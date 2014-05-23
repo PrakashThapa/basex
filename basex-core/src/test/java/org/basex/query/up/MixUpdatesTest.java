@@ -12,9 +12,9 @@ import org.junit.*;
  * Tests for the {@link MainOptions#MIXUPDATES} flag.
  *
  * @author BaseX Team 2005-14, BSD License
- * @author Lukas Kircher
+ * @author Christian Gruen
  */
-public final class MixpUpdatesTest extends AdvancedQueryTest {
+public final class MixUpdatesTest extends AdvancedQueryTest {
   /**
    * Prepare tests.
    * @throws BaseXException database exception
@@ -82,5 +82,12 @@ public final class MixpUpdatesTest extends AdvancedQueryTest {
     query("declare function local:a() { 1 }; local:a#0()", "1");
     query("declare function local:a() { local:b#0 };"
         + "declare function local:b() { db:output('1') }; local:a()()", "1");
+  }
+
+  /** Test method. */
+  @Test
+  public void functionLookup() {
+    query("declare function local:a() { db:output(1) };"
+        + "function-lookup(xs:QName('local:a'), 0)()", "1");
   }
 }

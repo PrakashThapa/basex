@@ -1440,20 +1440,20 @@ public class QueryParser extends InputParser {
    * @throws QueryException query exception
    */
   private Expr and() throws QueryException {
-    final Expr e = modify();
+    final Expr e = update();
     if(!wsConsumeWs(AND)) return e;
 
     final ExprList el = new ExprList(e);
-    do add(el, modify()); while(wsConsumeWs(AND));
+    do add(el, update()); while(wsConsumeWs(AND));
     return new And(info(), el.finish());
   }
 
   /**
-   * Parses the "CopyExpr" rule.
+   * Parses the "UpdateExpr" rule.
    * @return query expression
    * @throws QueryException query exception
    */
-  private Expr modify() throws QueryException {
+  private Expr update() throws QueryException {
     final Expr e = comparison();
     if(e != null) {
       if(wsConsumeWs(UPDATE)) {
@@ -2312,7 +2312,7 @@ public class QueryParser extends InputParser {
           final Expr lit = Functions.getLiteral(name, card, ctx, sc, ii);
           final Expr f = lit != null ? lit : FuncLit.unknown(name, card, ctx, sc, ii);
           ret = new PartFunc(sc, ii, f, args, holes);
-          if((lit instanceof FuncItem ? ((FuncItem) lit).annotations() :
+          if(lit != null && (lit instanceof FuncItem ? ((FuncItem) f).annotations() :
             ((FuncLit) lit).annotations()).contains(Ann.Q_UPDATING)) ctx.updating();
         } else {
           final TypedFunc f = Functions.get(name, args, false, ctx, sc, ii);
