@@ -103,7 +103,6 @@ public interface Text {
     "  -c<cmds>  Execute initial database commands" + NL +
     "  -d        Activate debugging mode" + NL +
     "  -e<port>  Set event port" + NL +
-    "  -i        Enter interactive mode" + NL +
     "  -n<name>  Set host the server is bound to" + NL +
     "  -p<port>  Set server port" + NL +
     "  -S        Start as service" + NL +
@@ -898,6 +897,8 @@ public interface Text {
   String NEW = lang("new");
   /** Command info. */
   String DELETE = lang("delete");
+  /** Command info. */
+  String INSTALL_FROM_URL = lang("install_from_url");
   /** Command info. */
   String INSTALL = lang("install");
   /** Command info. */
