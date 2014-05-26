@@ -19,6 +19,8 @@ import org.basex.query.*;
 import org.basex.query.expr.*;
 import org.basex.query.func.*;
 import org.basex.query.iter.*;
+import org.basex.query.path.*;
+import org.basex.query.path.Test.Kind;
 import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
@@ -35,8 +37,10 @@ import org.basex.util.list.*;
  * @author Christian Gruen
  */
 final class RestXqFunction implements Comparable<RestXqFunction> {
-  /** Pattern for a single template. */
+  /** Single template pattern. */
   private static final Pattern TEMPLATE = Pattern.compile("\\s*\\{\\s*\\$(.+?)\\s*\\}\\s*");
+  /** EQName pattern. */
+  private static final Pattern EQNAME = Pattern.compile("^Q\\{(.*?)\\}(.*)$");
 
   /** Supported methods. */
   final Set<String> methods = new HashSet<>();
@@ -132,8 +136,7 @@ final class RestXqFunction implements Comparable<RestXqFunction> {
           }
         } else if(eq(ERROR, local)) {
           // annotation "error"
-          if(error != null) throw error(info, ANN_TWICE, "%", name.string());
-          error = error(value, name);
+          error(value, name);
         } else if(eq(CONSUMES, local)) {
           // annotation "consumes"
           strings(value, name, consumes);
@@ -486,22 +489,58 @@ final class RestXqFunction implements Comparable<RestXqFunction> {
    * Returns an error.
    * @param value value
    * @param name name
-   * @return parameter
    * @throws QueryException HTTP exception
    */
-  private RestXqError error(final Value value, final QNm name) throws QueryException {
-    if(value.size() != 1) throw error(function.info, ANN_EXACTLY, "%", name.string(), 1);
+  private void error(final Value value, final QNm name) throws QueryException {
+    if(value.isEmpty()) throw error(function.info, ANN_ATLEAST, "%", name.string(), 1);
+
+    if(error == null) error = new RestXqError();
 
     // name of parameter
-    final String err = toString(value.itemAt(0), name);
-    QNm code = null;
-    if(!"*".equals(err)) {
-      final byte[] c = token(err);
-      if(!XMLToken.isQName(c)) throw error(INV_CODE, c);
-      code = new QNm(c, function.sc);
-      if(!code.hasURI() && code.hasPrefix()) throw error(INV_NONS, code);
+    final int s = (int) value.size();
+    NameTest last = error.get(0);
+    for(int i = 0; i < s; i++) {
+      final String err = toString(value.itemAt(i), name);
+      final Kind kind;
+      QNm qnm = null;
+      if(err.equals("*")) {
+        kind = Kind.WILDCARD;
+      } else if(err.startsWith("*:")) {
+        final byte[] local = token(err.substring(2));
+        if(!XMLToken.isNCName(local)) throw error(INV_CODE, err);
+        qnm = new QNm(local);
+        kind = Kind.NAME;
+      } else if(err.endsWith(":*")) {
+        final byte[] prefix = token(err.substring(0, err.length() - 2));
+        if(!XMLToken.isNCName(prefix)) throw error(INV_CODE, err);
+        qnm = new QNm(concat(prefix, COLON), function.sc);
+        kind = Kind.URI;
+      } else {
+        final Matcher m = EQNAME.matcher(err);
+        if(m.matches()) {
+          final byte[] uri = token(m.group(1));
+          final byte[] local = token(m.group(2));
+          if(local.length == 1 && local[0] == '*') {
+            qnm = new QNm(COLON, uri);
+            kind = Kind.URI;
+          } else {
+            if(!XMLToken.isNCName(local) || !Uri.uri(uri).isValid()) throw error(INV_CODE, err);
+            qnm = new QNm(local, uri);
+            kind = Kind.URI_NAME;
+          }
+        } else {
+          final byte[] nm = token(err);
+          if(!XMLToken.isQName(nm)) throw error(INV_CODE, err);
+          qnm = new QNm(nm, function.sc);
+          kind = Kind.URI_NAME;
+        }
+      }
+      // message
+      if(qnm != null && qnm.hasPrefix() && !qnm.hasURI()) throw error(INV_NONS, qnm);
+      final NameTest test = new NameTest(qnm, kind, false, null);
+      if(last != null && last.kind != kind) throw error(INV_PRIORITY, last, test);
+      if(!error.add(test)) throw error(INV_ERR_SAME, last);
+      last = test;
     }
-    // message
-    return new RestXqError(code);
   }
 }
