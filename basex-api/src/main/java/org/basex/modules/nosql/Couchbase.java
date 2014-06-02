@@ -368,7 +368,7 @@ public class Couchbase extends Nosql {
      * @return Item
      * @throws QueryException query exception
      */
-    public Item delete(final Str handler, final Str key) throws QueryException {
+    public Item remove(final Str handler, final Str key) throws QueryException {
         CouchbaseClient client = getClient(handler);
         try {
             OperationFuture<Boolean> result = client.delete(key.toJava());
@@ -390,9 +390,9 @@ public class Couchbase extends Nosql {
      * @return Item
      * @throws QueryException query exception
      */
-    public Item createview(final Str handler, final Str doc, final Str viewName,
+    public Item createView(final Str handler, final Str doc, final Str viewName,
             final Str map) throws QueryException {
-        return createview(handler, doc, viewName, map, null);
+        return createView(handler, doc, viewName, map, null);
     }
     /**
      * Create view with reduce method.
@@ -404,7 +404,7 @@ public class Couchbase extends Nosql {
      * @return Item
      * @throws QueryException query exception
      */
-    public Item createview(final Str handler, final Str doc, final Str viewName,
+    public Item createView(final Str handler, final Str doc, final Str viewName,
             final Str map, final Str reduce) throws QueryException {
         CouchbaseClient client = getClient(handler);
         if(map == null) {
@@ -542,9 +542,9 @@ public class Couchbase extends Nosql {
      * @return Item
      * @throws QueryException query exception
      */
-    public Item getview(final Str handler, final Str doc, final Str viewName)
+    public Item getView(final Str handler, final Str doc, final Str viewName)
             throws QueryException {
-        return getview(handler, doc, viewName, null);
+        return getView(handler, doc, viewName, null);
     }
     /**
      * view with mode Option.
@@ -555,7 +555,7 @@ public class Couchbase extends Nosql {
      * @return Item
      * @throws QueryException query exception
      */
-    public Item getview(final Str handler, final Str doc, final Str viewName,
+    public Item getView(final Str handler, final Str doc, final Str viewName,
             final Map query) throws QueryException {
         final CouchbaseClient client = getClient(handler);
         valueOnly = false;
