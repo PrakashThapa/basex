@@ -16,10 +16,18 @@ import org.basex.query.value.item.QNm;
 import org.basex.query.value.item.Str;
 import org.basex.query.value.map.Map;
 import org.basex.query.value.type.SeqType;
+
 import com.mongodb.*;
 import com.mongodb.MapReduceCommand.OutputType;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.MongoException;
 
 /**
  * This is the primary class for MongoDb processing in Basex.
@@ -458,7 +466,7 @@ public class MongoDB extends Nosql {
      * @return Item
      * @throws QueryException query exception
      */
-    public Item find(final Str handler, final Str col, final Str query,
+    public Item find(final Str handler, final Str col, final Item query,
              final Item opt) throws QueryException {
          return find(handler, col, query, opt, null);
        }
