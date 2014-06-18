@@ -44,7 +44,7 @@ public class RethinkDB extends Nosql {
      * connection instances.
      * @throws QueryException query exception
      */
-    public Str connection(final Map connectionMap) throws QueryException {
+    public Str connect(final Map connectionMap) throws QueryException {
         final NosqlOptions opts = new NosqlOptions();
         if(connectionMap != null) {
             new FuncOptions(Q_RETHINKDB, null).parse(connectionMap, opts);
@@ -261,7 +261,7 @@ public class RethinkDB extends Nosql {
      * @return Item
      * @throws QueryException query exception
      */
-    public Item dropTable(final Str handler, final Str table) throws QueryException {
+    public Item tableDrop(final Str handler, final Str table) throws QueryException {
         com.dkhenry.RethinkDB.RqlTopLevelQuery.DB db = getRethikClientDB(handler);
         try {
             return run(handler, db.table_drop(table.toJava()));
@@ -577,24 +577,24 @@ public class RethinkDB extends Nosql {
             throw new QueryException(e.getMessage());
         }
     }
-    @SuppressWarnings("javadoc")
-    public Function lambda(final String method, final String param) {
-      Function f = new Function() {
-
-        @Override
-        public RqlQuery apply(final RqlQuery.Var var) {
-          // TODO Auto-generated method stub
-          switch(method) {
-            case "add":
-                var.has_fields(param);
-              break;
-
-            default:
-              break;
-          }
-          return null;
-        }
-      };
-     return f;
-  }
+//    @SuppressWarnings("javadoc")
+//    public Function lambda(final String method, final String param) {
+//      Function f = new Function() {
+//
+//        @Override
+//        public RqlQuery apply(final RqlQuery.Var var) {
+//          // TODO Auto-generated method stub
+//          switch(method) {
+//            case "add":
+//                var.has_fields(param);
+//              break;
+//
+//            default:
+//              break;
+//          }
+//          return null;
+//        }
+//      };
+//     return f;
+//  }
 }
