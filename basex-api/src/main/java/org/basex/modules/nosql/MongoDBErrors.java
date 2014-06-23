@@ -40,7 +40,7 @@ public final class MongoDBErrors {
    * MONGODB0003: Incorrect username or password.
    * @return query exception
    */
-  public static QueryException unAuthorised() {
+  public static QueryException unauthorised() {
     return thrw(3, "Invalid username or password");
   }
   /**
@@ -91,6 +91,15 @@ public final class MongoDBErrors {
   public static QueryException findAndModifyUpdate() {
     return thrw(9, "'update' parameter cannot be empty in findAndModify()");
   }
+  /**
+   * MONGODB0010: Connection NullExceptions().
+   * @return query exception
+   */
+  public static QueryException connectionNullException() {
+    return thrw(10, "Parameters are not defined " +
+        "well like: {'url':'mongodb://user:pass@127.0.0.1:27017/basex'}");
+  }
+
   /**
    * Returns a query exception.
    * @param code code

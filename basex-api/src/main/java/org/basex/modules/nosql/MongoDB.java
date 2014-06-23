@@ -83,15 +83,18 @@ public class MongoDB extends Nosql {
                   opts.get(NosqlOptions.PASSWORD).toCharArray() : null;
           return mongoConnect(handler, opts.get(NosqlOptions.DATABASE),
                   opts.get(NosqlOptions.USERNAME), pass, connectionMap);
-        } catch (final MongoException ex) {
+        }catch (final MongoException ex) {
           throw MongoDBErrors.mongoExceptionError(ex);
         } catch (UnknownHostException ex) {
           throw MongoDBErrors.generalExceptionError(ex);
+        }catch(final NullPointerException ex) {
+          throw MongoDBErrors.connectionNullException();
+
         }
     }
     /**
      * Mongodb connection with options.
-     * @param url mongodb url like: "mongodb://127.0.0.1:27017/enron"
+     * @param url mongodb url like: "mongodb://127.0.0.1:27017/basex"
      * @param options nosql options
      * @return Str
      * @throws QueryException query exception
@@ -206,7 +209,7 @@ public class MongoDB extends Nosql {
             if (username != null && password != null) {
                 boolean auth = db.authenticate(username, password);
                 if (!auth) {
-                    throw  MongoDBErrors.unAuthorised();
+                    throw  MongoDBErrors.unauthorised();
                 }
              }
             dbs.put(dbh, db);
