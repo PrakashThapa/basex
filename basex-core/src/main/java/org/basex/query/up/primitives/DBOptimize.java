@@ -3,6 +3,7 @@ package org.basex.query.up.primitives;
 import static org.basex.query.util.Err.*;
 
 import java.io.*;
+import java.util.*;
 
 import org.basex.core.*;
 import org.basex.core.cmd.*;
@@ -41,8 +42,12 @@ public final class DBOptimize extends DBUpdate {
     super(UpdateType.DBOPTIMIZE, data, info);
     this.all = all;
     this.qc = qc;
-    options = new DBOptions(opts.free(), info);
-    options.check(all);
+
+    final ArrayList<Option<?>> supported = new ArrayList<>();
+    for(final Option<?> option : DBOptions.INDEXING) {
+      if(all || option != MainOptions.UPDINDEX) supported.add(option);
+    }
+    options = new DBOptions(opts.free(), supported, info);
   }
 
   @Override
@@ -58,10 +63,11 @@ public final class DBOptimize extends DBUpdate {
     // assign database and query options to runtime options
     final MetaData meta = data.meta;
     final MainOptions opts = meta.options;
-    options.tOptions.put(MainOptions.TEXTINDEX, meta.createtext);
-    options.tOptions.put(MainOptions.ATTRINDEX, meta.createattr);
-    options.tOptions.put(MainOptions.FTINDEX,   meta.createftxt);
-    options.tOptions.put(MainOptions.UPDINDEX,  meta.updindex);
+
+    options.assign(MainOptions.TEXTINDEX, meta.createtext);
+    options.assign(MainOptions.ATTRINDEX, meta.createattr);
+    options.assign(MainOptions.FTINDEX,   meta.createftxt);
+    options.assign(MainOptions.UPDINDEX,  meta.updindex);
     options.assign(opts);
 
     // adopt runtime options
