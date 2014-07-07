@@ -141,6 +141,7 @@ public abstract class Step extends Preds {
     int kind = -1, name = 0;
     if(test.type != null) {
       kind = ANode.kind(test.type);
+      // no index available for processing instructions
       if(kind == Data.PI) return null;
 
       if(test.kind == Kind.NAME) {
