@@ -25,36 +25,37 @@ import org.basex.util.*;
 public final class FNAggr extends StandardFunc {
   /**
    * Constructor.
-   * @param sctx static context
-   * @param ii input info
-   * @param f function definition
-   * @param e arguments
+   * @param sc static context
+   * @param info input info
+   * @param func function definition
+   * @param args arguments
    */
-  public FNAggr(final StaticContext sctx, final InputInfo ii, final Function f, final Expr... e) {
-    super(sctx, ii, f, e);
+  public FNAggr(final StaticContext sc, final InputInfo info, final Function func,
+      final Expr... args) {
+    super(sc, info, func, args);
   }
 
   @Override
-  public Item item(final QueryContext ctx, final InputInfo ii) throws QueryException {
-    final Iter iter = ctx.iter(expr[0]);
-    switch(sig) {
+  public Item item(final QueryContext qc, final InputInfo ii) throws QueryException {
+    final Iter iter = qc.iter(exprs[0]);
+    switch(func) {
       case COUNT:
         long c = iter.size();
         if(c == -1) {
           do {
-            ctx.checkStop();
+            qc.checkStop();
             ++c;
           } while(iter.next() != null);
         }
         return Int.get(c);
       case MIN:
-        return minmax(iter, OpV.GT, ctx);
+        return minmax(iter, OpV.GT, qc);
       case MAX:
-        return minmax(iter, OpV.LT, ctx);
+        return minmax(iter, OpV.LT, qc);
       case SUM:
         // partial sum calculation (Little Gauss)
-        if(expr[0] instanceof RangeSeq) {
-          final RangeSeq rs = (RangeSeq) expr[0];
+        if(exprs[0] instanceof RangeSeq) {
+          final RangeSeq rs = (RangeSeq) exprs[0];
           final long s = rs.itemAt(0).itr(ii);
           if(s == 0 || s == 1) {
             final long n = rs.size();
@@ -65,29 +66,29 @@ public final class FNAggr extends StandardFunc {
 
         Item it = iter.next();
         return it != null ? sum(iter, it, false) :
-          expr.length == 2 ? expr[1].item(ctx, info) : Int.get(0);
+          exprs.length == 2 ? exprs[1].item(qc, info) : Int.get(0);
       case AVG:
         it = iter.next();
         return it == null ? null : sum(iter, it, true);
       default:
-        return super.item(ctx, ii);
+        return super.item(qc, ii);
     }
   }
 
   @Override
-  protected Expr opt(final QueryContext ctx, final VarScope scp) {
+  protected Expr opt(final QueryContext qc, final VarScope scp) {
     // skip non-deterministic and variable expressions
-    final Expr e = expr[0];
+    final Expr e = exprs[0];
     if(e.has(Flag.NDT) || e.has(Flag.UPD) || e instanceof VarRef) return this;
 
     final long c = e.size();
-    switch(sig) {
+    switch(func) {
       case COUNT:
         if(c >= 0) return Int.get(c);
         break;
       case SUM:
-        if(c == 0) return expr.length == 2 ? expr[1] : Int.get(0);
-        final Type a = e.type().type, b = expr.length == 2 ? expr[1].type().type : a;
+        if(c == 0) return exprs.length == 2 ? exprs[1] : Int.get(0);
+        final Type a = e.type().type, b = exprs.length == 2 ? exprs[1].type().type : a;
         if(a.isNumberOrUntyped() && b.isNumberOrUntyped()) type = Calc.type(a, b).seqType();
         break;
       default:
@@ -130,14 +131,14 @@ public final class FNAggr extends StandardFunc {
    * Returns a minimum or maximum item.
    * @param iter values to be compared
    * @param cmp comparator
-   * @param ctx query context
+   * @param qc query context
    * @return resulting item
    * @throws QueryException query exception
    */
-  private Item minmax(final Iter iter, final OpV cmp, final QueryContext ctx)
+  private Item minmax(final Iter iter, final OpV cmp, final QueryContext qc)
       throws QueryException {
 
-    final Collation coll = checkColl(expr.length == 2 ? expr[1] : null, ctx, sc);
+    final Collation coll = checkColl(exprs.length == 2 ? exprs[1] : null, qc, sc);
 
     Item rs = iter.next();
     if(rs == null) return null;
@@ -162,11 +163,11 @@ public final class FNAggr extends StandardFunc {
       return rs;
     }
     // numbers
-    if(rs.type.isUntyped()) rs = DBL.cast(rs, ctx, sc, info);
+    if(rs.type.isUntyped()) rs = DBL.cast(rs, qc, sc, info);
     for(Item it; (it = iter.next()) != null;) {
       final Type t = numType(rs, it);
       if(cmp.eval(rs, it, coll, info) || Double.isNaN(it.dbl(info))) rs = it;
-      if(rs.type != t) rs = (Item) t.cast(rs, ctx, sc, info);
+      if(rs.type != t) rs = (Item) t.cast(rs, qc, sc, info);
     }
     return rs;
   }

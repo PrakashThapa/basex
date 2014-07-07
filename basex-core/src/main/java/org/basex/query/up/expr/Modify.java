@@ -31,60 +31,60 @@ public final class Modify extends Arr {
   }
 
   @Override
-  public Expr compile(final QueryContext ctx, final VarScope scp) throws QueryException {
-    final Value v = ctx.value;
+  public Expr compile(final QueryContext qc, final VarScope scp) throws QueryException {
+    final Value v = qc.value;
     try {
-      ctx.value = null;
-      super.compile(ctx, scp);
+      qc.value = null;
+      super.compile(qc, scp);
       return this;
     } finally {
-      ctx.value = v;
+      qc.value = v;
     }
   }
 
   @Override
   public void checkUp() throws QueryException {
-    checkNoUp(expr[0]);
-    final Expr m = expr[1];
+    checkNoUp(exprs[0]);
+    final Expr m = exprs[1];
     m.checkUp();
     if(!m.isVacuous() && !m.has(Flag.UPD)) throw UPMODIFY.get(info);
   }
 
   @Override
-  public ValueIter iter(final QueryContext ctx) throws QueryException {
-    return value(ctx).iter();
+  public ValueIter iter(final QueryContext qc) throws QueryException {
+    return value(qc).iter();
   }
 
   @Override
-  public Value value(final QueryContext ctx) throws QueryException {
-    final int o = (int) ctx.resources.output.size();
-    final Updates updates = ctx.resources.updates();
+  public Value value(final QueryContext qc) throws QueryException {
+    final int o = (int) qc.resources.output.size();
+    final Updates updates = qc.resources.updates();
     final ContextModifier tmp = updates.mod;
     final TransformModifier pu = new TransformModifier();
     updates.mod = pu;
 
-    final Value cv = ctx.value;
+    final Value cv = qc.value;
     try {
-      final Iter ir = ctx.iter(expr[0]);
+      final Iter ir = qc.iter(exprs[0]);
       Item i = ir.next();
       if(!(i instanceof ANode) || ir.next() != null) throw UPSOURCE.get(info);
 
       // copy node to main memory data instance
-      i = ((ANode) i).dbCopy(ctx.context.options);
+      i = ((ANode) i).dbCopy(qc.context.options);
       // set resulting node as context
-      ctx.value = i;
+      qc.value = i;
       pu.addData(i.data());
 
-      final Value v = ctx.value(expr[1]);
+      final Value v = qc.value(exprs[1]);
       if(!v.isEmpty()) throw BASEX_MOD.get(info);
 
       updates.prepare();
       updates.apply();
-      return ctx.value;
+      return qc.value;
     } finally {
-      ctx.resources.output.size(o);
+      qc.resources.output.size(o);
       updates.mod = tmp;
-      ctx.value = cv;
+      qc.value = cv;
     }
   }
 
@@ -94,13 +94,13 @@ public final class Modify extends Arr {
   }
 
   @Override
-  public Expr copy(final QueryContext ctx, final VarScope scp, final IntObjMap<Var> vs) {
-    return new Modify(info, expr[0].copy(ctx, scp, vs), expr[1].copy(ctx, scp, vs));
+  public Expr copy(final QueryContext qc, final VarScope scp, final IntObjMap<Var> vs) {
+    return new Modify(info, exprs[0].copy(qc, scp, vs), exprs[1].copy(qc, scp, vs));
   }
 
   @Override
   public void plan(final FElem plan) {
-    addPlan(plan, planElem(), expr);
+    addPlan(plan, planElem(), exprs);
   }
 
   @Override
@@ -111,7 +111,7 @@ public final class Modify extends Arr {
   @Override
   public int exprSize() {
     int sz = 1;
-    for(final Expr e : expr) sz += e.exprSize();
+    for(final Expr e : exprs) sz += e.exprSize();
     return sz;
   }
 }

@@ -742,7 +742,7 @@ public interface QueryText {
   // OPTIMIZATIONS
 
   /** Optimization info. */
-  String OPTDESC = "simplifying descendant-or-self step(s)";
+  String OPTDESC = "rewriting descendant-or-self step(s)";
   /** Optimization info. */
   String OPTATOMIC = "atomic evaluation of %";
   /** Optimization info. */
@@ -784,26 +784,21 @@ public interface QueryText {
   /** Optimization info. */
   String OPTPATH = "removing non-existing path %";
   /** Optimization info. */
-  String OPTTXTINDEX = "applying text index";
+  String OPTTXTINDEX = "applying text index for %";
   /** Optimization info. */
-  String OPTATVINDEX = "applying attribute index";
+  String OPTATVINDEX = "applying attribute index for %";
   /** Optimization info. */
-  String OPTFTXINDEX = "applying full-text index";
+  String OPTFTXINDEX = "applying full-text index for %";
   /** Optimization info. */
-  String OPTRNGINDEX = "applying range index";
+  String OPTSFTXINDEX = "applying sequential full-text index for %";
   /** Optimization info. */
-  String OPTSRNGINDEX = "applying string range index";
+  String OPTRNGINDEX = "applying range index for %";
+  /** Optimization info. */
+  String OPTSRNGINDEX = "applying string range index for %";
   /** Optimization info. */
   String OPTNOINDEX = "removing path with no index results";
   /** Optimization info. */
   String OPTCHILD = "converting % to child steps";
   /** Optimization info. */
   String OPTUNROLL = "unrolling %";
-
-  /** Warning. */
-  String WARNSELF = "Warning: '%' will never yield results.";
-  /** Warning. */
-  String WARNDESC = "Warning: '%' cannot have descendants.";
-  /** Warning. */
-  String WARNDOC = "Warning: '%' cannot have % nodes.";
 }

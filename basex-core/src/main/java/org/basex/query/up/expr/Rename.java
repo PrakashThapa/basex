@@ -26,18 +26,18 @@ import org.basex.util.hash.*;
 public final class Rename extends Update {
   /**
    * Constructor.
-   * @param sctx static context
+   * @param sc static context
    * @param info input info
    * @param trg target expression
    * @param name new name expression
    */
-  public Rename(final StaticContext sctx, final InputInfo info, final Expr trg, final Expr name) {
-    super(sctx, info, trg, name);
+  public Rename(final StaticContext sc, final InputInfo info, final Expr trg, final Expr name) {
+    super(sc, info, trg, name);
   }
 
   @Override
-  public Item item(final QueryContext ctx, final InputInfo ii) throws QueryException {
-    final Iter t = ctx.iter(expr[0]);
+  public Item item(final QueryContext qc, final InputInfo ii) throws QueryException {
+    final Iter t = qc.iter(exprs[0]);
     final Item i = t.next();
 
     // check target constraints
@@ -46,16 +46,16 @@ public final class Rename extends Update {
 
     final CNode ex;
     if(i.type == NodeType.ELM) {
-      ex = new CElem(sc, info, expr[1], null);
+      ex = new CElem(sc, info, exprs[1], null);
     } else if(i.type == NodeType.ATT) {
-      ex = new CAttr(sc, info, false, expr[1], Empty.SEQ);
+      ex = new CAttr(sc, info, false, exprs[1], Empty.SEQ);
     } else if(i.type == NodeType.PI) {
-      ex = new CPI(sc, info, expr[1], Empty.SEQ);
+      ex = new CPI(sc, info, exprs[1], Empty.SEQ);
     } else {
       throw UPWRTRGTYP.get(info);
     }
 
-    final QNm rename = ex.item(ctx, info).qname();
+    final QNm rename = ex.item(qc, info).qname();
     final ANode targ = (ANode) i;
 
     // check namespace conflicts...
@@ -69,19 +69,19 @@ public final class Rename extends Update {
       }
     }
 
-    final Updates updates = ctx.resources.updates();
-    final DBNode dbn = updates.determineDataRef(targ, ctx);
-    updates.add(new RenameNode(dbn.pre, dbn.data, info, rename), ctx);
+    final Updates updates = qc.resources.updates();
+    final DBNode dbn = updates.determineDataRef(targ, qc);
+    updates.add(new RenameNode(dbn.pre, dbn.data, info, rename), qc);
     return null;
   }
 
   @Override
-  public Expr copy(final QueryContext ctx, final VarScope scp, final IntObjMap<Var> vs) {
-    return new Rename(sc, info, expr[0].copy(ctx, scp, vs), expr[1].copy(ctx, scp, vs));
+  public Expr copy(final QueryContext qc, final VarScope scp, final IntObjMap<Var> vs) {
+    return new Rename(sc, info, exprs[0].copy(qc, scp, vs), exprs[1].copy(qc, scp, vs));
   }
 
   @Override
   public String toString() {
-    return RENAME + ' ' + NODE + ' ' + expr[0] + ' ' + AS + ' ' + expr[1];
+    return RENAME + ' ' + NODE + ' ' + exprs[0] + ' ' + AS + ' ' + exprs[1];
   }
 }

@@ -131,7 +131,7 @@ public final class StaticFuncs extends ExprInfo {
             if(a != 0) exp.append(a + 1 < as ? "," : " or ");
             exp.append(al.get(a));
           }
-          final int a = call.expr.length;
+          final int a = call.exprs.length;
           throw (a == 1 ? FUNCTYPESG : FUNCTYPEPL).get(call.info, call.name.string(), a, exp);
         }
 
@@ -159,12 +159,12 @@ public final class StaticFuncs extends ExprInfo {
 
   /**
    * Compiles the functions.
-   * @param ctx query context
+   * @param qc query context
    */
-  public void compile(final QueryContext ctx) {
+  public void compile(final QueryContext qc) {
     // only compile those functions that are used
     for(final FuncCache fc : funcs.values()) {
-      if(!fc.calls.isEmpty()) fc.func.compile(ctx);
+      if(!fc.calls.isEmpty()) fc.func.compile(qc);
     }
   }
 
@@ -177,8 +177,8 @@ public final class StaticFuncs extends ExprInfo {
    * @return function if found, {@code null} otherwise
    * @throws QueryException query exception
    */
-  public StaticFunc get(final QNm name, final long arity, final InputInfo ii,
-      final boolean error) throws QueryException {
+  public StaticFunc get(final QNm name, final long arity, final InputInfo ii, final boolean error)
+      throws QueryException {
 
     final FuncCache fc = funcs.get(sig(name, arity));
     if(fc != null) return fc.func;
@@ -197,20 +197,19 @@ public final class StaticFuncs extends ExprInfo {
    * @return exception
    */
   public QueryException similarError(final QNm name, final InputInfo ii) {
-    // find global function
-    QueryException qe = Functions.get().similarError(name, ii);
-    if(qe == null) {
-      // find local functions
-      final Levenshtein ls = new Levenshtein();
-      final byte[] nm = lc(name.local());
-      for(final FuncCache fc : funcs.values()) {
-        final StaticFunc sf = fc.func;
-        if(sf != null && sf.expr != null && ls.similar(nm, lc(sf.name.local()))) {
-          qe = FUNCSIMILAR.get(ii, name.string(), sf.name.string());
-          break;
-        }
+    // find local functions
+    QueryException qe = null;
+    final Levenshtein ls = new Levenshtein();
+    final byte[] nm = lc(name.local());
+    for(final FuncCache fc : funcs.values()) {
+      final StaticFunc sf = fc.func;
+      if(sf != null && sf.expr != null && ls.similar(nm, lc(sf.name.local()))) {
+        qe = FUNCSIMILAR.get(ii, name.string(), sf.name.string());
+        break;
       }
     }
+    // find global function
+    if(qe == null) qe = Functions.get().similarError(name, ii);
     return qe;
   }
 
