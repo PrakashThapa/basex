@@ -7,8 +7,7 @@ import org.basex.io.serial.SerializerOptions;
 import org.basex.modules.nosql.NosqlOptions.NosqlFormat;
 import org.basex.query.QueryException;
 import org.basex.query.QueryModule;
-import org.basex.query.func.FNJson;
-import org.basex.query.func.Function;
+import org.basex.query.func.*;
 import org.basex.query.value.item.Item;
 import org.basex.query.value.item.Str;
 import org.basex.query.value.map.Map;
@@ -156,11 +155,16 @@ abstract class Nosql extends QueryModule {
             try {
                 if(opt != null) {
                     if(opt.get(NosqlOptions.TYPE) == NosqlFormat.XML) {
-                        final JsonParserOptions opts = new JsonParserOptions();
-                        opts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
-                        final JsonConverter conv = JsonConverter.get(opts);
-                        conv.convert(json.string(), null);
-                        return conv.finish();
+                      final JsonParserOptions opts = new JsonParserOptions();
+                      opts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
+                      opts.set(JsonOptions.STRINGS, opt.get(JsonOptions.STRINGS));
+                      opts.set(JsonOptions.LAX, opt.get(JsonOptions.LAX));
+                      opts.set(JsonOptions.SPEC, opt.get(JsonOptions.SPEC));
+                      opts.set(JsonOptions.MERGE, opt.get(JsonOptions.MERGE));
+                      //JsonParserOptionsopts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
+                      final JsonConverter conv = JsonConverter.get(opts);
+                      conv.convert(json.string(), null);
+                      return conv.finish();
                     }
                     Item xXml = new FNJson(staticContext, null,
                             Function._JSON_PARSE, json).
