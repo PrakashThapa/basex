@@ -1,5 +1,7 @@
 package org.basex.modules.nosql;
 
+import static org.basex.util.Token.*;
+
 import org.basex.build.*;
 import org.basex.io.parse.json.JsonConverter;
 import org.basex.io.serial.SerialMethod;
@@ -8,9 +10,9 @@ import org.basex.modules.nosql.NosqlOptions.NosqlFormat;
 import org.basex.query.QueryException;
 import org.basex.query.QueryModule;
 import org.basex.query.func.*;
-import org.basex.query.value.item.Item;
-import org.basex.query.value.item.Str;
+import org.basex.query.value.item.*;
 import org.basex.query.value.map.Map;
+import org.basex.query.value.type.*;
 
 /**
  * All Nosql database common functionality.
@@ -87,6 +89,45 @@ abstract class Nosql extends QueryModule {
   /** for rethink **/
   /** id. */
   protected static final String ID = "id";
+
+
+  /** NOSQL URI. added later */
+  protected static final byte[] NOSQLURI = token("http://www.basex.org/modules/nosql");
+  /** Module prefix. */
+  private static final String PREFIX = "nosql";
+  /** QName. */
+  protected static final QNm Q_JSON = QNm.get(PREFIX, "json", NOSQLURI);
+  /** QName. */
+  protected static final QNm Q_KEY = QNm.get(PREFIX, "key", NOSQLURI);
+  /** QName. */
+  protected static final QNm Q_VALUE = QNm.get(PREFIX, "value", NOSQLURI);
+  /** Type type. */
+  protected static final byte[] TYPE = token("type");
+  /** Type object. */
+  protected static final byte[] OBJECT = token("object");
+  /** Type array. */
+  protected static final byte[] ARRAY = token("array");
+  /** Type int. */
+  protected static final byte[] INT = AtomType.INT.string();
+  /** Type string. */
+  protected static final byte[] STRING = AtomType.STR.string();
+  /** Type boolean. */
+  protected static final byte[] BOOL = AtomType.BLN.string();
+  /** Type date. */
+  protected static final byte[] DATE = AtomType.DAT.string();
+  /** Type double. */
+  protected static final byte[] DOUBLE = AtomType.DBL.string();
+  /** Type float. */
+  protected static final byte[] FLOAT = AtomType.FLT.string();
+  /** Type short. */
+  protected static final byte[] SHORT = AtomType.SHR.string();
+  /** Type time. */
+  protected static final byte[] TIME = AtomType.TIM.string();
+  /** Type timestamp. */
+  protected static final byte[] TIMESTAMP = token("timestamp");
+
+  /** Name. */
+  protected static final String NAME = "name";
   /** qnmOptions. */
     /**
      * convert Str to java string.
@@ -155,14 +196,7 @@ abstract class Nosql extends QueryModule {
             try {
                 if(opt != null) {
                     if(opt.get(NosqlOptions.TYPE) == NosqlFormat.XML) {
-                      final JsonParserOptions opts = new JsonParserOptions();
-                      opts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
-                      opts.set(JsonOptions.STRINGS, opt.get(JsonOptions.STRINGS));
-                      opts.set(JsonOptions.LAX, opt.get(JsonOptions.LAX));
-                      opts.set(JsonOptions.SPEC, opt.get(JsonOptions.SPEC));
-                      opts.set(JsonOptions.MERGE, opt.get(JsonOptions.MERGE));
-                      //JsonParserOptionsopts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
-                      final JsonConverter conv = JsonConverter.get(opts);
+                      final JsonConverter conv = JsonConverter.get(jsonParseOption(opt));
                       conv.convert(json.string(), null);
                       return conv.finish();
                     }
@@ -178,6 +212,19 @@ abstract class Nosql extends QueryModule {
             } catch (final Exception ex) {
                 throw new QueryException(ex);
             }
+    }
+    /** convert Nosql Options to jsonParseOptions.
+     * @param opt NosqlOptions
+     * @return JsonParserOptions
+     */
+    private JsonParserOptions jsonParseOption(final NosqlOptions opt) {
+      final JsonParserOptions opts = new JsonParserOptions();
+      opts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
+      opts.set(JsonOptions.STRINGS, opt.get(JsonOptions.STRINGS));
+      opts.set(JsonOptions.LAX, opt.get(JsonOptions.LAX));
+      opts.set(JsonOptions.SPEC, opt.get(JsonOptions.SPEC));
+      opts.set(JsonOptions.MERGE, opt.get(JsonOptions.MERGE));
+      return opts;
     }
     /**
      * insert key/value pair into Basex Map.

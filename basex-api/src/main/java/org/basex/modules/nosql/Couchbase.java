@@ -27,9 +27,9 @@ import com.couchbase.client.vbucket.ConfigurationException;
 
 
 /**
- * CouchBase extension of Basex.
+ * CouchBase extension of BaseX.
  *
- * @author BaseX Team 2005-13, BSD License
+ * @author BaseX Team 2005-14, BSD License
  * @author Prakash Thapa
  */
 public class Couchbase extends Nosql {
