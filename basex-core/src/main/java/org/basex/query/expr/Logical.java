@@ -28,7 +28,7 @@ public abstract class Logical extends Arr {
    */
   Logical(final InputInfo info, final Expr[] exprs) {
     super(info, exprs);
-    type = SeqType.BLN;
+    seqType = SeqType.BLN;
   }
 
   @Override
@@ -48,7 +48,7 @@ public abstract class Logical extends Arr {
       }
     }
     if(el.isEmpty()) return Bln.get(and);
-    exprs = el.finish();
+    exprs = el.array();
     return this;
   }
 
@@ -56,7 +56,7 @@ public abstract class Logical extends Arr {
   public final void markTailCalls(final QueryContext qc) {
     // if the last expression surely returns a boolean, we can jump to it
     final Expr last = exprs[exprs.length - 1];
-    if(last.type().eq(SeqType.BLN)) {
+    if(last.seqType().eq(SeqType.BLN)) {
       tailCall = true;
       last.markTailCalls(qc);
     }
@@ -78,8 +78,7 @@ public abstract class Logical extends Arr {
    */
   final void compFlatten(final QueryContext qc) {
     // flatten nested expressions
-    final int es = exprs.length;
-    final ExprList tmp = new ExprList(es);
+    final ExprList tmp = new ExprList(exprs.length);
     final boolean and = this instanceof And;
     final boolean or = this instanceof Or;
     for(final Expr ex : exprs) {
@@ -90,6 +89,6 @@ public abstract class Logical extends Arr {
         tmp.add(ex);
       }
     }
-    if(es != tmp.size()) exprs = tmp.finish();
+    exprs = tmp.array();
   }
 }

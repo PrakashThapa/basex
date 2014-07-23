@@ -80,12 +80,12 @@ public abstract class Filter extends Preds {
    */
   private Expr opt(final QueryContext qc) {
     // evaluate return type
-    final SeqType t = root.type();
+    final SeqType st = root.seqType();
 
     // determine number of results and type
     final long s = root.size();
     if(s == -1) {
-      type = SeqType.get(t.type, t.zeroOrOne() ? Occ.ZERO_ONE : Occ.ZERO_MORE);
+      seqType = SeqType.get(st.type, st.zeroOrOne() ? Occ.ZERO_ONE : Occ.ZERO_MORE);
     } else {
       if(pos != null) {
         size = Math.max(0, s + 1 - pos.min) - Math.max(0, s - pos.max);
@@ -94,7 +94,7 @@ public abstract class Filter extends Preds {
       }
       // no results will remain: return empty sequence
       if(size == 0) return optPre(null, qc);
-      type = SeqType.get(t.type, size);
+      seqType = SeqType.get(st.type, size);
     }
 
     // no numeric predicates.. use simple iterator
@@ -114,9 +114,9 @@ public abstract class Filter extends Preds {
     boolean off = false;
     if(preds.length == 1) {
       final Expr p = preds[0];
-      final SeqType st = p.type();
-      off = st.type.isNumber() && st.zeroOrOne() && !p.has(Flag.CTX) && !p.has(Flag.NDT);
-      if(off) type = SeqType.get(type.type, Occ.ZERO_ONE);
+      final SeqType pt = p.seqType();
+      off = pt.type.isNumber() && pt.zeroOrOne() && !p.has(Flag.CTX) && !p.has(Flag.NDT);
+      if(off) seqType = SeqType.get(seqType.type, Occ.ZERO_ONE);
     }
 
     // iterator for simple numeric predicate
@@ -158,25 +158,25 @@ public abstract class Filter extends Preds {
   }
 
   @Override
-  public final boolean removable(final Var v) {
-    return root.removable(v) && super.removable(v);
+  public final boolean removable(final Var var) {
+    return root.removable(var) && super.removable(var);
   }
 
   @Override
-  public VarUsage count(final Var v) {
-    final VarUsage inPreds = super.count(v), inRoot = root.count(v);
+  public VarUsage count(final Var var) {
+    final VarUsage inPreds = super.count(var), inRoot = root.count(var);
     if(inPreds == VarUsage.NEVER) return inRoot;
     final long sz = root.size();
-    return sz >= 0 && sz <= 1 || root.type().zeroOrOne()
+    return sz >= 0 && sz <= 1 || root.seqType().zeroOrOne()
         ? inRoot.plus(inPreds) : VarUsage.MORE_THAN_ONCE;
   }
 
   @Override
-  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e)
+  public Expr inline(final QueryContext qc, final VarScope scp, final Var var, final Expr ex)
       throws QueryException {
 
-    final boolean pr = super.inline(qc, scp, v, e) != null;
-    final Expr rt = root == null ? null : root.inline(qc, scp, v, e);
+    final boolean pr = super.inline(qc, scp, var, ex) != null;
+    final Expr rt = root == null ? null : root.inline(qc, scp, var, ex);
     if(rt != null) root = rt;
     return pr || rt != null ? optimize(qc, scp) : null;
   }

@@ -40,7 +40,7 @@ public final class VarRef extends ParseExpr {
 
   @Override
   public VarRef optimize(final QueryContext qc, final VarScope scp) {
-    type = var.type();
+    seqType = var.seqType();
     size = var.size;
     return this;
   }
@@ -71,9 +71,9 @@ public final class VarRef extends ParseExpr {
   }
 
   @Override
-  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e) {
+  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr ex) {
     // [LW] Is copying always necessary?
-    return v.is(var) ? e.isValue() ? e : e.copy(qc, scp) : null;
+    return var.is(v) ? ex.isValue() ? ex : ex.copy(qc, scp) : null;
   }
 
   @Override

@@ -118,7 +118,7 @@ public final class FNZip extends StandardFunc {
     final MainOptions opts = qc.context.options;
     final IO io = new IOContent(entry(qc));
     try {
-      return new DBNode(html ? new HtmlParser(io, opts) : Parser.xmlParser(io, opts));
+      return new DBNode(html ? new HtmlParser(io, opts) : Parser.xmlParser(io));
     } catch(final IOException ex) {
       throw SAXERR.get(info, ex);
     }
@@ -307,7 +307,7 @@ public final class FNZip extends StandardFunc {
               // treat children as base64/hex
               final ByteList bl = new ByteList();
               do bl.add(n.string()); while((n = ch.next()) != null);
-              final byte[] bytes = bl.toArray();
+              final byte[] bytes = bl.finish();
               zos.write((hex ? new Hex(bytes) : new B64(bytes)).toJava());
             } else {
               // serialize new nodes

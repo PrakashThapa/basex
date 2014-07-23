@@ -44,7 +44,7 @@ public abstract class Step extends Preds {
   public static Step get(final InputInfo info, final Axis axis, final Test test,
       final Expr... preds) {
     boolean num = false;
-    for(final Expr pr : preds) num |= pr.type().mayBeNumber() || pr.has(Flag.FCS);
+    for(final Expr pr : preds) num |= pr.seqType().mayBeNumber() || pr.has(Flag.FCS);
     return num ? new AxisStep(info, axis, test, preds) : new IterStep(info, axis, test, preds);
   }
 
@@ -59,7 +59,7 @@ public abstract class Step extends Preds {
     super(info, preds);
     this.axis = axis;
     this.test = test;
-    type = SeqType.NOD_ZM;
+    seqType = SeqType.NOD_ZM;
   }
 
   @Override
@@ -94,14 +94,14 @@ public abstract class Step extends Preds {
         qc.compInfo(OPTPRED, pr);
         final Expr[] and = ((Arr) pr).exprs;
         final int m = and.length - 1;
-        final ExprList tmp = new ExprList(preds.length + m);
-        for(final Expr e : Arrays.asList(preds).subList(0, p)) tmp.add(e);
+        final ExprList el = new ExprList(preds.length + m);
+        for(final Expr e : Arrays.asList(preds).subList(0, p)) el.add(e);
         for(final Expr a : and) {
           // wrap test with boolean() if the result is numeric
-          tmp.add(Function.BOOLEAN.get(null, info, a).compEbv(qc));
+          el.add(Function.BOOLEAN.get(null, info, a).compEbv(qc));
         }
-        for(final Expr e : Arrays.asList(preds).subList(p + 1, preds.length)) tmp.add(e);
-        preds = tmp.finish();
+        for(final Expr e : Arrays.asList(preds).subList(p + 1, preds.length)) el.add(e);
+        preds = el.array();
       } else {
         preds[p] = pr;
       }
@@ -146,7 +146,7 @@ public abstract class Step extends Preds {
 
       if(test.kind == Kind.NAME) {
         // element/attribute test (*:ln)
-        final Names names = kind == Data.ATTR ? data.atnindex : data.tagindex;
+        final Names names = kind == Data.ATTR ? data.atnindex : data.elmindex;
         name = names.id(((NameTest) test).local);
       } else if(test.kind != null && test.kind != Kind.WILDCARD) {
         // skip namespace and standard tests

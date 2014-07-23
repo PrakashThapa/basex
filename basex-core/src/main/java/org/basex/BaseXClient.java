@@ -4,8 +4,8 @@ import static org.basex.core.Text.*;
 
 import java.io.*;
 
+import org.basex.api.client.*;
 import org.basex.core.*;
-import org.basex.server.*;
 import org.basex.util.*;
 
 /**
@@ -40,7 +40,7 @@ public final class BaseXClient extends BaseX {
   }
 
   @Override
-  protected boolean sa() {
+  protected boolean local() {
     return false;
   }
 

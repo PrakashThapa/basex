@@ -31,7 +31,7 @@ public final class ClientListener extends Thread {
   public long last;
 
   /** Active queries. */
-  private final HashMap<String, QueryListener> queries = new HashMap<>();
+  private final HashMap<String, ServerQuery> queries = new HashMap<>();
   /** Performance measurement. */
   private final Performance perf = new Performance();
   /** Database context. */
@@ -60,14 +60,14 @@ public final class ClientListener extends Thread {
 
   /**
    * Constructor.
-   * @param s socket
-   * @param c database context
-   * @param srv server reference
+   * @param socket socket
+   * @param context database context
+   * @param server server reference
    */
-  public ClientListener(final Socket s, final Context c, final BaseXServer srv) {
-    context = new Context(c, this);
-    socket = s;
-    server = srv;
+  public ClientListener(final Socket socket, final Context context, final BaseXServer server) {
+    this.context = new Context(context, this);
+    this.socket = socket;
+    this.server = server;
     last = System.currentTimeMillis();
     setDaemon(true);
   }
@@ -234,8 +234,9 @@ public final class ClientListener extends Thread {
     running = false;
 
     // wait until running command was stopped
-    if(command != null) {
-      command.stop();
+    final Command c = command;
+    if(c != null) {
+      c.stop();
       do Performance.sleep(50); while(command != null);
     }
     context.sessions.remove(this);
@@ -450,11 +451,11 @@ public final class ClientListener extends Thread {
 
     String err = null;
     try {
-      final QueryListener qp;
+      final ServerQuery qp;
       final StringBuilder info = new StringBuilder();
       if(sc == ServerCmd.QUERY) {
         final String query = arg;
-        qp = new QueryListener(query, context);
+        qp = new ServerQuery(query, context);
         arg = Integer.toString(id++);
         queries.put(arg, qp);
         // send {ID}0

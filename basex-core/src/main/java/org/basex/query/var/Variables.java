@@ -9,6 +9,7 @@ import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.expr.*;
 import org.basex.query.util.*;
+import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
@@ -27,7 +28,7 @@ public final class Variables extends ExprInfo implements Iterable<StaticVar> {
   /**
    * Declares a new static variable.
    * @param nm variable name
-   * @param type type
+   * @param type declared type
    * @param ann annotations
    * @param expr bound expression, possibly {@code null}
    * @param ext {@code external} flag
@@ -117,12 +118,12 @@ public final class Variables extends ExprInfo implements Iterable<StaticVar> {
    * @param bindings variable bindings
    * @throws QueryException query exception
    */
-  public void bindExternal(final QueryContext qc, final HashMap<QNm, Expr> bindings)
+  public void bindExternal(final QueryContext qc, final HashMap<QNm, Value> bindings)
       throws QueryException {
 
-    for(final Entry<QNm, Expr> e : bindings.entrySet()) {
-      final VarEntry ve = vars.get(e.getKey());
-      if(ve != null) ve.var.bind(e.getValue(), qc);
+    for(final Entry<QNm, Value> entry : bindings.entrySet()) {
+      final VarEntry ve = vars.get(entry.getKey());
+      if(ve != null) ve.var.bind(entry.getValue(), qc);
     }
   }
 

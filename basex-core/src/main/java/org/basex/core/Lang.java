@@ -91,11 +91,11 @@ public final class Lang {
   /**
    * Returns the specified string with some text extensions included.
    * @param key key
-   * @param e text text extensions
+   * @param ext text text extensions
    * @return string
    */
-  static synchronized String lang(final String key, final Object... e) {
-    return Util.info(lang(key), e);
+  static synchronized String lang(final String key, final Object... ext) {
+    return Util.info(lang(key), ext);
   }
 
   /**
@@ -132,7 +132,7 @@ public final class Lang {
     } catch(final IOException ex) {
       Util.errln(ex);
     }
-    return new String[][] { langs.toArray(), creds.toArray() };
+    return new String[][] { langs.finish(), creds.finish() };
   }
 
   /**

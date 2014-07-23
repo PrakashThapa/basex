@@ -110,13 +110,13 @@ public final class FNXslt extends StandardFunc {
     try {
       System.setErr(new PrintStream(ao));
       final byte[] result = transform(in, xsl, opts.free());
-      return node ? new DBNode(new IOContent(result), qc.context.options) : Str.get(result);
+      return node ? new DBNode(new IOContent(result)) : Str.get(result);
     } catch(final IOException ex) {
       System.setErr(tmp);
       throw IOERR.get(info, ex);
     } catch(final TransformerException ex) {
       System.setErr(tmp);
-      throw BXSL_ERROR.get(info, trim(utf8(ao.toArray(), Prop.ENCODING)));
+      throw BXSL_ERROR.get(info, trim(utf8(ao.finish(), Prop.ENCODING)));
     } finally {
       System.setErr(tmp);
     }
@@ -124,26 +124,24 @@ public final class FNXslt extends StandardFunc {
 
   /**
    * Returns an input reference (possibly cached) to the specified input.
-   * @param e expressio nto be evaluated
+   * @param ex expressio nto be evaluated
    * @param qc query context
    * @return item
    * @throws QueryException query exception
    */
-  private IO read(final Expr e, final QueryContext qc) throws QueryException {
-    final Item it = checkItem(e, qc);
+  private IO read(final Expr ex, final QueryContext qc) throws QueryException {
+    final Item it = checkItem(ex, qc);
     if(it.type.isNode()) {
       try {
-        final IO io = new IOContent(it.serialize().toArray());
+        final IO io = new IOContent(it.serialize().finish());
         io.name(string(((ANode) it).baseURI()));
         return io;
-      } catch(final QueryIOException ex) {
-        ex.getCause(info);
+      } catch(final QueryIOException e) {
+        e.getCause(info);
       }
     }
-    if(it.type.isStringOrUntyped()) {
-      return checkPath(it, qc);
-    }
-    throw STRNODTYPE.get(info, this, it.type);
+    if(it.type.isStringOrUntyped()) return checkPath(it, qc);
+    throw STRNODTYPE.get(info, it.type, it);
   }
 
   /**
@@ -168,6 +166,6 @@ public final class FNXslt extends StandardFunc {
     // do transformation and return result
     final ArrayOutput ao = new ArrayOutput();
     tr.transform(in.streamSource(), new StreamResult(ao));
-    return ao.toArray();
+    return ao.finish();
   }
 }

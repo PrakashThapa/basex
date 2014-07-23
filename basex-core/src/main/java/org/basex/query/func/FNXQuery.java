@@ -142,10 +142,10 @@ public final class FNXQuery extends StandardFunc {
     try {
       final StaticContext sctx = new StaticContext(qctx.context);
       for(final Map.Entry<String, Value> it : bindings.entrySet()) {
-        final String k = it.getKey();
-        final Value v = it.getValue();
-        if(k.isEmpty()) qctx.context(v, null, sctx);
-        else qctx.bind(k, v, null);
+        final String key = it.getKey();
+        final Value val = it.getValue();
+        if(key.isEmpty()) qctx.context(val, sctx);
+        else qctx.bind(key, val);
       }
       qctx.parseMain(string(qu), path, sctx);
 
@@ -194,7 +194,7 @@ public final class FNXQuery extends StandardFunc {
    * @return the argument expression
    */
   private Expr type(final QueryContext qc) {
-    FNInfo.dump(Util.inf("{ type: %, size: %, exprSize: % }", exprs[0].type(), exprs[0].size(),
+    FNInfo.dump(Util.inf("{ type: %, size: %, exprSize: % }", exprs[0].seqType(), exprs[0].size(),
         exprs[0].exprSize()), token(exprs[0].toString()), qc);
     return exprs[0];
   }

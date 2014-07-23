@@ -30,7 +30,7 @@ public final class MemData extends Data {
 
   /**
    * Constructor.
-   * @param tag tag index
+   * @param elm element name index
    * @param att attribute name index
    * @param ps path summary
    * @param ns namespaces
@@ -38,7 +38,7 @@ public final class MemData extends Data {
    * @param txt text index
    * @param atv attribute value index
    */
-  private MemData(final Names tag, final Names att, final PathSummary ps, final Namespaces ns,
+  private MemData(final Names elm, final Names att, final PathSummary ps, final Namespaces ns,
       final MainOptions opts, final Index txt, final Index atv) {
 
     meta = new MetaData(opts);
@@ -51,7 +51,7 @@ public final class MemData extends Data {
       txtindex = txt == null ? new MemValues(this) : txt;
       atvindex = atv == null ? new MemValues(this) : atv;
     }
-    tagindex = tag == null ? new Names(meta) : tag;
+    elmindex = elm == null ? new Names(meta) : elm;
     atnindex = att == null ? new Names(meta) : att;
     paths = ps == null ? new PathSummary(this) : ps;
     nspaces = ns == null ? new Namespaces() : ns;
@@ -62,7 +62,7 @@ public final class MemData extends Data {
    * @param data data reference
    */
   public MemData(final Data data) {
-    this(data.tagindex, data.atnindex, data.paths, null, data.meta.options, data.txtindex,
+    this(data.elmindex, data.atnindex, data.paths, null, data.meta.options, data.txtindex,
         data.atvindex);
   }
 
@@ -115,13 +115,13 @@ public final class MemData extends Data {
   protected void delete(final int pre, final boolean text) { }
 
   @Override
-  public void updateText(final int pre, final byte[] val, final int kind) {
+  public void updateText(final int pre, final byte[] value, final int kind) {
     final int id = id(pre);
     if(meta.updindex) {
       final boolean txt = kind != ATTR;
       ((MemValues) (txt ? txtindex : atvindex)).delete(text(pre, txt), id);
     }
-    textOff(pre, index(pre, id, val, kind));
+    textOff(pre, index(pre, id, value, kind));
   }
 
   @Override

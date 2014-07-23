@@ -1,7 +1,6 @@
 package org.basex.query;
 
 import static org.basex.core.Text.*;
-import static org.basex.query.util.Err.*;
 
 import java.io.*;
 import java.util.regex.*;
@@ -102,14 +101,14 @@ public final class QueryProcessor extends Proc {
   }
 
   /**
-   * Binds a value with the specified data type to a global variable.
+   * Binds a value with the specified type to a global variable.
    * If the value is an {@link Expr} instance, it is directly assigned.
    * Otherwise, it is first cast to the appropriate XQuery type. If {@code "json"}
-   * is specified as data type, the value is interpreted according to the rules
+   * is specified as type, the value is interpreted according to the rules
    * specified in {@link JsonMapConverter}.
    * @param name name of variable
    * @param value value to be bound
-   * @param type data type (may be {@code null})
+   * @param type type (may be {@code null})
    * @return self reference
    * @throws QueryException query exception
    */
@@ -131,6 +130,18 @@ public final class QueryProcessor extends Proc {
   }
 
   /**
+   * Binds an XQuery value to a global variable.
+   * @param name name of variable
+   * @param value value to be bound
+   * @return self reference
+   * @throws QueryException query exception
+   */
+  public QueryProcessor bind(final String name, final Value value) throws QueryException {
+    qc.bind(name, value);
+    return this;
+  }
+
+  /**
    * Binds a value to the context item.
    * @param value value to be bound
    * @return self reference
@@ -138,6 +149,16 @@ public final class QueryProcessor extends Proc {
    */
   public QueryProcessor context(final Object value) throws QueryException {
     return context(value, null);
+  }
+
+  /**
+   * Binds an XQuery value to the context item.
+   * @param value value to be bound
+   * @return self reference
+   */
+  public QueryProcessor context(final Value value) {
+    qc.context(value, sc);
+    return this;
   }
 
   /**
@@ -151,25 +172,15 @@ public final class QueryProcessor extends Proc {
   }
 
   /**
-   * Binds a value with the specified data type to the context item,
+   * Binds a value with the specified type to the context item,
    * using the same rules as for {@link #bind binding variables}.
    * @param value value to be bound
-   * @param type data type (may be {@code null})
+   * @param type type (may be {@code null})
    * @return self reference
    * @throws QueryException query exception
    */
   public QueryProcessor context(final Object value, final String type) throws QueryException {
     qc.context(value, type, sc);
-    return this;
-  }
-
-  /**
-   * Binds an initial nodeset to the context item.
-   * @param nodes node set
-   * @return self reference
-   */
-  public QueryProcessor context(final Nodes nodes) {
-    qc.nodes = nodes;
     return this;
   }
 
@@ -203,20 +214,6 @@ public final class QueryProcessor extends Proc {
     } catch(final QueryIOException ex) {
       throw ex.getCause();
     }
-  }
-
-  /**
-   * Evaluates the specified query and returns the result nodes.
-   * @return result nodes
-   * @throws QueryException query exception
-   */
-  public Nodes queryNodes() throws QueryException {
-    final Result res = execute();
-    if(res instanceof Nodes) return (Nodes) res;
-    // throw error
-    if(res.size() != 0) throw BXDB_DBRETURN.get(null);
-    // return empty result set
-    return new Nodes(qc.nodes.data);
   }
 
   /**

@@ -35,7 +35,7 @@ final class XMLParser extends CmdParser {
   @Override
   protected void parse(final ArrayList<Command> cmds) throws QueryException {
     try {
-      final DBNode node = new DBNode(IO.get(input), ctx.options);
+      final DBNode node = new DBNode(IO.get(string));
       String query = "/*";
       if(!execute(COMMANDS, node).isEmpty()) {
         query = COMMANDS + query;
@@ -285,7 +285,7 @@ final class XMLParser extends CmdParser {
 
     // run query
     final QueryProcessor qp = new QueryProcessor(tb.toString(), ctx).context(root);
-    qp.bind("A", ma).bind("O", oa);
+    qp.bind("A", ma.value()).bind("O", oa.value());
     if(!qp.execute().toString().isEmpty()) return true;
 
     // build error string

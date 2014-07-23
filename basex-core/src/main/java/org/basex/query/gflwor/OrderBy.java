@@ -104,7 +104,7 @@ public final class OrderBy extends GFLWOR.Clause {
                   if(m == Dbl.NAN || m == Flt.NAN) m = null;
                   if(n == Dbl.NAN || n == Flt.NAN) n = null;
                   if(m != null && n != null && !m.comparable(n))
-                    throw Err.castError(or.info, m.type, n);
+                    throw Err.castError(or.info, n, m.type);
 
                   final int c = m == null
                       ? n == null ? 0                 : or.least ? -1 : 1
@@ -156,22 +156,22 @@ public final class OrderBy extends GFLWOR.Clause {
   }
 
   @Override
-  public boolean removable(final Var v) {
-    for(final Key k : keys) if(!k.removable(v)) return false;
+  public boolean removable(final Var var) {
+    for(final Key k : keys) if(!k.removable(var)) return false;
     return true;
   }
 
   @Override
-  public VarUsage count(final Var v) {
-    return VarUsage.sum(v, keys);
+  public VarUsage count(final Var var) {
+    return VarUsage.sum(var, keys);
   }
 
   @Override
-  public GFLWOR.Clause inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e)
-      throws QueryException {
+  public GFLWOR.Clause inline(final QueryContext qc, final VarScope scp, final Var var,
+      final Expr ex) throws QueryException {
     for(int i = refs.length; --i >= 0;)
-      if(v.is(refs[i].var)) refs = Array.delete(refs, i);
-    return inlineAll(qc, scp, keys, v, e) ? optimize(qc, scp) : null;
+      if(var.is(refs[i].var)) refs = Array.delete(refs, i);
+    return inlineAll(qc, scp, keys, var, ex) ? optimize(qc, scp) : null;
   }
 
   @Override
@@ -212,8 +212,7 @@ public final class OrderBy extends GFLWOR.Clause {
   }
 
   @Override
-  long calcSize(final long cnt) {
-    return cnt;
+  void calcSize(final long[] minMax) {
   }
 
   @Override

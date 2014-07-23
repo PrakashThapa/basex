@@ -23,7 +23,7 @@ import org.basex.util.hash.*;
 import org.basex.util.list.*;
 
 /**
- * Database nodes.
+ * Database node.
  *
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
@@ -74,17 +74,16 @@ public class DBNode extends ANode {
     super(type);
     this.data = data;
     this.pre = pre;
-    this.par = par;
+    this.parent = par;
   }
 
   /**
    * Constructor, specifying an XML input reference.
    * @param input input reference
-   * @param opts database options
    * @throws IOException I/O exception
    */
-  public DBNode(final IO input, final MainOptions opts) throws IOException {
-    this(Parser.xmlParser(input, opts));
+  public DBNode(final IO input) throws IOException {
+    this(Parser.xmlParser(input));
   }
 
   /**
@@ -103,7 +102,7 @@ public class DBNode extends ANode {
    */
   private void set(final int p, final int k) {
     type = type(k);
-    par = null;
+    parent = null;
     value = null;
     nsp = null;
     pre = p;
@@ -122,9 +121,14 @@ public class DBNode extends ANode {
 
   @Override
   public final long itr(final InputInfo ii) throws QueryException {
-    final boolean txt = type == NodeType.TXT || type == NodeType.COM;
-    if(txt || type == NodeType.ATT) {
-      final long l = data.textItr(pre, txt);
+    if(type == NodeType.ELM) {
+      final int as = data.attSize(pre, Data.ELEM);
+      if(data.size(pre, Data.ELEM) - as == 1 && data.kind(pre + as) == Data.TEXT) {
+        final long l = data.textItr(pre + as, true);
+        if(l != Long.MIN_VALUE) return l;
+      }
+    } else if(type == NodeType.TXT || type == NodeType.ATT) {
+      final long l = data.textItr(pre, type == NodeType.TXT);
       if(l != Long.MIN_VALUE) return l;
     }
     return Int.parse(data.atom(pre), ii);
@@ -132,10 +136,13 @@ public class DBNode extends ANode {
 
   @Override
   public final double dbl(final InputInfo ii) throws QueryException {
-    final boolean txt = type == NodeType.TXT || type == NodeType.COM;
-    if(txt || type == NodeType.ATT) {
-      final double d = data.textDbl(pre, txt);
-      if(!Double.isNaN(d)) return d;
+    if(type == NodeType.ELM) {
+      final int as = data.attSize(pre, Data.ELEM);
+      if(data.size(pre, Data.ELEM) - as == 1 && data.kind(pre + as) == Data.TEXT) {
+        return data.textDbl(pre + as, true);
+      }
+    } else if(type == NodeType.TXT || type == NodeType.ATT) {
+      return data.textDbl(pre, type == NodeType.TXT);
     }
     return Dbl.parse(data.atom(pre), ii);
   }
@@ -211,7 +218,7 @@ public class DBNode extends ANode {
 
   @Override
   public final DBNode copy() {
-    final DBNode n = new DBNode(data, pre, par, nodeType());
+    final DBNode n = new DBNode(data, pre, parent, nodeType());
     n.score = score;
     return n;
   }
@@ -225,7 +232,7 @@ public class DBNode extends ANode {
   public final DBNode dbCopy(final MainOptions opts) {
     final MemData md = new MemData(opts);
     new DataBuilder(md).build(this);
-    return new DBNode(md).parent(par);
+    return new DBNode(md).parent(parent);
   }
 
   @Override
@@ -240,7 +247,7 @@ public class DBNode extends ANode {
 
   @Override
   public final ANode parent() {
-    if(par != null) return par;
+    if(parent != null) return parent;
     final int p = data.parent(pre, data.kind(pre));
     if(p == -1) return null;
 
@@ -251,7 +258,7 @@ public class DBNode extends ANode {
 
   @Override
   protected final DBNode parent(final ANode p) {
-    par = p;
+    parent = p;
     return this;
   }
 
@@ -445,7 +452,7 @@ public class DBNode extends ANode {
     final ByteList bl = new ByteList().add(typeId().bytes());
     if(type == NodeType.DOC) bl.add(baseURI()).add(0);
     else if(type == NodeType.ATT) bl.add(qname().uri()).add(0);
-    return bl.toArray();
+    return bl.finish();
   }
 
   @Override

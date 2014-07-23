@@ -3,6 +3,7 @@ package org.basex;
 import static org.basex.core.Text.*;
 
 import java.awt.*;
+import java.util.*;
 
 import javax.swing.*;
 import javax.swing.UIManager.LookAndFeelInfo;
@@ -26,7 +27,7 @@ public final class BaseXGUI extends Main {
   /** Database context. */
   private final Context context = new Context();
   /** Files, specified as arguments. */
-  private final StringList files = new StringList();
+  private final StringList files = new StringList(0);
   /** Mac OS X GUI optimizations. */
   GUIMacOSX osxGUI;
 
@@ -81,7 +82,7 @@ public final class BaseXGUI extends Main {
         if(osxGUI != null) osxGUI.init(gui);
 
         // open specified document or database
-        for(final String file : files) {
+        for(final String file : files.finish()) {
           if(file.matches("^.*\\" + IO.BASEXSUFFIX + "[^.]*$")) continue;
 
           final IOFile io = new IOFile(file);
@@ -122,9 +123,9 @@ public final class BaseXGUI extends Main {
       if(laf.equals("Metal")) {
         // use non-bold fonts in Java's look & feel
         final UIDefaults def = UIManager.getDefaults();
-        for(final Object k : def.keySet()) {
-          final Object v = def.get(k);
-          if(v instanceof Font) def.put(k, ((Font) v).deriveFont(Font.PLAIN));
+        for(final Map.Entry<Object, Object> entry : def.entrySet()) {
+          final Object value = entry.getValue();
+          if(value instanceof Font) def.put(entry.getKey(), ((Font) value).deriveFont(Font.PLAIN));
         }
       } else if(laf.isEmpty()) {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

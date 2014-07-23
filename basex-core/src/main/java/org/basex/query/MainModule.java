@@ -41,16 +41,16 @@ public final class MainModule extends StaticScope {
    * @param expr root expression
    * @param scope variable scope
    * @param doc xqdoc documentation
-   * @param type optional type
+   * @param declType declared type (optional)
    * @param sc static context
    * @param info input info
    */
-  public MainModule(final Expr expr, final VarScope scope, final SeqType type, final String doc,
+  public MainModule(final Expr expr, final VarScope scope, final SeqType declType, final String doc,
       final StaticContext sc, final InputInfo info) {
 
     super(scope, doc, sc, info);
     this.expr = expr;
-    this.declType = type;
+    this.declType = declType;
   }
 
   @Override
@@ -74,12 +74,11 @@ public final class MainModule extends StaticScope {
     final int fp = scope.enter(qc);
     try {
       final Iter iter = expr.iter(qc);
-
       final ValueBuilder cache;
       if(iter instanceof ValueBuilder) {
         cache = (ValueBuilder) iter;
       } else {
-        cache = new ValueBuilder();
+        cache = new ValueBuilder(Math.max(1, (int) iter.size()));
         for(Item it; (it = iter.next()) != null;) cache.add(it);
       }
       if(declType != null) declType.treat(cache.value(), info);

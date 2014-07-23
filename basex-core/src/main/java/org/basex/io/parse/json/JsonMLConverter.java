@@ -63,7 +63,7 @@ public class JsonMLConverter extends JsonXmlConverter {
 
   @Override
   public void openObject() throws QueryIOException {
-    if(elem == null || attName != null || stack.peek() != null)
+    if(curr == null || attName != null || stack.peek() != null)
       error("No object allowed at this stage");
   }
 
@@ -78,23 +78,23 @@ public class JsonMLConverter extends JsonXmlConverter {
   @Override
   public void closeObject() {
     stack.pop();
-    stack.push(elem);
-    elem = null;
+    stack.push(curr);
+    curr = null;
   }
 
   @Override
   public void openArray() throws QueryIOException {
     if(!stack.isEmpty()) {
-      if(attName == null && elem != null && stack.peek() == null) {
+      if(attName == null && curr != null && stack.peek() == null) {
         stack.pop();
-        stack.push(elem);
-        elem = null;
-      } else if(attName != null || elem != null || stack.peek() == null) {
+        stack.push(curr);
+        curr = null;
+      } else if(attName != null || curr != null || stack.peek() == null) {
         error("No array allowed at this stage");
       }
     }
     stack.push(null);
-    elem = null;
+    curr = null;
   }
 
   @Override
@@ -107,8 +107,8 @@ public class JsonMLConverter extends JsonXmlConverter {
   public void closeArray() throws QueryIOException {
     FElem val = stack.pop();
     if(val == null) {
-      val = elem;
-      elem = null;
+      val = curr;
+      curr = null;
     }
 
     if(val == null) error("Missing element name");
@@ -118,19 +118,19 @@ public class JsonMLConverter extends JsonXmlConverter {
   }
 
   @Override
-  public void stringLit(final byte[] val) throws QueryIOException {
-    if(attName == null && elem != null && stack.peek() == null) {
+  public void stringLit(final byte[] value) throws QueryIOException {
+    if(attName == null && curr != null && stack.peek() == null) {
       stack.pop();
-      stack.push(elem);
-      elem = null;
+      stack.push(curr);
+      curr = null;
     }
 
-    if(elem == null) {
+    if(curr == null) {
       final FElem e = stack.isEmpty() ? null : stack.peek();
-      if(e == null) elem = new FElem(check(val));
-      else e.add(new FTxt(val));
+      if(e == null) curr = new FElem(check(value));
+      else e.add(new FTxt(value));
     } else if(attName != null) {
-      elem.add(attName, val);
+      curr.add(attName, value);
       attName = null;
     } else {
       error("No string allowed at this stage");

@@ -240,7 +240,7 @@ public final class FNArchive extends StandardFunc {
    * @throws QueryException query exception
    */
   private ValueBuilder extractText(final QueryContext qc) throws QueryException {
-    final String enc = encoding(2, ARCH_ENCODING, qc);
+    final String enc = checkEncoding(2, ARCH_ENCODING, qc);
     final ValueBuilder vb = new ValueBuilder();
     for(final byte[] b : extract(qc)) vb.add(Str.get(encode(b, enc, qc)));
     return vb;
@@ -479,17 +479,16 @@ public final class FNArchive extends StandardFunc {
 
   /**
    * Encodes the specified string to another encoding.
-   * @param val value to be encoded
-   * @param enc encoding
+   * @param value value to be encoded
+   * @param encoding encoding
    * @param qc query context
    * @return encoded string
    * @throws QueryException query exception
    */
-  private byte[] encode(final byte[] val, final String enc, final QueryContext qc)
+  private byte[] encode(final byte[] value, final String encoding, final QueryContext qc)
       throws QueryException {
-
     try {
-      return FNConvert.toString(new ArrayInput(val), enc, qc);
+      return FNConvert.toString(new ArrayInput(value), encoding, qc);
     } catch(final IOException ex) {
       throw ARCH_ENCODE.get(info, ex);
     }
@@ -503,6 +502,6 @@ public final class FNArchive extends StandardFunc {
    */
   private Item checkElmStr(final Item it) throws QueryException {
     if(it instanceof AStr || TEST.eq(it)) return it;
-    throw ELMSTRTYPE.get(info, Q_ENTRY.string(), it.type);
+    throw ELMSTRTYPE.get(info, Q_ENTRY.prefixId(XML), it.type, it);
   }
 }

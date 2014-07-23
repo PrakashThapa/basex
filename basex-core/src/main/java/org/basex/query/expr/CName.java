@@ -82,21 +82,49 @@ public abstract class CName extends CNode {
     final Item it = checkItem(name, qc);
     final Type ip = it.type;
     if(ip == AtomType.QNM) return (QNm) it;
+    if(!ip.isStringOrUntyped() || ip == AtomType.URI) throw STRQNM.get(info, ip, it);
 
     // create and update namespace
     final byte[] str = it.string(ii);
     if(XMLToken.isQName(str)) return new QNm(str, sc);
-    throw (ip.isStringOrUntyped() ? INVNAME : INVQNAME).get(info, str);
+    throw INVNAME.get(info, str);
   }
 
   @Override
-  public boolean removable(final Var v) {
-    return name.removable(v) && super.removable(v);
+  public boolean removable(final Var var) {
+    return name.removable(var) && super.removable(var);
   }
 
   @Override
   public final boolean has(final Flag flag) {
     return name.has(flag) || super.has(flag);
+  }
+
+  @Override
+  public final boolean accept(final ASTVisitor visitor) {
+    return name.accept(visitor) && visitAll(visitor, exprs);
+  }
+
+  @Override
+  public final VarUsage count(final Var var) {
+    return name.count(var).plus(super.count(var));
+  }
+
+  @Override
+  public Expr inline(final QueryContext qc, final VarScope scp, final Var var, final Expr ex)
+      throws QueryException {
+
+    final boolean changed = inlineAll(qc, scp, exprs, var, ex);
+    final Expr sub = name.inline(qc, scp, var, ex);
+    if(sub != null) name = sub;
+    return sub != null || changed ? optimize(qc, scp) : null;
+  }
+
+  @Override
+  public final int exprSize() {
+    int sz = 1;
+    for(final Expr expr : exprs) sz += expr.exprSize();
+    return sz + name.exprSize();
   }
 
   @Override
@@ -111,34 +139,6 @@ public abstract class CName extends CNode {
 
   @Override
   public final String toString() {
-    return toString(desc + (name.type().eq(SeqType.QNM) ? " " + name :
-      " { " + name + " }"));
-  }
-
-  @Override
-  public final boolean accept(final ASTVisitor visitor) {
-    return name.accept(visitor) && visitAll(visitor, exprs);
-  }
-
-  @Override
-  public final VarUsage count(final Var v) {
-    return name.count(v).plus(super.count(v));
-  }
-
-  @Override
-  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e)
-      throws QueryException {
-
-    final boolean ex = inlineAll(qc, scp, exprs, v, e);
-    final Expr sub = name.inline(qc, scp, v, e);
-    if(sub != null) name = sub;
-    return sub != null || ex ? optimize(qc, scp) : null;
-  }
-
-  @Override
-  public final int exprSize() {
-    int sz = 1;
-    for(final Expr e : exprs) sz += e.exprSize();
-    return sz + name.exprSize();
+    return toString(desc + (name.seqType().eq(SeqType.QNM) ? " " + name : " { " + name + " }"));
   }
 }

@@ -54,9 +54,9 @@ public final class Catch extends Single {
   public Catch compile(final QueryContext qc, final VarScope scp) {
     try {
       expr = expr.compile(qc, scp);
-      type = expr.type();
+      seqType = expr.seqType();
     } catch(final QueryException qe) {
-      expr = FNInfo.error(qe, expr.type());
+      expr = FNInfo.error(qe, expr.seqType());
     }
     return this;
   }
@@ -93,13 +93,13 @@ public final class Catch extends Single {
   }
 
   @Override
-  public Catch inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e) {
+  public Catch inline(final QueryContext qc, final VarScope scp, final Var var, final Expr ex) {
     try {
-      final Expr sub = expr.inline(qc, scp, v, e);
+      final Expr sub = expr.inline(qc, scp, var, ex);
       if(sub == null) return null;
       expr = sub;
     } catch(final QueryException qe) {
-      expr = FNInfo.error(qe, type);
+      expr = FNInfo.error(qe, seqType);
     }
     return this;
   }

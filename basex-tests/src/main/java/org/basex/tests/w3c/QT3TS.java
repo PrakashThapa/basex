@@ -120,7 +120,6 @@ public final class QT3TS extends Main {
 
     final Performance perf = new Performance();
     ctx.options.set(MainOptions.CHOP, false);
-    ctx.options.set(MainOptions.INTPARSE, false);
 
     final SerializerOptions sopts = new SerializerOptions();
     sopts.set(SerializerOptions.INDENT, YesNo.NO);
@@ -334,9 +333,10 @@ public final class QT3TS extends Main {
           query.addDocument(src.get(URI), file);
           final String role = src.get(ROLE);
           if(role == null) continue;
-          final Object call = query.funcCall("fn:doc", Str.get(file));
-          if(role.equals(".")) query.context(call);
-          else query.bind(role, call);
+
+          final XdmValue doc = query.document(file);
+          if(role.equals(".")) query.context(doc);
+          else query.bind(role, doc);
         }
         // bind resources
         for(final HashMap<String, String> src : e.resources) {
@@ -345,7 +345,7 @@ public final class QT3TS extends Main {
         // bind collections
         query.addCollection(e.collURI, e.collSources.toArray());
         if(e.collContext) {
-          query.context(query.funcCall("fn:collection", Str.get(e.collURI)));
+          query.context(query.collection(e.collURI));
         }
         // bind context item
         if(e.context != null) {
@@ -411,8 +411,7 @@ public final class QT3TS extends Main {
       right.add(tmp.finish());
       correct++;
     } else {
-      tmp.add("Expect: " + noComments(exp)).add(NL).add(NL);
-      wrong.add(tmp.finish());
+      wrong.add(tmp.add("Expect: ").add(noComments(exp)).add(NL).add(NL).finish());
     }
     if(report != null) report.addTest(name, exp == null);
   }
@@ -755,7 +754,7 @@ public final class QT3TS extends Main {
    * @return optional expected test suite result
    * @throws IOException I/O exception
    */
-  private String serialize(final XdmValue value, final SerializerOptions sprop)
+  private static String serialize(final XdmValue value, final SerializerOptions sprop)
       throws IOException {
 
     final ArrayOutput ao = new ArrayOutput();
@@ -780,9 +779,8 @@ public final class QT3TS extends Main {
     final TokenBuilder tb = new TokenBuilder();
     int c = 0;
     for(final XdmItem it : value) {
-      if(c != 0) tb.add(' ');
+      if(c++ != 0) tb.add(' ');
       tb.add(it.getString());
-      c++;
     }
 
     final String res = norm ? string(norm(tb.finish())) : tb.toString();

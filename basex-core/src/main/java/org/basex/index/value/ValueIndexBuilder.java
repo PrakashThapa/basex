@@ -42,12 +42,12 @@ public final class ValueIndexBuilder extends IndexBuilder {
 
   /**
    * Constructor.
-   * @param d data reference
-   * @param txt value type (text/attribute)
+   * @param data data reference
+   * @param text value type (text/attribute)
    */
-  public ValueIndexBuilder(final Data d, final boolean txt) {
-    super(d, d.meta.options.get(MainOptions.INDEXSPLITSIZE));
-    text = txt;
+  public ValueIndexBuilder(final Data data, final boolean text) {
+    super(data, data.meta.options.get(MainOptions.INDEXSPLITSIZE));
+    this.text = text;
   }
 
   @Override
@@ -150,9 +150,9 @@ public final class ValueIndexBuilder extends IndexBuilder {
     }
 
     // write number of entries to first position
-    final DataAccess da = new DataAccess(data.meta.dbfile(f + 'l'));
-    da.write4(sz);
-    da.close();
+    try(final DataAccess da = new DataAccess(data.meta.dbfile(f + 'l'))) {
+      da.write4(sz);
+    }
   }
 
   /**

@@ -15,6 +15,7 @@ import org.basex.query.util.Compare.Mode;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.tests.bxapi.*;
+import org.basex.tests.bxapi.XQuery;
 import org.basex.tests.bxapi.xdm.*;
 import org.basex.util.*;
 import org.junit.*;
@@ -48,7 +49,6 @@ public abstract class QT3TestSet {
   public void buildUp() throws BaseXException {
     ctx = new Context();
     new Set(MainOptions.CHOP, false).execute(ctx);
-    new Set(MainOptions.INTPARSE, false).execute(ctx);
     new Set(MainOptions.XQUERY3, true).execute(ctx);
     result = null;
   }
@@ -293,7 +293,8 @@ public abstract class QT3TestSet {
     final XdmValue value = result.value;
     if(value == null) return fail(Util.info("Matches: '%'", pat));
     final XQuery match = new XQuery("fn:matches($in, $pat, $flags)", ctx);
-    match.bind("in", value.toString()).bind("pat", pat).bind("flags", flags);
+    match.bind("in", value).bind("pat", XdmItem.get(Str.get(pat)));
+    match.bind("flags", XdmItem.get(Str.get(flags)));
     return result(match.next().getBoolean(), Util.info("Matches: '%'", pat));
   }
 

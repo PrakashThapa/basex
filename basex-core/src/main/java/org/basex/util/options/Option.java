@@ -8,16 +8,17 @@ package org.basex.util.options;
  * @author Christian Gruen
  * @param <O> option type
  */
+@SuppressWarnings("unused")
 public abstract class Option<O> {
   /** Name. */
   private final String name;
 
   /**
    * Constructor without default value.
-   * @param n name
+   * @param name name
    */
-  Option(final String n) {
-    name = n;
+  Option(final String name) {
+    this.name = name;
   }
 
   /**

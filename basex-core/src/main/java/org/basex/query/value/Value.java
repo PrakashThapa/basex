@@ -32,12 +32,12 @@ import org.basex.util.hash.*;
  * @author Christian Gruen
  */
 public abstract class Value extends Expr implements Iterable<Item> {
-  /** Data type. */
+  /** Item type. */
   public Type type;
 
   /**
    * Constructor.
-   * @param type data type
+   * @param type item type
    */
   protected Value(final Type type) {
     this.type = type;
@@ -103,17 +103,17 @@ public abstract class Value extends Expr implements Iterable<Item> {
   }
 
   @Override
-  public final boolean removable(final Var v) {
+  public final boolean removable(final Var var) {
     return true;
   }
 
   @Override
-  public final VarUsage count(final Var v) {
+  public final VarUsage count(final Var var) {
     return VarUsage.NEVER;
   }
 
   @Override
-  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e)
+  public Expr inline(final QueryContext qc, final VarScope scp, final Var var, final Expr ex)
       throws QueryException {
     // values do not contain variable references
     return null;
@@ -140,10 +140,10 @@ public abstract class Value extends Expr implements Iterable<Item> {
   /**
    * Writes this value's items out to the given array.
    * @param arr array to write to
-   * @param start start position
+   * @param index start position
    * @return number of written items
    */
-  public abstract int writeTo(final Item[] arr, final int start);
+  public abstract int writeTo(final Item[] arr, final int index);
 
   /**
    * Creates an {@link ValueBuilder}, containing all items of this value.

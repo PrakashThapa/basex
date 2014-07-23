@@ -26,13 +26,13 @@ public abstract class NativeSeq extends Seq {
 
   @Override
   public Item ebv(final QueryContext qc, final InputInfo ii) throws QueryException {
-    throw CONDTYPE.get(ii, this);
+    throw EBV.get(ii, this);
   }
 
   @Override
-  public final int writeTo(final Item[] arr, final int start) {
-    final int w = Math.min((int) size, arr.length - start);
-    for(int i = 0; i < w; i++) arr[start + i] = itemAt(i);
+  public final int writeTo(final Item[] arr, final int index) {
+    final int w = Math.min((int) size, arr.length - index);
+    for(int i = 0; i < w; i++) arr[index + i] = itemAt(i);
     return w;
   }
 
@@ -42,7 +42,7 @@ public abstract class NativeSeq extends Seq {
   }
 
   @Override
-  public final SeqType type() {
+  public final SeqType seqType() {
     return SeqType.get(type, Occ.ONE_MORE);
   }
 }

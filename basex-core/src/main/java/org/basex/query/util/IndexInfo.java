@@ -87,7 +87,7 @@ public final class IndexInfo {
       // only do check if database is up-to-date, if no namespaces occur and if name test is used
       if(!data.meta.uptodate || data.nspaces.size() != 0 || s.test.kind != Kind.NAME) return false;
       name = s.test.name.local();
-      final Stats stats = data.tagindex.stat(data.tagindex.id(name));
+      final Stats stats = data.elmindex.stat(data.elmindex.id(name));
       if(stats == null || !stats.isLeaf()) return false;
     }
 
@@ -145,7 +145,7 @@ public final class IndexInfo {
       if(at.test.name != null) {
         final ExprList steps = new ExprList(invPath.steps.length + 1);
         steps.add(Step.get(at.info, Axis.SELF, at.test)).add(invPath.steps);
-        return Path.get(invPath.info, invPath.root, steps.finish());
+        return Path.get(invPath.info, invPath.root, steps.array());
       }
     }
     return invPath;

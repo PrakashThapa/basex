@@ -94,7 +94,7 @@ public final class HTTPContext {
     if(auth != null) {
       final String[] values = auth.split(" ");
       if(values[0].equals(BASIC)) {
-        final String[] cred = Base64.decode(values[1]).split(":", 2);
+        final String[] cred = org.basex.util.Base64.decode(values[1]).split(":", 2);
         if(cred.length != 2) throw new LoginException(NOPASSWD);
         user = cred[0];
         pass = cred[1];

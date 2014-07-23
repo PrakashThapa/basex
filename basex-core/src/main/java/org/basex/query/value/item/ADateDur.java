@@ -53,7 +53,7 @@ public abstract class ADateDur extends Item {
 
   /**
    * Constructor.
-   * @param type data type
+   * @param type item type
    */
   ADateDur(final Type type) {
     super(type);
@@ -119,7 +119,7 @@ public abstract class ADateDur extends Item {
     try {
       return Long.parseLong(s);
     } catch(final NumberFormatException ex) {
-      throw (dur ? DURRANGE : DATERANGE).get(ii, type, chop(s));
+      throw (dur ? DURRANGE : DATERANGE).get(ii, type, chop(s, ii));
     }
   }
 
@@ -138,7 +138,7 @@ public abstract class ADateDur extends Item {
     try {
       return new BigDecimal(s);
     } catch(final NumberFormatException ex) {
-      throw (dur ? DURRANGE : DATERANGE).get(ii, type, chop(s));
+      throw (dur ? DURRANGE : DATERANGE).get(ii, type, chop(s, ii));
     }
   }
 }

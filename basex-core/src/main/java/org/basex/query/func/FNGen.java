@@ -6,9 +6,9 @@ import static org.basex.util.Token.*;
 
 import java.io.*;
 
+import org.basex.build.*;
 import org.basex.build.xml.*;
 import org.basex.core.*;
-import org.basex.core.Context;
 import org.basex.io.*;
 import org.basex.io.in.*;
 import org.basex.io.serial.*;
@@ -82,8 +82,8 @@ public final class FNGen extends StandardFunc {
   @Override
   protected Expr opt(final QueryContext qc, final VarScope scp) {
     if(func == DATA && exprs.length == 1) {
-      final SeqType t = exprs[0].type();
-      type = t.type.isNode() ? SeqType.get(AtomType.ATM, t.occ) : t;
+      final SeqType t = exprs[0].seqType();
+      seqType = t.type.isNode() ? SeqType.get(AtomType.ATM, t.occ) : t;
     }
     return this;
   }
@@ -217,7 +217,7 @@ public final class FNGen extends StandardFunc {
 
     String enc = null;
     try {
-      enc = encoding(1, WHICHENC, qc);
+      enc = checkEncoding(1, WHICHENC, qc);
 
       final String p = string(path);
       if(p.indexOf('#') != -1) throw FRAGID.get(info, p);
@@ -277,7 +277,7 @@ public final class FNGen extends StandardFunc {
         @Override
         public Item next() {
           try {
-            return nli.readLine(tb) ? Str.get(tb.finish()) : null;
+            return nli.readLine(tb) ? Str.get(tb.toArray()) : null;
           } catch(final IOException ex) {
             throw Util.notExpected(ex);
           }
@@ -291,16 +291,25 @@ public final class FNGen extends StandardFunc {
   /**
    * Returns a document node for the parsed XML input.
    * @param qc query context
-   * @param frag parse fragment
+   * @param frag parse fragments
    * @return result
    * @throws QueryException query exception
    */
   private ANode parseXml(final QueryContext qc, final boolean frag) throws QueryException {
-    final Item item = exprs[0].item(qc, info);
-    if(item == null) return null;
+    final Item it = exprs[0].item(qc, info);
+    if(it == null) return null;
+
+    final IO io = new IOContent(checkStr(it), string(sc.baseURI().string()));
     try {
-      final IO io = new IOContent(checkStr(item), string(sc.baseURI().string()));
-      return parseXml(io, qc.context, frag);
+      final Parser parser;
+      if(frag) {
+        final MainOptions opts = new MainOptions();
+        opts.set(MainOptions.CHOP, false);
+        parser = new XMLParser(io, opts, true);
+      } else {
+        parser = Parser.xmlParser(io);
+      }
+      return new DBNode(parser);
     } catch(final IOException ex) {
       throw SAXERR.get(info, ex);
     }
@@ -347,27 +356,5 @@ public final class FNGen extends StandardFunc {
   public boolean iterable() {
     // collections will never yield duplicates
     return func == COLLECTION || super.iterable();
-  }
-
-  /**
-   * Returns a document node for the parsed XML input.
-   * @param input string to be parsed
-   * @param ctx query context
-   * @param frag parse fragment
-   * @return result
-   * @throws IOException I/O exception
-   */
-  public static ANode parseXml(final IO input, final Context ctx, final boolean frag)
-      throws IOException {
-
-    final MainOptions opts = ctx.options;
-    final boolean chop = opts.get(MainOptions.CHOP);
-    try {
-      opts.set(MainOptions.CHOP, false);
-      return new DBNode(frag || opts.get(MainOptions.INTPARSE) ?
-        new XMLParser(input, ctx.options, frag) : new SAXWrapper(input, ctx.options));
-    } finally {
-      opts.set(MainOptions.CHOP, chop);
-    }
   }
 }

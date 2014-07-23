@@ -5,11 +5,11 @@ import static org.junit.Assert.*;
 
 import java.io.*;
 
+import org.basex.api.client.*;
 import org.basex.core.cmd.*;
 import org.basex.core.parse.Commands.*;
 import org.basex.data.*;
 import org.basex.io.*;
-import org.basex.server.*;
 import org.basex.*;
 import org.basex.util.*;
 import org.junit.*;
@@ -587,7 +587,7 @@ public class CommandTest extends SandboxTest {
    * @param nodes context nodes
    * @param size expected size
    */
-  private static void ok(final Nodes nodes, final int size) {
+  private static void ok(final DBNodes nodes, final int size) {
     if(nodes != null) assertEquals(size, nodes.size());
   }
 

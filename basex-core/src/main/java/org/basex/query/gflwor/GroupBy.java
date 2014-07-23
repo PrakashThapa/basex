@@ -180,39 +180,21 @@ public final class GroupBy extends GFLWOR.Clause {
 
   /**
    * Checks two keys for equality.
-   * @param as first key
-   * @param bs second key
+   * @param its1 first keys
+   * @param its2 second keys
    * @param coll collations
    * @return {@code true} if the compare as equal, {@code false} otherwise
    * @throws QueryException query exception
    */
-  private boolean eq(final Item[] as, final Item[] bs, final Collation[] coll)
+  private boolean eq(final Item[] its1, final Item[] its2, final Collation[] coll)
       throws QueryException {
 
-    for(int i = 0; i < as.length; i++) {
-      final Item a = as[i], b = bs[i];
-      if(a == null ^ b == null || a != null && !a.equiv(b, coll[i], info)) return false;
+    final int il = its1.length;
+    for(int i = 0; i < il; i++) {
+      final Item it1 = its1[i], it2 = its2[i];
+      if(it1 == null ^ it2 == null || it1 != null && !it1.equiv(it2, coll[i], info)) return false;
     }
     return true;
-  }
-
-  @Override
-  public void plan(final FElem plan) {
-    final FElem e = planElem();
-    for(final Spec spec : specs) spec.plan(e);
-    plan.add(e);
-  }
-
-  @Override
-  public String toString() {
-    final StringBuilder sb = new StringBuilder();
-    for(int i = 0; i < post.length; i++) {
-      sb.append(LET).append(" (: post-group :) ").append(post[i]);
-      sb.append(' ').append(ASSIGN).append(' ').append(preExpr[i]).append(' ');
-    }
-    sb.append(GROUP).append(' ').append(BY);
-    for(int i = 0; i < specs.length; i++) sb.append(i == 0 ? " " : SEP).append(specs[i]);
-    return sb.toString();
   }
 
   @Override
@@ -231,28 +213,27 @@ public final class GroupBy extends GFLWOR.Clause {
   @Override
   public GroupBy optimize(final QueryContext qc, final VarScope scp) throws QueryException {
     for(int i = 0; i < preExpr.length; i++) {
-      final SeqType it = preExpr[i].type();
+      final SeqType it = preExpr[i].seqType();
       post[i].refineType(it.withOcc(it.mayBeZero() ? Occ.ZERO_MORE : Occ.ONE_MORE), qc, info);
     }
     return this;
   }
 
   @Override
-  public boolean removable(final Var v) {
-    for(final Spec b : specs) if(!b.removable(v)) return false;
+  public boolean removable(final Var var) {
+    for(final Spec b : specs) if(!b.removable(var)) return false;
     return true;
   }
 
   @Override
-  public VarUsage count(final Var v) {
-    return VarUsage.sum(v, specs).plus(VarUsage.sum(v, preExpr));
+  public VarUsage count(final Var var) {
+    return VarUsage.sum(var, specs).plus(VarUsage.sum(var, preExpr));
   }
 
   @Override
-  public GFLWOR.Clause inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e)
-      throws QueryException {
-    final boolean b = inlineAll(qc, scp, specs, v, e),
-        p = inlineAll(qc, scp, preExpr, v, e);
+  public GFLWOR.Clause inline(final QueryContext qc, final VarScope scp, final Var var,
+      final Expr ex) throws QueryException {
+    final boolean b = inlineAll(qc, scp, specs, var, ex), p = inlineAll(qc, scp, preExpr, var, ex);
     return b || p ? optimize(qc, scp) : null;
   }
 
@@ -306,8 +287,8 @@ public final class GroupBy extends GFLWOR.Clause {
   }
 
   @Override
-  long calcSize(final long cnt) {
-    return -1;
+  void calcSize(final long[] minMax) {
+    minMax[0] = Math.min(minMax[0], 1);
   }
 
   @Override
@@ -316,6 +297,25 @@ public final class GroupBy extends GFLWOR.Clause {
     for(final Expr e : preExpr) sz += e.exprSize();
     for(final Expr e : specs) sz += e.exprSize();
     return sz;
+  }
+
+  @Override
+  public void plan(final FElem plan) {
+    final FElem e = planElem();
+    for(final Spec spec : specs) spec.plan(e);
+    plan.add(e);
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder();
+    for(int i = 0; i < post.length; i++) {
+      sb.append(LET).append(" (: post-group :) ").append(post[i]);
+      sb.append(' ').append(ASSIGN).append(' ').append(preExpr[i]).append(' ');
+    }
+    sb.append(GROUP).append(' ').append(BY);
+    for(int i = 0; i < specs.length; i++) sb.append(i == 0 ? " " : SEP).append(specs[i]);
+    return sb.toString();
   }
 
   /**
@@ -347,22 +347,6 @@ public final class GroupBy extends GFLWOR.Clause {
     }
 
     @Override
-    public void plan(final FElem plan) {
-      final FElem e = planElem();
-      var.plan(e);
-      expr.plan(e);
-      plan.add(e);
-    }
-
-    @Override
-    public String toString() {
-      final TokenBuilder tb = new TokenBuilder().add(var.toString()).add(' ').add(ASSIGN);
-      tb.add(' ').add(expr.toString());
-      if(coll != null) tb.add(' ').add(COLLATION).add(" \"").add(coll.uri()).add('"');
-      return tb.toString();
-    }
-
-    @Override
     public Item item(final QueryContext qc, final InputInfo ii) throws QueryException {
       return expr.item(qc, ii);
     }
@@ -384,6 +368,22 @@ public final class GroupBy extends GFLWOR.Clause {
     @Override
     public int exprSize() {
       return expr.exprSize();
+    }
+
+    @Override
+    public void plan(final FElem plan) {
+      final FElem e = planElem();
+      var.plan(e);
+      expr.plan(e);
+      plan.add(e);
+    }
+
+    @Override
+    public String toString() {
+      final TokenBuilder tb = new TokenBuilder().add(var.toString()).add(' ').add(ASSIGN);
+      tb.add(' ').add(expr.toString());
+      if(coll != null) tb.add(' ').add(COLLATION).add(" \"").add(coll.uri()).add('"');
+      return tb.toString();
     }
   }
 

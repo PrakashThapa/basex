@@ -10,6 +10,7 @@ import java.io.*;
 import javax.swing.event.*;
 
 import org.basex.*;
+import org.basex.api.client.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.gui.*;
@@ -17,7 +18,6 @@ import org.basex.gui.GUIConstants.Msg;
 import org.basex.gui.layout.*;
 import org.basex.gui.text.*;
 import org.basex.io.*;
-import org.basex.server.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
 
@@ -339,7 +339,7 @@ public final class DialogServer extends BaseXDialog {
       } else if(cmp == deleteAll) {
         IOFile file = null;
         for(int i = 0; i < logc.getItemCount(); ++i) {
-          final IOFile f = new IOFile(logd, logc.getItemAt(i).toString());
+          final IOFile f = new IOFile(logd, logc.getItemAt(i));
           if(!f.delete()) file = f;
         }
         if(file != null) {

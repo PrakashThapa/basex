@@ -3,7 +3,6 @@ package org.basex.query.value.type;
 import static org.basex.query.QueryText.*;
 import static org.basex.query.util.Err.*;
 
-import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.func.*;
 import org.basex.query.iter.*;
@@ -231,7 +230,7 @@ public final class SeqType {
   /** Zero or more binaries. */
   public static final SeqType BIN_ZM = new SeqType(AtomType.BIN, Occ.ZERO_MORE);
 
-  /** Sequence type. */
+  /** Item type. */
   public final Type type;
   /** Number of occurrences. */
   public final Occ occ;
@@ -248,7 +247,7 @@ public final class SeqType {
   }
 
   /**
-   * Constructor. This one is called by {@link Type#seqType} to create
+   * Constructor. This one is called by {@link Type#seqType()} to create
    * unique sequence type instances.
    * @param type type
    */
@@ -342,25 +341,28 @@ public final class SeqType {
    * @param it item to cast
    * @param qc query context
    * @param sc static context
-   * @param ii input info
-   * @param e expression for error message
+   * @param info input info
+   * @param error return error
    * @return promoted item
    * @throws QueryException query exception
    */
   public Value cast(final Item it, final QueryContext qc, final StaticContext sc,
-      final InputInfo ii, final ExprInfo e) throws QueryException {
+      final InputInfo info, final boolean error) throws QueryException {
 
-    if(it == null) {
-      if(!occ.check(0)) throw INVEMPTYEX.get(ii, e, this);
-      return Empty.SEQ;
+    if(it.type.eq(type)) return it;
+    try {
+      if(!error && info != null) info.check(true);
+      final Value v = type.cast(it, qc, sc, info);
+      if(kind != null) {
+        for(final Item i : v) if(!kind.eq(it)) throw Err.castError(info, i, type);
+      }
+      return v;
+    } catch(final QueryException ex) {
+      if(error) throw ex;
+      return null;
+    } finally {
+      if(!error && info != null) info.check(false);
     }
-
-    if(!occ.check(1)) throw INVCAST.get(ii, it.type, this);
-    final Value v = it.type.eq(type) ? it : type.cast(it, qc, sc, ii);
-    if(kind != null) {
-      for(final Item i : v) if(!kind.eq(it)) throw Err.castError(ii, type, i);
-    }
-    return v;
   }
 
   /**
@@ -369,17 +371,20 @@ public final class SeqType {
    * @param qc query context
    * @param sc static context
    * @param ii input info
-   * @param e expression
    * @return resulting value
    * @throws QueryException query exception
    */
   public Value cast(final Value val, final QueryContext qc, final StaticContext sc,
-      final InputInfo ii, final ExprInfo e) throws QueryException {
-    if(val.size() < 2) return cast(val.isEmpty() ? null : val.itemAt(0), qc, sc, ii, e);
+      final InputInfo ii) throws QueryException {
 
-    if(!occ.check(val.size())) throw INVCAST.get(ii, val.type(), this);
-    final ValueBuilder vb = new ValueBuilder((int) val.size());
-    for(int i = 0; i < val.size(); i++) vb.add(cast(val.itemAt(i), qc, sc, ii, e));
+    final long vs = val.size();
+    if(!occ.check(vs)) throw INVCASTEX.get(ii, val.seqType(), this, val);
+
+    if(val.isEmpty()) return Empty.SEQ;
+    if(val.isItem()) return cast((Item) val, qc, sc, ii, true);
+
+    final ValueBuilder vb = new ValueBuilder((int) vs);
+    for(int v = 0; v < vs; v++) vb.add(cast(val.itemAt(v), qc, sc, ii, true));
     return vb.value();
   }
 
@@ -390,10 +395,10 @@ public final class SeqType {
    * @throws QueryException query exception
    */
   public void treat(final Value val, final InputInfo ii) throws QueryException {
-    if(val.type().instanceOf(this)) return;
+    if(val.seqType().instanceOf(this)) return;
 
     final int size = (int) val.size();
-    if(!occ.check(size)) throw Err.treatError(ii, this, val);
+    if(!occ.check(size)) throw Err.treatError(ii, val, this);
 
     // empty sequence has all types
     if(size == 0) return;
@@ -403,7 +408,7 @@ public final class SeqType {
     // check heterogeneous sequences
     if(!val.homogeneous())
       for(int i = 1; ins && i < size; i++) ins = instance(val.itemAt(i), true);
-    if(!ins) throw Err.treatError(ii, this, val);
+    if(!ins) throw Err.treatError(ii, val, this);
   }
 
   /**
@@ -425,7 +430,7 @@ public final class SeqType {
       if(atom.type == AtomType.ATM) {
         if(type.nsSensitive()) {
           if(sc.xquery3()) throw NSSENS.get(ii, it.type, type);
-          throw Err.treatError(ii, withOcc(Occ.ONE), it);
+          throw Err.treatError(ii, it, withOcc(Occ.ONE));
         }
         return type.cast(atom, qc, sc, ii);
       }
@@ -441,7 +446,7 @@ public final class SeqType {
       return ((FItem) it).coerceTo((FuncType) type, qc, ii, opt);
     }
 
-    throw Err.treatError(ii, withOcc(Occ.ONE), it);
+    throw Err.treatError(ii, it, withOcc(Occ.ONE));
   }
 
   /**
@@ -458,10 +463,9 @@ public final class SeqType {
       final Value val, final boolean opt) throws QueryException {
 
     final long n = val.size();
-    if(!occ.check(n)) throw Err.treatError(ii, this, val);
+    if(!occ.check(n)) throw Err.treatError(ii, val, this);
     if(n == 0) return Empty.SEQ;
-    if(val.isItem())
-      return instance((Item) val, true) ? val : promote(qc, sc, ii, (Item) val, opt);
+    if(val.isItem()) return instance((Item) val, true) ? val : promote(qc, sc, ii, (Item) val, opt);
 
     ValueBuilder vb = null;
     final Item fst = val.itemAt(0);
@@ -600,6 +604,17 @@ public final class SeqType {
       && (t.kind == null || kind != null && kind.intersect(t.kind) != null);
   }
 
+  /**
+   * Returns a string representation of the type.
+   * @return string
+   */
+  public String typeString() {
+    final StringBuilder sb = new StringBuilder();
+    sb.append(occ == Occ.ZERO ? EMPTY_SEQUENCE + "()" : type);
+    if(kind != null) sb.deleteCharAt(sb.length() - 1).append(kind).append(')');
+    return sb.toString();
+  }
+
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
@@ -609,17 +624,6 @@ public final class SeqType {
       sb.append(typeString());
     }
     if(!(type instanceof ListType)) sb.append(occ);
-    return sb.toString();
-  }
-
-  /**
-   * Returns a string representation of the type.
-   * @return string
-   */
-  public String typeString() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append(occ == Occ.ZERO ? EMPTY_SEQUENCE + "()" : type);
-    if(kind != null) sb.deleteCharAt(sb.length() - 1).append(kind).append(')');
     return sb.toString();
   }
 }

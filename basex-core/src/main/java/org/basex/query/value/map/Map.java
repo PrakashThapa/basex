@@ -87,9 +87,9 @@ public final class Map extends FItem {
    * @return possibly atomized item if non {@code NaN}, {@code null} otherwise
    * @throws QueryException query exception
    */
-  private Item key(final Item it, final InputInfo ii) throws QueryException {
+  private static Item key(final Item it, final InputInfo ii) throws QueryException {
     // no empty sequence allowed
-    if(it == null) throw INVEMPTY.get(ii, description());
+    if(it == null) throw SEQEMPTY.get(ii);
 
     // function items can't be keys
     if(it instanceof FItem) throw FIATOM.get(ii, it.type);
@@ -163,13 +163,13 @@ public final class Map extends FItem {
    */
   public boolean hasType(final MapType t) {
     return root.hasType(t.keyType == AtomType.AAT ? null : t.keyType,
-        t.ret.eq(SeqType.ITEM_ZM) ? null : t.ret);
+        t.retType.eq(SeqType.ITEM_ZM) ? null : t.retType);
   }
 
   @Override
   public Map coerceTo(final FuncType ft, final QueryContext qc, final InputInfo ii,
       final boolean opt) throws QueryException {
-    if(!(ft instanceof MapType) || !hasType((MapType) ft)) throw castError(ii, ft, this);
+    if(!(ft instanceof MapType) || !hasType((MapType) ft)) throw castError(ii, this, ft);
     return this;
   }
 

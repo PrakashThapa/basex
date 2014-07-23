@@ -27,6 +27,7 @@ import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
+import org.basex.query.value.seq.*;
 import org.basex.query.value.type.*;
 import org.basex.query.var.*;
 import org.basex.util.*;
@@ -53,7 +54,7 @@ public final class QueryContext extends Proc {
   /** Functions. */
   public final StaticFuncs funcs = new StaticFuncs();
   /** Externally bound variables. */
-  private final HashMap<QNm, Expr> bindings = new HashMap<>();
+  private final HashMap<QNm, Value> bindings = new HashMap<>();
 
   /** Parent query context. */
   private final QueryContext qcParent;
@@ -82,17 +83,15 @@ public final class QueryContext extends Proc {
   public long pos = 1;
   /** Current context size. */
   public long size = 1;
-  /** Globally available nodes (may be {@code null}). */
-  Nodes nodes;
 
+  /** Full-text position data (needed for highlighting full-text results). */
+  public FTPosData ftPosData = Prop.gui ? new FTPosData() : null;
   /** Available collations. */
   public TokenObjMap<Collation> collations;
   /** Current full-text token. */
   public FTLexer ftToken;
   /** Current full-text options. */
   private FTOpt ftOpt;
-  /** Full-text position data (needed for highlighting full-text results). */
-  public FTPosData ftPosData;
   /** Full-text token positions (needed for highlighting full-text results). */
   public int ftPos;
 
@@ -262,8 +261,6 @@ public final class QueryContext extends Proc {
    * @throws QueryException query exception
    */
   public void compile() throws QueryException {
-    if(nodes == null) nodes = context.current();
-
     // set database options
     final StringList o = tempOpts;
     for(int s = 0; s < o.size(); s += 2) {
@@ -289,17 +286,19 @@ public final class QueryContext extends Proc {
         // only {@link ParseExpr} instances may cause this error
         throw CIRCCTX.get(ctxItem.info);
       }
-    } else if(nodes != null) {
-      // add full-text container reference
-      if(nodes.ftpos != null) ftPosData = new FTPosData();
+    } else {
       // cache the initial context nodes
-      resources.compile(nodes);
+      final DBNodes nodes = context.current();
+      if(nodes != null) {
+        if(!context.perm(Perm.READ, nodes.data.meta)) throw BASX_PERM.get(null, Perm.READ);
+        value = resources.compile(nodes);
+      }
     }
 
     // if specified, convert context item to specified type
     // [LW] should not be necessary
-    if(value != null && root.sc.initType != null) {
-      value = root.sc.initType.promote(this, root.sc, null, value, true);
+    if(value != null && root.sc.contextType != null) {
+      value = root.sc.contextType.promote(this, root.sc, null, value, true);
     }
 
     // dynamic compilation
@@ -386,13 +385,13 @@ public final class QueryContext extends Proc {
 
   /**
    * Evaluates the specified expression and returns an iterator.
-   * @param e expression to be evaluated
+   * @param expr expression to be evaluated
    * @return iterator
    * @throws QueryException query exception
    */
-  public Iter iter(final Expr e) throws QueryException {
+  public Iter iter(final Expr expr) throws QueryException {
     checkStop();
-    return e.iter(this);
+    return expr.iter(this);
   }
 
   /**
@@ -436,34 +435,68 @@ public final class QueryContext extends Proc {
 
   /**
    * Binds a value to the context item, using the same rules as for
-   * {@link #bind binding variables}.
+   * {@link #bind(String, Object, String) binding variables}.
    * @param val value to be bound
-   * @param type data type (may be {@code null})
+   * @param type type (may be {@code null})
    * @param sc static context
    * @throws QueryException query exception
    */
   public void context(final Object val, final String type, final StaticContext sc)
       throws QueryException {
-    ctxItem = new MainModule(cast(val, type), new VarScope(sc), null, sc);
+    context(cast(val, type), sc);
+  }
+
+  /**
+   * Binds a value to the context item.
+   * @param val value to be bound
+   * @param sc static context
+   */
+  public void context(final Value val, final StaticContext sc) {
+    ctxItem = new MainModule(val, new VarScope(sc), null, sc);
   }
 
   /**
    * Binds a value to a global variable. The specified type is interpreted as follows:
    * <ul>
-   * <li>If {@code "json"} is specified, the value is converted according to the rules
-   *     specified in {@link JsonMapConverter}.</li>
-   * <li>If {@code "xml"} is specified, the value is converted to a document node.</li>
-   * <li>Otherwise, the type is interpreted as atomic XDM data type.</li>
+   *   <li>If {@code "json"} is specified, the value is converted according to the rules
+   *       specified in {@link JsonMapConverter}.</li>
+   *   <li>Otherwise, the type is cast to the specified XDM type.</li>
    * </ul>
-   * If the value is an XQuery value {@link Value}, it is directly assigned.
+   * If the value is an XQuery {@link Value}, it is directly assigned.
    * Otherwise, it is cast to the XQuery data model, using a Java/XQuery mapping.
    * @param name name of variable
    * @param val value to be bound
-   * @param type data type (may be {@code null})
+   * @param type type (may be {@code null})
    * @throws QueryException query exception
    */
   public void bind(final String name, final Object val, final String type) throws QueryException {
     bind(name, cast(val, type));
+  }
+
+  /**
+   * Binds a value to a global variable.
+   * @param name name of variable
+   * @param val value to be bound
+   * @throws QueryException query exception
+   */
+  public void bind(final String name, final Value val) throws QueryException {
+    // remove optional $ prefix
+    String nm = name.indexOf('$') == 0 ? name.substring(1) : name;
+    byte[] uri = EMPTY;
+
+    // check for namespace declaration
+    final Matcher m = BIND.matcher(nm);
+    if(m.find()) {
+      String u = m.group(3);
+      if(u == null) u = m.group(5);
+      uri = token(u);
+      nm = m.group(6);
+    }
+    final byte[] ln = token(nm);
+    if(nm.isEmpty() || !XMLToken.isNCName(ln)) throw BINDNAME.get(null, nm);
+
+    // bind variable
+    bindings.put(new QNm(ln, uri), val);
   }
 
   /**
@@ -573,23 +606,21 @@ public final class QueryContext extends Proc {
     Item it;
 
     // check if all results belong to the database of the input context
-    if(serialOpts == null && nodes != null) {
-      final IntList pre = new IntList();
-
+    final Data data = resources.globalData();
+    if(serialOpts == null && data != null) {
+      final IntList pres = new IntList();
       while((it = ir.next()) != null) {
         checkStop();
-        if(it.data() != nodes.data) break;
-        if(pre.size() < max) pre.add(((DBNode) it).pre);
+        if(it.data() != data) break;
+        if(pres.size() < max) pres.add(((DBNode) it).pre);
       }
 
-      final int ps = pre.size();
-      if(it == null || ps == max) {
-        // all nodes have been processed: return GUI-friendly nodeset
-        return ps == 0 ? vb : new Nodes(pre.toArray(), nodes.data, ftPosData);
-      }
+      final int ps = pres.size();
+      // all nodes have been processed: return compact node sequence
+      if(it == null || ps == max) return ps == 0 ? vb : new DBNodes(data, ftPosData, pres.finish());
 
       // otherwise, add nodes to standard iterator
-      for(int p = 0; p < ps; ++p) vb.add(new DBNode(nodes.data, pre.get(p)));
+      for(int p = 0; p < ps; ++p) vb.add(new DBNode(data, pres.get(p)));
       vb.add(it);
     }
 
@@ -610,86 +641,112 @@ public final class QueryContext extends Proc {
     final FElem e = new FElem(QueryText.PLAN);
     if(root != null) {
       for(final StaticScope scp : QueryCompiler.usedDecls(root)) scp.plan(e);
+      root.plan(e);
     } else {
       funcs.plan(e);
       vars.plan(e);
     }
-    root.plan(e);
     doc.add(e);
   }
 
   // PRIVATE METHODS ====================================================================
 
   /**
-   * Binds an expression to a global variable.
-   * @param name name of variable
-   * @param e value to be bound
-   */
-  private void bind(final String name, final Expr e) {
-    // remove optional $ prefix
-    String nm = name.indexOf('$') == 0 ? name.substring(1) : name;
-    byte[] uri = EMPTY;
-
-    // check for namespace declaration
-    final Matcher m = BIND.matcher(nm);
-    if(m.find()) {
-      String u = m.group(3);
-      if(u == null) u = m.group(5);
-      uri = token(u);
-      nm = m.group(6);
-    }
-    final byte[] ln = token(nm);
-
-    // [LW] better throw an error
-    if(nm.isEmpty() || !XMLToken.isNCName(ln)) return;
-
-    // bind variable
-    bindings.put(new QNm(ln, uri), e);
-  }
-
-  /**
    * Casts a value to the specified type.
    * See {@link #bind(String, Object, String)} for more infos.
    * @param val value to be cast
-   * @param type data type (may be {@code null})
+   * @param type type (may be {@code null})
    * @return cast value
    * @throws QueryException query exception
    */
-  private Expr cast(final Object val, final String type) throws QueryException {
+  private Value cast(final Object val, final String type) throws QueryException {
     final StaticContext sc = root != null ? root.sc : new StaticContext(context);
 
-    // return original value
-    if(type == null || type.isEmpty())
-      return val instanceof Expr ? (Expr) val : JavaMapping.toValue(val, this, sc);
+    // String input
+    Object vl = val;
+    if(vl instanceof String) {
+      final String string = (String) vl;
+      final StringList strings = new StringList(1);
+      // strings containing multiple items (value \1 ...)
+      if(string.indexOf('\1') != -1) {
+        strings.add(string.split("\1"));
+        vl = strings.toArray();
+      } else {
+        strings.add(string);
+      }
+
+      // sub types overriding the global value (value \2 type)
+      if(string.indexOf('\2') != -1) {
+        final ValueBuilder vb = new ValueBuilder(strings.size());
+        for(final String str : strings) {
+          final int i = str.indexOf('\2');
+          final String s = i == -1 ? str : str.substring(0, i);
+          final String t = i == -1 ? type : str.substring(i + 1);
+          vb.add(cast(s, t));
+        }
+        return vb.value();
+      }
+    }
+
+    // no type specified: return original value or convert Java object
+    if(type == null || type.isEmpty()) {
+      return vl instanceof Value ? (Value) vl : JavaMapping.toValue(vl, this, sc);
+    }
 
     // convert to json
-    try {
-      if(type.equalsIgnoreCase(MainParser.JSON.toString())) {
+    if(type.equalsIgnoreCase(MainParser.JSON.name())) {
+      try {
         final JsonParserOptions jp = new JsonParserOptions();
         jp.set(JsonOptions.SPEC, JsonSpec.ECMA_262);
         jp.set(JsonOptions.FORMAT, JsonFormat.MAP);
         final JsonConverter conv = JsonConverter.get(jp);
-        conv.convert(token(val.toString()), null);
+        conv.convert(token(vl.toString()), null);
         return conv.finish();
+      } catch(final QueryIOException ex) {
+        throw ex.getCause();
       }
-    } catch(final QueryIOException ex) {
-      throw ex.getCause();
     }
+
+    // test for empty sequence
+    if(type.equals(QueryText.EMPTY_SEQUENCE + "()")) return Empty.SEQ;
 
     // convert to the specified type
     // [LW] type should be parsed properly
     final QNm nm = new QNm(token(type.replaceAll("\\(.*?\\)$", "")), sc);
     if(!nm.hasURI() && nm.hasPrefix()) throw NOURI.get(null, nm.string());
 
-    Type t;
+    Type tp;
     if(type.endsWith(")")) {
-      t = NodeType.find(nm);
+      if(nm.eq(AtomType.ITEM.name)) tp = AtomType.ITEM;
+      else tp = NodeType.find(nm);
+      if(tp == null) tp = FuncType.find(nm);
     } else {
-      t = ListType.find(nm);
-      if(t == null) t = AtomType.find(nm, false);
+      tp = ListType.find(nm);
+      if(tp == null) tp = AtomType.find(nm, false);
     }
-    if(t == null) throw NOTYPE.get(null, type);
-    return t.cast(val, this, sc, null);
+    if(tp == null) throw NOTYPE.get(null, type);
+
+    // cast XDM values
+    if(vl instanceof Value) {
+      // cast single item
+      if(vl instanceof Item) return tp.cast((Item) vl, this, sc, null);
+      // cast sequence
+      final Value v = (Value) vl;
+      final ValueBuilder seq = new ValueBuilder((int) v.size());
+      for(final Item i : v) seq.add(tp.cast(i, this, sc, null));
+      return seq.value();
+    }
+
+    if(vl instanceof String[]) {
+      // cast string array
+      final String[] strings = (String[]) vl;
+      final ValueBuilder seq = new ValueBuilder(strings.length);
+      for(final String s : strings) seq.add(tp.cast(s, this, sc, null));
+      return seq.value();
+    }
+
+    // cast any other object to XDM
+    return tp.cast(vl, this, sc, null);
   }
 
   /**

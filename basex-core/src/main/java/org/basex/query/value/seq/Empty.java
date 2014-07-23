@@ -76,7 +76,7 @@ public final class Empty extends Value {
   }
 
   @Override
-  public SeqType type() {
+  public SeqType seqType() {
     return SeqType.EMP;
   }
 
@@ -105,7 +105,7 @@ public final class Empty extends Value {
   }
 
   @Override
-  public int writeTo(final Item[] arr, final int start) {
+  public int writeTo(final Item[] arr, final int index) {
     return 0;
   }
 

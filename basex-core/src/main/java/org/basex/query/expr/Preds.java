@@ -91,26 +91,26 @@ public abstract class Preds extends ParseExpr {
   @Override
   public boolean has(final Flag flag) {
     for(final Expr p : preds) {
-      if(flag == Flag.FCS && p.type().mayBeNumber() || p.has(flag)) return true;
+      if(flag == Flag.FCS && p.seqType().mayBeNumber() || p.has(flag)) return true;
     }
     return false;
   }
 
   @Override
-  public boolean removable(final Var v) {
-    for(final Expr p : preds) if(p.uses(v)) return false;
+  public boolean removable(final Var var) {
+    for(final Expr p : preds) if(p.uses(var)) return false;
     return true;
   }
 
   @Override
-  public VarUsage count(final Var v) {
-    return VarUsage.sum(v, preds);
+  public VarUsage count(final Var var) {
+    return VarUsage.sum(var, preds);
   }
 
   @Override
-  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e)
+  public Expr inline(final QueryContext qc, final VarScope scp, final Var var, final Expr ex)
       throws QueryException {
-    return inlineAll(qc, scp, preds, v, e) ? optimize(qc, scp) : null;
+    return inlineAll(qc, scp, preds, var, ex) ? optimize(qc, scp) : null;
   }
 
   /**

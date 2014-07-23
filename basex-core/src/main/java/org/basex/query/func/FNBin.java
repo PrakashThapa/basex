@@ -237,7 +237,7 @@ public class FNBin extends StandardFunc {
       if(l < 0 || l > 255) throw BIN_OOR_X.get(info, l);
       bl.add((int) l);
     }
-    return new B64(bl.toArray());
+    return new B64(bl.finish());
   }
 
   /**
@@ -281,8 +281,8 @@ public class FNBin extends StandardFunc {
   private B64 join(final QueryContext qc) throws QueryException {
     final ByteList bl = new ByteList();
     final Iter ir = qc.iter(exprs[0]);
-    for(Item it; (it = ir.next()) != null;) bl.add(checkBinary(it, qc).binary(info));
-    return new B64(bl.toArray());
+    for(Item it; (it = ir.next()) != null;) bl.add(checkBin(it).binary(info));
+    return new B64(bl.finish());
   }
 
   /**
@@ -371,7 +371,7 @@ public class FNBin extends StandardFunc {
    */
   private Str decodeString(final QueryContext qc) throws QueryException {
     final B64 b64 = b64(exprs[0], true, qc);
-    final String enc = encoding(1, BIN_UE_X, qc);
+    final String enc = checkEncoding(1, BIN_UE_X, qc);
     final Long off = exprs.length > 2 ? checkItr(exprs[2], qc) : null;
     final Long len = exprs.length > 3 ? checkItr(exprs[3], qc) : null;
     if(b64 == null) return null;
@@ -401,7 +401,7 @@ public class FNBin extends StandardFunc {
    */
   private B64 encodeString(final QueryContext qc) throws QueryException {
     final byte[] str = str(0, qc);
-    final String enc = encoding(1, BIN_UE_X, qc);
+    final String enc = checkEncoding(1, BIN_UE_X, qc);
     if(str == null) return null;
     try {
       return new B64(enc == null || enc == UTF8 ? str : FNConvert.toBinary(str, enc));
@@ -622,17 +622,17 @@ public class FNBin extends StandardFunc {
 
   /**
    * Checks if the specified expression yields a binary item.
-   * @param e expression to be evaluated
+   * @param ex expression to be evaluated
    * @param empty allow empty sequence
    * @param qc query context
    * @return binary item
    * @throws QueryException query exception
    */
-  private B64 b64(final Expr e, final boolean empty, final QueryContext qc) throws QueryException {
-    final Item it = e.item(qc, info);
+  private B64 b64(final Expr ex, final boolean empty, final QueryContext qc) throws QueryException {
+    final Item it = ex.item(qc, info);
     if(it == null) {
       if(empty) return null;
-      throw INVEMPTY.get(info, description());
+      throw SEQEMPTY.get(info);
     }
     return (B64) checkType(it, AtomType.B64);
   }

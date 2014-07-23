@@ -64,18 +64,18 @@ public final class TypeCase extends Single {
       }
     } catch(final QueryException ex) {
       // replace original expression with error
-      expr = FNInfo.error(ex, expr.type());
+      expr = FNInfo.error(ex, expr.seqType());
     }
-    type = expr.type();
+    seqType = expr.seqType();
     return this;
   }
 
   @Override
-  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e) {
+  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr ex) {
     try {
-      return super.inline(qc, scp, v, e);
+      return super.inline(qc, scp, v, ex);
     } catch(final QueryException qe) {
-      expr = FNInfo.error(qe, expr.type());
+      expr = FNInfo.error(qe, expr.seqType());
       return this;
     }
   }
@@ -126,7 +126,7 @@ public final class TypeCase extends Single {
         if(!bl.isEmpty()) bl.add(or);
         bl.add(Token.token(t.toString()));
       }
-      e.add(planAttr(Token.token(TYPE), bl.toArray()));
+      e.add(planAttr(Token.token(TYPE), bl.finish()));
     }
     if(var != null) e.add(planAttr(VAR, Token.token(var.toString())));
     expr.plan(e);

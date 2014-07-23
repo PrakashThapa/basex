@@ -84,9 +84,9 @@ public abstract class Data {
   public final Resources resources = new Resources(this);
   /** Meta data. */
   public MetaData meta;
-  /** Tag index. */
-  public Names tagindex;
-  /** Attribute name index. */
+  /** Element names. */
+  public Names elmindex;
+  /** Attribute names. */
   public Names atnindex;
   /** Namespace index. */
   public Namespaces nspaces;
@@ -173,13 +173,13 @@ public abstract class Data {
    */
   final Index index(final IndexType type) {
     switch(type) {
-      case TAG:       return tagindex;
+      case TAG:   return elmindex;
       case ATTNAME:   return atnindex;
       case TEXT:      return txtindex;
       case ATTRIBUTE: return atvindex;
       case FULLTEXT:  return ftxindex;
       case PATH:      return paths;
-      default:        throw Util.notExpected();
+      default:         throw Util.notExpected();
     }
   }
 
@@ -205,7 +205,7 @@ public abstract class Data {
         byte[] t = EMPTY;
         int p = pre;
         final int s = p + size(p, kind(p));
-        while(p != s) {
+        while(p < s) {
           final int k = kind(p);
           if(k == TEXT) {
             txt = text(p, true);
@@ -231,12 +231,9 @@ public abstract class Data {
    */
   private int preold(final int id) {
     // find pre value in table
-    for(int p = Math.max(0, id); p < meta.size; ++p)
-      if(id == id(p)) return p;
+    for(int p = Math.max(0, id); p < meta.size; ++p) if(id == id(p)) return p;
     final int ps = Math.min(meta.size, id);
-    for(int p = 0; p < ps; ++p)
-      if(id == id(p)) return p;
-
+    for(int p = 0; p < ps; ++p) if(id == id(p)) return p;
     // id not found
     return -1;
   }
@@ -244,7 +241,7 @@ public abstract class Data {
   /**
    * Returns a pre value.
    * @param id unique node id
-   * @return pre value or -1 if id was not found
+   * @return pre value or {@code -1} if id was not found
    */
   public final int pre(final int id) {
     return meta.updindex ? idmap.pre(id) : preold(id);
@@ -259,10 +256,9 @@ public abstract class Data {
    */
   public final int[] pre(final int[] ids, final int off, final int len) {
     if(meta.updindex) return idmap.pre(ids, off, len);
-
-    final IntList p = new IntList(ids.length);
-    for(int i = off; i < len; ++i) p.add(preold(ids[i]));
-    return p.sort().toArray();
+    final IntList il = new IntList(len - off);
+    for(int i = off; i < len; ++i) il.add(preold(ids[i]));
+    return il.sort().finish();
   }
 
   /**
@@ -375,7 +371,7 @@ public abstract class Data {
       final int i = indexOf(name, ' ');
       return i == -1 ? name : substring(name, 0, i);
     }
-    return (kind == ELEM ? tagindex : atnindex).key(name(pre));
+    return (kind == ELEM ? elmindex : atnindex).key(name(pre));
   }
 
   /**
@@ -481,7 +477,7 @@ public abstract class Data {
       table.write1(pre, kind == ELEM ? 3 : 11, nuri);
       // write name reference
       table.write2(pre, 1, (nsFlag(pre) ? 1 << 15 : 0) |
-        (kind == ELEM ? tagindex : atnindex).index(name, null, false));
+        (kind == ELEM ? elmindex : atnindex).index(name, null, false));
       // write namespace flag
       table.write2(npre, 1, (ne || nsFlag(npre) ? 1 << 15 : 0) | name(npre));
     }
@@ -556,7 +552,7 @@ public abstract class Data {
         case ELEM:
           // add element
           byte[] nm = data.name(spre, kind);
-          elem(dist, tagindex.index(nm, null, false), data.attSize(spre, kind), ssize,
+          elem(dist, elmindex.index(nm, null, false), data.attSize(spre, kind), ssize,
               nspaces.uri(nm, true), false);
           break;
         case TEXT:
@@ -756,7 +752,7 @@ public abstract class Data {
             }
           }
           byte[] nm = data.name(spre, kind);
-          elem(dist, tagindex.index(nm, null, false), data.attSize(spre, kind), ssize,
+          elem(dist, elmindex.index(nm, null, false), data.attSize(spre, kind), ssize,
               nspaces.uri(nm, true), ne);
           preStack.push(pre);
           break;

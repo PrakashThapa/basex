@@ -2,7 +2,6 @@ package org.basex.build;
 
 import java.io.*;
 
-import org.basex.core.*;
 import org.basex.data.*;
 import org.basex.io.*;
 
@@ -20,22 +19,21 @@ public final class MemBuilder extends Builder {
 
   /**
    * Constructor.
-   * @param nm name of database
+   * @param name name of database
    * @param parse parser
    */
-  public MemBuilder(final String nm, final Parser parse) {
-    super(nm, parse);
+  public MemBuilder(final String name, final Parser parse) {
+    super(name, parse);
   }
 
   /**
    * Builds a main memory database instance.
    * @param input input
-   * @param context database context
    * @return data database instance
    * @throws IOException I/O exception
    */
-  public static MemData build(final IO input, final Context context) throws IOException {
-    return build(Parser.xmlParser(input, context.options));
+  public static MemData build(final IO input) throws IOException {
+    return build(Parser.xmlParser(input));
   }
 
   /**
@@ -90,7 +88,7 @@ public final class MemBuilder extends Builder {
     md.filesize = file != null ? file.length() : 0;
     md.time = file != null ? file.timeStamp() : System.currentTimeMillis();
     meta = data.meta;
-    tags = data.tagindex;
+    elms = data.elmindex;
     atts = data.atnindex;
     path.data(data);
   }
@@ -115,15 +113,15 @@ public final class MemBuilder extends Builder {
   }
 
   @Override
-  protected void addElem(final int dist, final int nm, final int asize, final int uri,
+  protected void addElem(final int dist, final int name, final int asize, final int uri,
       final boolean ne) {
-    data.elem(dist, nm, asize, asize, uri, ne);
+    data.elem(dist, name, asize, asize, uri, ne);
     data.insert(meta.size);
   }
 
   @Override
-  protected void addAttr(final int nm, final byte[] value, final int dist, final int uri) {
-    data.attr(meta.size, dist, nm, value, uri, false);
+  protected void addAttr(final int name, final byte[] value, final int dist, final int uri) {
+    data.attr(meta.size, dist, name, value, uri, false);
     data.insert(meta.size);
   }
 

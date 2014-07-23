@@ -24,8 +24,7 @@ public abstract class XdmValue implements Iterable<XdmItem> {
    * @return result
    */
   public static XdmValue get(final Value val) {
-    return val instanceof Empty ? XdmEmpty.EMPTY :
-        val instanceof Item ? XdmItem.get((Item) val) :
+    return val instanceof Empty ? XdmEmpty.EMPTY : val instanceof Item ? XdmItem.get((Item) val) :
       new XdmSequence((Seq) val);
   }
 
@@ -98,16 +97,13 @@ public abstract class XdmValue implements Iterable<XdmItem> {
    * @return value type
    */
   public abstract SeqType getType();
-
-  @Override
-  public abstract String toString();
-
-  // PACKAGE PROTECTED METHODS ================================================
-
   /**
    * Returns the internal value representation.
    * Should be made invisible to other packages.
    * @return value
    */
   public abstract Value internal();
+
+  @Override
+  public abstract String toString();
 }

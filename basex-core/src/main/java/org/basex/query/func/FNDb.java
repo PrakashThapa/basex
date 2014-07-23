@@ -159,8 +159,8 @@ public final class FNDb extends StandardFunc {
     final Data data = checkData(qc);
     final int v = (int) checkItr(exprs[1], qc);
     final int pre = id ? data.pre(v) : v;
-    if(pre < 0 || pre >= data.meta.size) throw BXDB_RANGE.get(info, this, v);
-    return new DBNode(data, pre);
+    if(pre >= 0 && pre < data.meta.size) return new DBNode(data, pre);
+    throw BXDB_RANGE.get(info, data.meta.name, id ? "ID" : "pre", v);
   }
 
   /**
@@ -467,7 +467,7 @@ public final class FNDb extends StandardFunc {
    * @throws QueryException query exception
    */
   private Str name(final QueryContext qc) throws QueryException {
-    return Str.get(checkDBNode(checkItem(exprs[0], qc)).data.meta.name);
+    return Str.get(checkDBNode(exprs[0].item(qc, info)).data.meta.name);
   }
 
   /**
@@ -583,7 +583,7 @@ public final class FNDb extends StandardFunc {
   private Item replace(final QueryContext qc) throws QueryException {
     final Data data = checkData(qc);
     final String path = path(1, qc);
-    final NewInput input = checkInput(checkItem(exprs[2], qc), token(path));
+    final Item item = checkItem(exprs[2], qc);
     final Options opts = checkOptions(3, Q_OPTIONS, new Options(), qc);
 
     // remove old documents
@@ -597,11 +597,11 @@ public final class FNDb extends StandardFunc {
     // delete binary resources
     final IOFile bin = data.inMemory() ? null : data.meta.binary(path);
     if(bin != null) {
-      if(bin.exists()) {
+      if(bin.exists() || item instanceof Bin) {
         if(bin.isDir()) throw BXDB_DIR.get(info, path);
-        updates.add(new DBStore(data, path, input, info), qc);
+        updates.add(new DBStore(data, path, item, info), qc);
       } else {
-        updates.add(new DBAdd(data, input, opts, qc, info), qc);
+        updates.add(new DBAdd(data, checkInput(item, token(path)), opts, qc, info), qc);
       }
     }
     return null;
@@ -819,12 +819,13 @@ public final class FNDb extends StandardFunc {
   private Item store(final QueryContext qc) throws QueryException {
     final Data data = checkData(qc);
     final String path = path(1, qc);
+    final Item item = checkItem(exprs[2], qc);
+
     if(data.inMemory()) throw BXDB_MEM.get(info, data.meta.name);
     final IOFile file = data.meta.binary(path);
     if(file == null || file.isDir()) throw RESINV.get(info, path);
 
-    final Item it = checkItem(exprs[2], qc);
-    qc.resources.updates().add(new DBStore(data, path, it, info), qc);
+    qc.resources.updates().add(new DBStore(data, path, item, info), qc);
     return null;
   }
 
@@ -887,8 +888,7 @@ public final class FNDb extends StandardFunc {
     try {
       final ArrayOutput ao = qc.value(exprs[1]).serialize();
       // throw exception if event is unknown
-      if(!qc.context.events.notify(qc.context, name, ao.toArray()))
-        throw BXDB_EVENT.get(info, name);
+      if(!qc.context.events.notify(qc.context, name, ao.finish())) throw BXDB_EVENT.get(info, name);
       return null;
     } catch(final QueryIOException ex) {
       throw ex.getCause(info);
@@ -944,7 +944,7 @@ public final class FNDb extends StandardFunc {
       return ni;
     }
 
-    if(!in.type.isStringOrUntyped()) throw STRNODTYPE.get(info, this, in.type);
+    if(!in.type.isStringOrUntyped()) throw STRNODTYPE.get(info, in.type, in);
 
     final QueryInput qi = new QueryInput(string(in.string(info)));
     if(!qi.input.exists()) throw WHICHRES.get(info, qi.original);

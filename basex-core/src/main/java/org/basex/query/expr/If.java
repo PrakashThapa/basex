@@ -55,7 +55,7 @@ public final class If extends Arr {
         exprs[e] = exprs[e].compile(qc, scp);
       } catch(final QueryException ex) {
         // replace original expression with error
-        exprs[e] = FNInfo.error(ex, type);
+        exprs[e] = FNInfo.error(ex, seqType);
       }
     }
     return optimize(qc, scp);
@@ -79,7 +79,7 @@ public final class If extends Arr {
     }
 
     // rewritings for constant booleans
-    if(exprs[0].type().eq(SeqType.BLN) && exprs[1].type().eq(SeqType.BLN)) {
+    if(exprs[0].seqType().eq(SeqType.BLN) && exprs[1].seqType().eq(SeqType.BLN)) {
       final Expr a = cond, b = exprs[0], c = exprs[1];
       if(b == Bln.TRUE) {
         if(c == Bln.FALSE) {
@@ -118,7 +118,7 @@ public final class If extends Arr {
       }
     }
 
-    type = exprs[0].type().union(exprs[1].type());
+    seqType = exprs[0].seqType().union(exprs[1].seqType());
     return this;
   }
 
@@ -153,29 +153,29 @@ public final class If extends Arr {
   }
 
   @Override
-  public boolean removable(final Var v) {
-    return cond.removable(v) && super.removable(v);
+  public boolean removable(final Var var) {
+    return cond.removable(var) && super.removable(var);
   }
 
   @Override
-  public VarUsage count(final Var v) {
-    return cond.count(v).plus(VarUsage.maximum(v, exprs));
+  public VarUsage count(final Var var) {
+    return cond.count(var).plus(VarUsage.maximum(var, exprs));
   }
 
   @Override
-  public Expr inline(final QueryContext qc, final VarScope scp, final Var v, final Expr e)
+  public Expr inline(final QueryContext qc, final VarScope scp, final Var var, final Expr ex)
       throws QueryException {
 
-    final Expr sub = cond.inline(qc, scp, v, e);
+    final Expr sub = cond.inline(qc, scp, var, ex);
     if(sub != null) cond = sub;
     boolean te = false;
     final int es = exprs.length;
     for(int i = 0; i < es; i++) {
       Expr nw;
       try {
-        nw = exprs[i].inline(qc, scp, v, e);
+        nw = exprs[i].inline(qc, scp, var, ex);
       } catch(final QueryException qe) {
-        nw = FNInfo.error(qe, type);
+        nw = FNInfo.error(qe, seqType);
       }
       if(nw != null) {
         exprs[i] = nw;
@@ -228,7 +228,7 @@ public final class If extends Arr {
   public Expr typeCheck(final TypeCheck tc, final QueryContext qc, final VarScope scp)
       throws QueryException {
     for(int i = 0; i < exprs.length; i++) {
-      final SeqType tp = exprs[i].type();
+      final SeqType tp = exprs[i].seqType();
       try {
         exprs[i] = tc.check(exprs[i], qc, scp);
       } catch(final QueryException ex) {

@@ -6,6 +6,7 @@ import java.io.*;
 import java.util.*;
 import java.util.regex.*;
 
+import org.basex.api.client.*;
 import org.basex.core.*;
 import org.basex.io.out.*;
 import org.basex.query.*;
@@ -15,7 +16,6 @@ import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
-import org.basex.server.*;
 import org.basex.util.*;
 
 /**
@@ -102,7 +102,7 @@ public final class FNClient extends StandardFunc {
       cs.setOutputStream(ao);
       cs.execute(cmd);
       cs.setOutputStream(null);
-      return Str.get(ao.toArray());
+      return Str.get(ao.finish());
     } catch(final BaseXException ex) {
       throw BXCL_COMMAND.get(info, ex);
     } catch(final IOException ex) {
@@ -136,16 +136,11 @@ public final class FNClient extends StandardFunc {
       // bind variables and context item
       for(final Map.Entry<String, Value> binding : bindings(2, qc).entrySet()) {
         final String k = binding.getKey();
-        final Value v = binding.getValue();
-        if(!v.isItem()) throw BXCL_ITEM.get(info, v);
-        final Item it = (Item) v;
-        final Type t = v.type;
-        if(it instanceof FuncItem) throw FIVALUE.get(info, t);
-
-        final Object value = t instanceof NodeType ? v.serialize() : Token.string(it.string(info));
-        if(k.isEmpty()) cq.context(value, t.toString());
-        else cq.bind(k, value, t.toString());
+        final Value value = binding.getValue();
+        if(k.isEmpty()) cq.context(value);
+        else cq.bind(k, value);
       }
+
       // evaluate query
       while(cq.more()) {
         final String result = cq.next();
@@ -157,7 +152,7 @@ public final class FNClient extends StandardFunc {
     } catch(final BaseXException ex) {
       final Matcher m = QUERYPAT.matcher(ex.getMessage());
       if(m.find()) {
-        final QueryException exc = get(m.group(1), info, m.group(2));
+        final QueryException exc = get(m.group(1), m.group(2), info);
         throw exc == null ? new QueryException(info, new QNm(m.group(1)), m.group(2)) : exc;
       }
       throw BXCL_QUERY.get(info, ex);

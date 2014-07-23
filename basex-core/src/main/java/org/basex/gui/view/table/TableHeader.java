@@ -282,9 +282,9 @@ final class TableHeader extends BaseXPanel {
 
     final Data data = view.gui.context.data();
     final JPopupMenu popup = new JPopupMenu();
-    final byte[] root = data.tagindex.key(tdata.root);
+    final byte[] root = data.elmindex.key(tdata.root);
     for(final byte[] en : tdata.roots) {
-      final int id = data.tagindex.id(en);
+      final int id = data.elmindex.id(en);
       final JMenuItem mi = new JRadioButtonMenuItem(string(en), eq(root, en));
       mi.addActionListener(new ActionListener() {
         @Override
@@ -362,7 +362,7 @@ final class TableHeader extends BaseXPanel {
     if(ENTER.is(e)) {
       box.stop();
       inputCol = -1;
-      final Nodes marked = view.gui.context.marked;
+      final DBNodes marked = view.gui.context.marked;
       if(marked.size() != 0) view.gui.notify.context(marked, false, null);
     } else if(TAB.is(e)) {
       tdata.cols[inputCol].filter = box.text;

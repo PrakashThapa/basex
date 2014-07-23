@@ -71,7 +71,7 @@ public final class FAttr extends FNode {
 
   @Override
   public FNode copy() {
-    return new FAttr(name, value).parent(par);
+    return new FAttr(name, value).parent(parent);
   }
 
   @Override
@@ -81,7 +81,7 @@ public final class FAttr extends FNode {
 
   @Override
   public byte[] xdmInfo() {
-    return new ByteList().add(typeId().bytes()).add(name.uri()).add(0).toArray();
+    return new ByteList().add(typeId().bytes()).add(name.uri()).add(0).finish();
   }
 
   @Override

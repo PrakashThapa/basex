@@ -140,10 +140,9 @@ public final class QNm extends Item {
   }
 
   @Override
-  public boolean eq(final Item it, final Collation coll, final InputInfo ii)
-      throws QueryException {
+  public boolean eq(final Item it, final Collation coll, final InputInfo ii) throws QueryException {
     if(it instanceof QNm) return eq((QNm) it);
-    throw INVTYPECMP.get(ii, it.type, type);
+    throw diffError(ii, this, it);
   }
 
   /**
@@ -237,7 +236,7 @@ public final class QNm extends Item {
 
   @Override
   public byte[] xdmInfo() {
-    return new ByteList().add(typeId().bytes()).add(uri()).add(0).toArray();
+    return new ByteList().add(typeId().bytes()).add(uri()).add(0).finish();
   }
 
   @Override
@@ -247,7 +246,7 @@ public final class QNm extends Item {
 
   @Override
   public boolean equals(final Object obj) {
-    return obj.getClass() == QNm.class && eq((QNm) obj);
+    return obj instanceof QNm && eq((QNm) obj);
   }
 
   @Override
