@@ -1,8 +1,6 @@
 package org.basex.io.in;
 
-import java.io.FilterInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 import org.basex.util.*;
 
@@ -58,12 +56,12 @@ public final class TarInputStream extends FilterInputStream {
 
   @Override
   public synchronized void mark(final int limit) {
-    Util.notImplemented();
+    throw Util.notExpected();
   }
 
   @Override
   public synchronized void reset() {
-    Util.notImplemented();
+    throw Util.notExpected();
   }
 
   /**

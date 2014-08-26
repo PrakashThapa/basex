@@ -37,14 +37,14 @@ public final class Optimize extends ACreate {
     final MetaData m = data.meta;
     size = m.size;
 
-    if(!data.startUpdate()) return error(DB_PINNED_X, data.meta.name);
+    if(!startUpdate()) return false;
     try {
       optimize(data, this);
       return info(DB_OPTIMIZED_X, m.name, perf);
     } catch(final IOException ex) {
       return error(Util.message(ex));
     } finally {
-      data.finishUpdate();
+      finishUpdate();
     }
   }
 
@@ -66,7 +66,7 @@ public final class Optimize extends ACreate {
   /**
    * Optimizes the structures of a database.
    * @param data data
-   * @param cmd calling command instance (can be {@code null})
+   * @param cmd calling command instance (may be {@code null})
    * @throws IOException I/O Exception during index rebuild
    */
   public static void optimize(final Data data, final Optimize cmd) throws IOException {
@@ -78,7 +78,7 @@ public final class Optimize extends ACreate {
    * @param data data
    * @param rebuild rebuild all index structures
    * @param rebuildFT rebuild full-text index
-   * @param cmd calling command instance (can be {@code null})
+   * @param cmd calling command instance (may be {@code null})
    * @throws IOException I/O Exception during index rebuild
    */
   public static void optimize(final Data data, final boolean rebuild, final boolean rebuildFT,
@@ -89,8 +89,8 @@ public final class Optimize extends ACreate {
     if(!md.uptodate) {
       data.paths.init();
       data.resources.init();
-      data.elmindex.init();
-      data.atnindex.init();
+      data.elemNames.init();
+      data.attrNames.init();
       md.dirty = true;
 
       final IntList pars = new IntList();
@@ -112,18 +112,18 @@ public final class Optimize extends ACreate {
           ++n;
         } else if(kind == Data.ELEM) {
           final int id = data.name(pre);
-          data.elmindex.index(data.elmindex.key(id), null, true);
+          data.elemNames.index(data.elemNames.key(id), null, true);
           data.paths.put(id, Data.ELEM, level);
           pars.push(pre);
           elms.push(id);
         } else if(kind == Data.ATTR) {
           final int id = data.name(pre);
           final byte[] val = data.text(pre, false);
-          data.atnindex.index(data.atnindex.key(id), val, true);
+          data.attrNames.index(data.attrNames.key(id), val, true);
           data.paths.put(id, Data.ATTR, level, val, md);
         } else {
           final byte[] val = data.text(pre, true);
-          if(kind == Data.TEXT && level > 1) data.elmindex.index(elms.peek(), val);
+          if(kind == Data.TEXT && level > 1) data.elemNames.index(elms.peek(), val);
           data.paths.put(0, kind, level, val, md);
         }
         if(cmd != null) cmd.pre = pre;

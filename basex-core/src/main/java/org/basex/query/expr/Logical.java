@@ -2,7 +2,6 @@ package org.basex.query.expr;
 
 import static org.basex.query.QueryText.*;
 
-import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.util.*;
 import org.basex.query.value.item.*;
@@ -38,7 +37,7 @@ public abstract class Logical extends Arr {
     final int es = exprs.length;
     final ExprList el = new ExprList(es);
     for(final Expr e : exprs) {
-      final Expr ex = e.compEbv(qc);
+      final Expr ex = e.optimizeEbv(qc, scp);
       if(ex.isValue()) {
         // atomic items can be pre-evaluated
         qc.compInfo(OPTREMOVE, this, e);
@@ -48,7 +47,7 @@ public abstract class Logical extends Arr {
       }
     }
     if(el.isEmpty()) return Bln.get(and);
-    exprs = el.array();
+    exprs = el.finish();
     return this;
   }
 
@@ -89,6 +88,6 @@ public abstract class Logical extends Arr {
         tmp.add(ex);
       }
     }
-    exprs = tmp.array();
+    exprs = tmp.finish();
   }
 }

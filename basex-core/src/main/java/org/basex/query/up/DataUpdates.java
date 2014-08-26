@@ -179,7 +179,7 @@ final class DataUpdates {
         Export.export(data, data.meta.original, null);
       } catch(final IOException ex) {
         Util.debug(ex);
-        throw UPPUTERR.get(null, data.meta.original);
+        throw UPPUTERR_X.get(null, data.meta.original);
       }
     }
   }
@@ -214,15 +214,15 @@ final class DataUpdates {
    * @return list of atomic updates ready for execution
    */
   private AtomicUpdateCache createAtomicUpdates(final List<NodeUpdate> l) {
-    final AtomicUpdateCache atomics = new AtomicUpdateCache(data);
+    final AtomicUpdateCache ac = new AtomicUpdateCache(data);
     //  from the lowest to the highest score, corresponds w/ from lowest to highest PRE
     final int s = l.size();
     for(int i = 0; i < s; i++) {
       final NodeUpdate u = l.get(i);
-      u.addAtomics(atomics);
+      u.addAtomics(ac);
       l.set(i, null);
     }
-    return atomics;
+    return ac;
   }
 
   /**
@@ -274,6 +274,6 @@ final class DataUpdates {
       }
     }
     final QNm dup = pool.duplicate();
-    if(dup != null) throw UPATTDUPL.get(null, dup);
+    if(dup != null) throw UPATTDUPL_X.get(null, dup);
   }
 }

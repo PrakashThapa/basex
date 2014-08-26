@@ -47,9 +47,9 @@ import org.basex.util.hash.*;
  */
 public final class AtomicUpdateCache {
   /** List of structural updates (nodes are inserted to / deleted from the table. */
-  private final List<StructuralUpdate> struct = new ArrayList<>();
+  private final List<StructuralUpdate> struct = new ArrayList<>(1);
   /** Value / non-structural updates like rename. */
-  private final List<BasicUpdate> val = new ArrayList<>();
+  private final List<BasicUpdate> val = new ArrayList<>(1);
   /** Most recently added update buffer. Used to merge/discard updates and to detect
    * inconsistencies on-the-fly eliminating the need to traverse all updates. */
   private BasicUpdate recent;
@@ -80,12 +80,10 @@ public final class AtomicUpdateCache {
    * @param pre PRE value of the target node/update location
    * @param par new parent of the inserted nodes
    * @param clip insertion sequence data clip
-   * @param attr insert attribute if true or a node of any other kind if false
    */
-  public void addInsert(final int pre, final int par, final DataClip clip,
-      final boolean attr) {
-    considerAtomic(attr ? InsertAttr.getInstance(pre, par, clip) :
-      Insert.getInstance(pre, par, clip), false);
+  public void addInsert(final int pre, final int par, final DataClip clip) {
+    considerAtomic(clip.data.kind(clip.start) == Data.ATTR
+        ? InsertAttr.getInstance(pre, par, clip) : Insert.getInstance(pre, par, clip), false);
   }
 
   /**
@@ -224,11 +222,9 @@ public final class AtomicUpdateCache {
       // - the inserted node would directly be deleted without this restriction
       if(bu2 instanceof Insert || bu2 instanceof InsertAttr)
         if(bu1 instanceof Delete)
-          throw Util.notExpected("Invalid sequence of delete, insert at location "
-          + bu1.location);
+          throw Util.notExpected("Invalid sequence of delete, insert at location " + bu1.location);
         else if(bu1 instanceof Replace)
-          throw Util.notExpected("Invalid sequence of replace, insert at location "
-              + bu1.location);
+          throw Util.notExpected("Invalid sequence of replace, insert at location " + bu1.location);
 
       // check multiple {@link Delete}, {@link Replace}
       if(bu2.destructive() && bu1.destructive())
@@ -285,8 +281,7 @@ public final class AtomicUpdateCache {
     data.cache = true;
     applyUpdates();
     adjustDistances();
-    if(mergeTexts)
-      resolveTextAdjacency();
+    if(mergeTexts) resolveTextAdjacency();
     data.cache = false;
     clear();
   }
@@ -297,13 +292,10 @@ public final class AtomicUpdateCache {
   public void applyUpdates() {
     // check if previous update still in buffer
     flush();
-
     // value updates applied front-to-back, doens't matter as there are no row shifts
-    for(final BasicUpdate u : val)
-      u.apply(data);
+    for(final BasicUpdate u : val) u.apply(data);
     // structural updates are applied back-to-front
-    for(int i = struct.size() - 1; i >= 0; i--)
-      struct.get(i).apply(data);
+    for(int i = struct.size() - 1; i >= 0; i--) struct.get(i).apply(data);
   }
 
   /**
@@ -487,12 +479,12 @@ public final class AtomicUpdateCache {
       }
     }
 
-    final AtomicUpdateCache atomicDeletes = new AtomicUpdateCache(data);
-    for(final Delete delete : deletes) atomicDeletes.considerAtomic(delete, true);
+    final AtomicUpdateCache auc = new AtomicUpdateCache(data);
+    for(final Delete delete : deletes) auc.considerAtomic(delete, true);
     deletes.clear();
-    atomicDeletes.applyUpdates();
-    atomicDeletes.adjustDistances();
-    atomicDeletes.clear();
+    auc.applyUpdates();
+    auc.adjustDistances();
+    auc.clear();
   }
 
   /**

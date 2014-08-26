@@ -12,7 +12,7 @@ import org.basex.util.*;
 import org.basex.util.hash.*;
 
 /**
- * Context item (or value).
+ * Context value.
  *
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
@@ -29,23 +29,28 @@ public final class Context extends Simple {
 
   @Override
   public Context compile(final QueryContext qc, final VarScope scp) {
+    return optimize(qc, scp);
+  }
+
+  @Override
+  public Context optimize(final QueryContext qc, final VarScope scp) {
     if(qc.value != null) seqType = qc.value.seqType();
     return this;
   }
 
   @Override
   public Iter iter(final QueryContext qc) throws QueryException {
-    return checkCtx(qc).iter();
+    return ctxValue(qc).iter();
   }
 
   @Override
   public Value value(final QueryContext qc) throws QueryException {
-    return checkCtx(qc);
+    return ctxValue(qc);
   }
 
   @Override
   public Item item(final QueryContext qc, final InputInfo ii) throws QueryException {
-    return checkCtx(qc).item(qc, info);
+    return ctxValue(qc).item(qc, info);
   }
 
   @Override

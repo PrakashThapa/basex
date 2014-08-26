@@ -47,6 +47,22 @@ public final class RangeSeq extends Seq {
     return size < 1 ? Empty.SEQ : size == 1 ? Int.get(min) : new RangeSeq(min, size, asc);
   }
 
+  /**
+   * Returns the first value.
+   * @return start value
+   */
+  public long start() {
+    return start;
+  }
+
+  /**
+   * Returns the last value.
+   * @return end value
+   */
+  public long end() {
+    return asc ? start + size - 1 : start - size + 1;
+  }
+
   @Override
   public Object toJava() {
     final long[] obj = new long[(int) size];
@@ -56,7 +72,7 @@ public final class RangeSeq extends Seq {
 
   @Override
   public Item ebv(final QueryContext qc, final InputInfo ii) throws QueryException {
-    throw EBV.get(ii, this);
+    throw EBV_X.get(ii, this);
   }
 
   @Override
@@ -67,8 +83,8 @@ public final class RangeSeq extends Seq {
   @Override
   public boolean sameAs(final Expr cmp) {
     if(!(cmp instanceof RangeSeq)) return false;
-    final RangeSeq is = (RangeSeq) cmp;
-    return start == is.start && size == is.size && asc == is.asc;
+    final RangeSeq rs = (RangeSeq) cmp;
+    return start == rs.start && size == rs.size && asc == rs.asc;
   }
 
   @Override
@@ -89,22 +105,35 @@ public final class RangeSeq extends Seq {
   }
 
   @Override
+  public Value materialize(final InputInfo ii) {
+    return this;
+  }
+
+  @Override
+  public Value atomValue(final InputInfo ii) {
+    return this;
+  }
+
+  @Override
+  public long atomSize() {
+    return size;
+  }
+
+  @Override
   public boolean homogeneous() {
     return true;
   }
 
   @Override
   public void plan(final FElem plan) {
-    final long s = start;
-    final long e = asc ? start + size - 1 : start - size + 1;
-    addPlan(plan, planElem(FROM, s, TO, e));
+    addPlan(plan, planElem(FROM, start(), TO, end()));
   }
 
   @Override
   public String toString() {
     final long s = asc ? start : start - size + 1;
     final long e = asc ? start + size - 1 : start;
-    final String str = PAR1 + s + ' ' + TO + ' ' + e + PAR2;
+    final String str = PAREN1 + s + ' ' + TO + ' ' + e + PAREN2;
     return asc ? str : Function.REVERSE.args(str);
   }
 }

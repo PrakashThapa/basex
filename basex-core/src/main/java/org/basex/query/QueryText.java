@@ -25,6 +25,8 @@ public interface QueryText {
   /** Parser token. */
   String ANY = "any";
   /** Parser token. */
+  String ARRAYSTR = "array";
+  /** Parser token. */
   String AS = "as";
   /** Parser token. */
   String ASCENDING = "ascending";
@@ -378,15 +380,15 @@ public interface QueryText {
   /** Parser token. */
   String ASSIGN = ":=";
   /** Parser token. */
-  String BR1 = "[";
+  String SQUARE1 = "[";
   /** Parser token. */
-  String BR2 = "]";
+  String SQUARE2 = "]";
   /** Parser token. */
   String EQNAME = "Q{";
   /** Parser token. */
-  String BRACE1 = "{";
+  String CURLY1 = "{";
   /** Parser token. */
-  String BRACE2 = "}";
+  String CURLY2 = "}";
   /** Parser token. */
   String CDATA = "<![CDATA[";
   /** Parser token. */
@@ -400,15 +402,17 @@ public interface QueryText {
   /** Parser token. */
   String IS = "=";
   /** Parser token. */
+  String EXCL = "!";
+  /** Parser token. */
   String XQ10 = "1.0";
   /** Parser token. */
   String XQ11 = "1.1";
   /** Parser token. */
   String XQ30 = "3.0";
   /** Parser token. */
-  String PAR1 = "(";
+  String PAREN1 = "(";
   /** Parser token. */
-  String PAR2 = ")";
+  String PAREN2 = ")";
   /** Parser token. */
   String PIPE = "|";
   /** Parser token. */
@@ -416,9 +420,11 @@ public interface QueryText {
   /** Parser token. */
   String PRAGMA2 = "#)";
   /** Parser Token. */
-  String PLHOLDER = "?";
+  String QUESTION = "?";
   /** Parser Token. */
   String ASTERISK = "*";
+  /** Parser token. */
+  String ARROW = "=>";
 
   // TOKENS ===================================================================
 
@@ -506,6 +512,8 @@ public interface QueryText {
   byte[] JSON = token("json");
   /** MAP token. */
   byte[] MAP = token(MAPSTR);
+  /** Array token. */
+  byte[] ARRAY = token(ARRAYSTR);
   /** Package token. */
   byte[] PKG = token("pkg");
   /** Process token. */
@@ -564,6 +572,8 @@ public interface QueryText {
   byte[] ERRORURI = token(W3URI + "/2005/xqt-errors");
   /** Map URI. */
   byte[] MAPURI = token(W3URI + "/2005/xpath-functions/map");
+  /** Array URI. */
+  byte[] ARRAYURI = token(W3URI + "/2005/xpath-functions/array");
   /** Annotations URI. */
   byte[] XQURI = token(W3URI + "/2012/xquery");
 

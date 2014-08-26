@@ -4,10 +4,11 @@ import static org.basex.core.Text.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
-import org.basex.query.ft.*;
+import org.basex.query.expr.constr.*;
+import org.basex.query.expr.ft.*;
+import org.basex.query.expr.gflwor.*;
+import org.basex.query.expr.path.*;
 import org.basex.query.func.*;
-import org.basex.query.gflwor.*;
-import org.basex.query.path.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.seq.*;
 import org.basex.query.var.*;
@@ -87,7 +88,7 @@ final class DOTData {
   };
 
   /**
-   * Returns the color for the specified string, or {@code null}.
+   * Returns the color for the specified string or {@code null}.
    * @param string string string
    * @return color
    */

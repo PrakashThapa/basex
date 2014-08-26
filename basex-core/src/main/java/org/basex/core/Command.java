@@ -286,6 +286,29 @@ public abstract class Command extends Proc {
   }
 
   /**
+   * Starts an update operation.
+   * @param data data reference
+   * @return success flag
+   */
+  protected final boolean startUpdate(final Data data) {
+    try {
+      data.startUpdate();
+      return true;
+    } catch(final IOException ex) {
+      info(Util.message(ex));
+      return false;
+    }
+  }
+
+  /**
+   * Finalizes an update operation.
+   * @param data data reference
+   */
+  protected final void finishUpdate(final Data data) {
+    data.finishUpdate();
+  }
+
+  /**
    * Returns the specified command option.
    * @param string string to be found
    * @param type options enumeration
@@ -313,18 +336,26 @@ public abstract class Command extends Proc {
   }
 
   /**
+   * Initializes the command execution.
+   * @param ctx database context
+   * @param os output stream
+   */
+  public void init(final Context ctx, final OutputStream os) {
+    perf = new Performance();
+    context = ctx;
+    options = ctx.options;
+    goptions = ctx.globalopts;
+    out = PrintOutput.get(os);
+  }
+
+  /**
    * Runs the command without permission, data and concurrency checks.
    * @param ctx database context
    * @param os output stream
    * @return result of check
    */
   public boolean run(final Context ctx, final OutputStream os) {
-    perf = new Performance();
-    context = ctx;
-    options = ctx.options;
-    goptions = ctx.globalopts;
-    out = PrintOutput.get(os);
-
+    init(ctx, os);
     try {
       return run();
     } catch(final ProcException ex) {

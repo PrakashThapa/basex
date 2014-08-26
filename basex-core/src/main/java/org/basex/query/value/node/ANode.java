@@ -73,6 +73,11 @@ public abstract class ANode extends Item {
       coll.compare(string(), it.string(ii)) : -it.diff(this, coll, ii);
   }
 
+  @Override
+  public final Item atomItem(final InputInfo ii) {
+    return type == NodeType.PI || type == NodeType.COM ? Str.get(string()) : new Atm(string());
+  }
+
   /**
    * Creates a copy of this node.
    * @return copy
@@ -269,7 +274,7 @@ public abstract class ANode extends Item {
   public abstract boolean hasChildren();
 
   /**
-   * Returns the value of the specified attribute, or {@code null}.
+   * Returns the value of the specified attribute or {@code null}.
    * @param name attribute to be found
    * @return attribute value
    */
@@ -278,7 +283,7 @@ public abstract class ANode extends Item {
   }
 
   /**
-   * Returns the value of the specified attribute, or {@code null}.
+   * Returns the value of the specified attribute or {@code null}.
    * @param name attribute to be found
    * @return attribute value
    */
@@ -287,7 +292,7 @@ public abstract class ANode extends Item {
   }
 
   /**
-   * Returns the value of the specified attribute, or {@code null}.
+   * Returns the value of the specified attribute or {@code null}.
    * @param name attribute to be found
    * @return attribute value
    */

@@ -6,7 +6,7 @@ import static org.basex.util.Token.*;
 import java.io.*;
 
 import org.basex.build.*;
-import org.basex.build.CsvOptions.*;
+import org.basex.build.CsvOptions.CsvFormat;
 import org.basex.io.serial.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
@@ -145,6 +145,6 @@ public final class CsvDirectSerializer extends CsvSerializer {
    * @throws IOException I/O exception
    */
   private static void error(final String msg, final Object... ext) throws IOException {
-    throw BXCS_SERIAL.getIO(Util.inf(msg, ext));
+    throw BXCS_SERIAL_X.getIO(Util.inf(msg, ext));
   }
 }

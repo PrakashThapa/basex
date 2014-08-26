@@ -6,7 +6,6 @@ import static org.basex.util.Token.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
-import org.basex.query.func.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
 import org.basex.util.hash.*;
@@ -83,12 +82,12 @@ public final class DecFormatter extends FormatUtil {
           else if(k.equals(DF_PM)) permille = cp;
           else if(k.equals(DF_ZG)) {
             z = zeroes(cp);
-            if(z == -1) throw INVDECFORM.get(info, k, v);
-            if(z != cp) throw INVDECZERO.get(info, (char)  cp);
+            if(z == -1) throw INVDECFORM_X_X.get(info, k, v);
+            if(z != cp) throw INVDECZERO_X.get(info, (char)  cp);
           }
         } else {
           // signs must have single character
-          throw INVDECSINGLE.get(info, k, v);
+          throw INVDECSINGLE_X_X.get(info, k, v);
         }
       }
     }
@@ -97,7 +96,7 @@ public final class DecFormatter extends FormatUtil {
     zero = z;
     final IntSet is = new IntSet();
     final int[] ss = { decimal, grouping, percent, permille, zero, optional, pattern };
-    for(final int s : ss) if(!is.add(s)) throw DUPLDECFORM.get(info, (char) s);
+    for(final int s : ss) if(!is.add(s)) throw DUPLDECFORM_X.get(info, (char) s);
 
     // create auxiliary strings
     final TokenBuilder tb = new TokenBuilder();
@@ -114,7 +113,7 @@ public final class DecFormatter extends FormatUtil {
    * @return string representation
    * @throws QueryException query exception
    */
-  public byte[] format(final InputInfo info, final Item number, final byte[] picture)
+  public byte[] format(final InputInfo info, final ANum number, final byte[] picture)
       throws QueryException {
 
     // find pattern separator and sub-patterns
@@ -126,13 +125,13 @@ public final class DecFormatter extends FormatUtil {
     } else {
       tl.add(substring(pic, 0, i));
       pic = substring(pic, i + cl(pic, i));
-      if(contains(pic, pattern)) throw PICNUM.get(info, picture);
+      if(contains(pic, pattern)) throw PICNUM_X.get(info, picture);
       tl.add(pic);
     }
     final byte[][] patterns = tl.finish();
 
     // check and analyze patterns
-    if(!check(patterns)) throw PICNUM.get(info, picture);
+    if(!check(patterns)) throw PICNUM_X.get(info, picture);
     final Picture[] pics = analyze(patterns);
 
     // return formatted string
@@ -273,7 +272,7 @@ public final class DecFormatter extends FormatUtil {
    * @return picture variables
    * @throws QueryException query exception
    */
-  private byte[] format(final Item it, final Picture[] pics, final InputInfo ii)
+  private byte[] format(final ANum it, final Picture[] pics, final InputInfo ii)
       throws QueryException {
 
     // return results for NaN
@@ -291,10 +290,10 @@ public final class DecFormatter extends FormatUtil {
       intgr.add(inf);
     } else {
       // convert and round number
-      Item num = it;
-      if(pic.pc) num = Calc.MULT.ev(ii, num, Int.get(100));
-      if(pic.pm) num = Calc.MULT.ev(ii, num, Int.get(1000));
-      num = FNNum.abs(FNNum.round(num, num.dbl(ii), pic.maxFrac, true, ii), ii);
+      ANum num = it;
+      if(pic.pc) num = (ANum) Calc.MULT.ev(ii, num, Int.get(100));
+      if(pic.pm) num = (ANum) Calc.MULT.ev(ii, num, Int.get(1000));
+      num = num.round(pic.maxFrac, true).abs();
 
       // convert positive number to string, chop leading zero
       final String s = (num instanceof Dbl || num instanceof Flt ?

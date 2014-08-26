@@ -8,7 +8,7 @@ import java.io.*;
 import org.basex.build.*;
 import org.basex.core.*;
 import org.basex.gui.*;
-import org.basex.gui.GUIConstants.*;
+import org.basex.gui.GUIConstants.Msg;
 import org.basex.gui.layout.*;
 import org.basex.util.options.*;
 
@@ -33,7 +33,7 @@ final class DialogHtmlParser extends DialogParser {
    */
   DialogHtmlParser(final BaseXDialog d, final MainOptions opts) {
     super(d);
-    hopts = opts.get(MainOptions.HTMLPARSER);
+    hopts = new HtmlOptions(opts.get(MainOptions.HTMLPARSER));
 
     final boolean avl = HtmlParser.available();
     final BaseXBack pp  = new BaseXBack(new TableLayout(3, 1, 0, 8));

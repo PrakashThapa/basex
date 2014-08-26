@@ -32,7 +32,7 @@ public final class StaticContext {
   public byte[] elemNS;
   /** Default function namespace. */
   public byte[] funcNS = FNURI;
-  /** Context item static type. */
+  /** Static type of context value. */
   public SeqType contextType;
 
   /** Construction mode. */
@@ -82,7 +82,7 @@ public final class StaticContext {
   }
 
   /**
-   * Returns an IO representation of the static base URI, or {@code null}.
+   * Returns an IO representation of the static base URI or {@code null}.
    * @return IO reference
    */
   public IO baseIO() {

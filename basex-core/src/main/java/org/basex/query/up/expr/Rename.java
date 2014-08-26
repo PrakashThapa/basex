@@ -6,6 +6,7 @@ import static org.basex.util.Token.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
+import org.basex.query.expr.constr.*;
 import org.basex.query.iter.*;
 import org.basex.query.up.*;
 import org.basex.query.up.primitives.*;
@@ -41,7 +42,7 @@ public final class Rename extends Update {
     final Item i = t.next();
 
     // check target constraints
-    if(i == null) throw UPSEQEMP.get(info, Util.className(this));
+    if(i == null) throw UPSEQEMP_X.get(info, Util.className(this));
     if(t.next() != null) throw UPWRTRGTYP.get(info);
 
     final CNode ex;

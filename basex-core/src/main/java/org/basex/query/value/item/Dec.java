@@ -18,33 +18,10 @@ import org.basex.util.*;
  * @author Christian Gruen
  */
 public final class Dec extends ANum {
-  /** Maximum unsigned long values. */
-  public static final BigDecimal MAXULNG = new BigDecimal(Long.MAX_VALUE).multiply(
-      BigDecimal.valueOf(2)).add(BigDecimal.ONE);
-
   /** Zero value. */
   private static final Dec ZERO = new Dec(BigDecimal.ZERO);
   /** Decimal value. */
   private final BigDecimal value;
-
-  /**
-   * Constructor.
-   * @param t string representation
-   */
-  public Dec(final byte[] t) {
-    super(AtomType.DEC);
-    value = new BigDecimal(Token.string(trim(t)));
-  }
-
-  /**
-   * Constructor.
-   * @param value decimal value
-   * @param type string representation
-   */
-  public Dec(final BigDecimal value, final Type type) {
-    super(type);
-    this.value = value;
-  }
 
   /**
    * Constructor.
@@ -104,15 +81,35 @@ public final class Dec extends ANum {
   }
 
   @Override
-  public boolean eq(final Item it, final Collation coll, final InputInfo ii)
-      throws QueryException {
+  public Dec abs() {
+    return value.signum() == -1 ? Dec.get(value.negate()) : this;
+  }
+
+  @Override
+  public Dec ceiling() {
+    return Dec.get(value.setScale(0, BigDecimal.ROUND_CEILING));
+  }
+
+  @Override
+  public Dec floor() {
+    return Dec.get(value.setScale(0, BigDecimal.ROUND_FLOOR));
+  }
+
+  @Override
+  public Dec round(final int scale, final boolean even) {
+    final int s = value.signum();
+    return s == 0 ? this : Dec.get(value.setScale(scale, even ? BigDecimal.ROUND_HALF_EVEN :
+           s == 1 ? BigDecimal.ROUND_HALF_UP : BigDecimal.ROUND_HALF_DOWN));
+  }
+
+  @Override
+  public boolean eq(final Item it, final Collation coll, final InputInfo ii) throws QueryException {
     return it.type == AtomType.DBL || it.type == AtomType.FLT ?
         it.eq(this, coll, ii) : value.compareTo(it.dec(ii)) == 0;
   }
 
   @Override
-  public int diff(final Item it, final Collation coll, final InputInfo ii)
-      throws QueryException {
+  public int diff(final Item it, final Collation coll, final InputInfo ii) throws QueryException {
     final double d = it.dbl(ii);
     return d == Double.NEGATIVE_INFINITY ? -1 : d == Double.POSITIVE_INFINITY ? 1 :
       Double.isNaN(d) ? UNDEF : value.compareTo(it.dec(ii));
@@ -120,7 +117,7 @@ public final class Dec extends ANum {
 
   @Override
   public Object toJava() {
-    return type == AtomType.ULN ? new BigInteger(value.toString()) : value;
+    return value;
   }
 
   @Override

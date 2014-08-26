@@ -18,7 +18,6 @@ import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
-import org.basex.query.var.*;
 import org.basex.util.*;
 
 /**
@@ -27,7 +26,7 @@ import org.basex.util.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
-public final class Unit {
+final class Unit {
   /** Database context. */
   private final Context ctx;
   /** File. */
@@ -35,10 +34,8 @@ public final class Unit {
   /** Parent process. */
   private final Proc proc;
 
-  /** File contents. */
+  /** Query string. */
   private String input;
-  /** Functions. */
-  private StaticFunc[] funcs;
   /** Currently processed function. */
   private StaticFunc current;
 
@@ -77,14 +74,13 @@ public final class Unit {
     final ArrayList<StaticFunc> test = new ArrayList<>(0);
     final Performance perf = new Performance();
 
+    final QueryContext qc = new QueryContext(ctx);
     try {
-      final QueryContext qc = new QueryContext(ctx);
       input = string(file.read());
       qc.parse(input, file.path(), null);
-      funcs = qc.funcs.funcs();
 
       // loop through all functions
-      for(final StaticFunc sf : funcs) {
+      for(final StaticFunc sf : qc.funcs.funcs()) {
         // find Unit annotations
         final Ann ann = sf.ann;
         final int as = ann.size();
@@ -95,8 +91,8 @@ public final class Unit {
         if(!xq) continue;
 
         // Unit function:
-        if(sf.ann.contains(Ann.Q_PRIVATE)) throw UNIT_PRIVATE.get(null, sf.name.local());
-        if(sf.args.length > 0) throw UNIT_ARGS.get(null, sf.name.local());
+        if(sf.ann.contains(Ann.Q_PRIVATE)) throw UNIT_PRIVATE_X.get(null, sf.name.local());
+        if(sf.args.length > 0) throw UNIT_ARGS_X.get(null, sf.name.local());
 
         if(indexOf(sf, BEFORE) != -1) before.add(sf);
         if(indexOf(sf, AFTER) != -1) after.add(sf);
@@ -119,7 +115,7 @@ public final class Unit {
           if(vs == 2 && eq(EXPECTED, values.itemAt(0).string(null))) {
             code = values.itemAt(1).string(null);
           } else {
-            throw UNIT_ANN.get(null, '%', sf.ann.names[0]);
+            throw UNIT_ANN_X_X.get(null, '%', sf.ann.names[0]);
           }
         }
 
@@ -142,20 +138,7 @@ public final class Unit {
               testcase.add(new FElem(FAILURE).add(new FElem(EXPECTED).add(code)));
             }
           } catch(final QueryException ex) {
-            final QNm name = ex.qname();
-            if(code == null || !eq(code, name.local())) {
-              final FElem error;
-              final boolean fail = Err.UNIT_ASSERT.eq(name);
-              if(fail) {
-                failures++;
-                error = new FElem(FAILURE);
-              } else {
-                errors++;
-                error = new FElem(ERROR);
-              }
-              addError(ex, error, fail);
-              testcase.add(error);
-            }
+            addError(ex, testcase, code);
           }
         } else {
           // skip test
@@ -171,20 +154,18 @@ public final class Unit {
       for(final StaticFunc sf : afterModule) eval(sf);
 
     } catch(final QueryException ex) {
-      final FElem error;
       if(current == null) {
-        // handle errors caused by parsing or compiling a module
-        error = new FElem(ERROR);
-        try {
-          addError(ex, error, true);
-        } catch(final QueryException ignored) { }
+        // handle errors caused by parsing or compilation
+        addError(ex, suite, null);
       } else {
-        // handle errors caused by initializing unit functions
-        error = new FElem(TESTCASE).add(NAME, current.name.local());
-        error.add(TIME, time(perf));
+        // handle errors caused by initializing or finalizing unit functions
+        final FElem tc = new FElem(TESTINIT).add(NAME, current.name.local()).add(TIME, time(perf));
+        suite.add(tc);
+        addError(ex, tc, null);
       }
-      suite.add(error);
-      errors++;
+
+    } finally {
+      qc.close();
     }
 
     if(suite.hasChildren()) {
@@ -198,43 +179,47 @@ public final class Unit {
   }
 
   /**
-   * Adds error information to the specified node.
+   * Adds an error element to the specified test case.
    * @param ex exception
-   * @param error error element
-   * @param fail fail (unit error) flag
-   * @throws QueryException query exception
+   * @param testcase testcase element
+   * @param code error code (may be {@code null})
    */
-  private void addError(final QueryException ex, final FElem error, final boolean fail)
-      throws QueryException {
+  private void addError(final QueryException ex, final FElem testcase, final byte[] code) {
+    final QNm name = ex.qname();
+    if(code == null || !eq(code, name.local())) {
+      final FElem error;
+      final boolean fail = UNIT_ASSERT.eq(name);
+      if(fail) {
+        failures++;
+        error = new FElem(FAILURE);
+      } else {
+        errors++;
+        error = new FElem(ERROR);
+      }
+      error.add(LINE, token(ex.line()));
+      error.add(COLUMN, token(ex.column()));
+      final String url = IO.get(ex.file()).url();
+      if(!file.url().equals(url)) error.add(URI, url);
 
-    error.add(LINE, token(ex.line()));
-    error.add(COLUMN, token(ex.column()));
-    final String url = IO.get(ex.file()).url();
-    if(!file.url().equals(url)) error.add(URI, url);
+      if(ex instanceof UnitException) {
+        // unit exception: add expected and returned values
+        final UnitException ue = (UnitException) ex;
+        error.add(element(ue.returned, RETURNED, ue.count));
+        error.add(element(ue.expected, EXPECTED, ue.count));
+      } else if(!fail) {
+        // exception other than failure: add type
+        error.add(TYPE, ex.qname().prefixId(QueryText.ERRORURI));
+      }
 
-    if(ex instanceof UnitException) {
-      // unit exception: add expected and returned values
-      final UnitException ue = (UnitException) ex;
-      error.add(elem(ue.returned, RETURNED, ue.count));
-      error.add(elem(ue.expected, EXPECTED, ue.count));
-    } else if(fail) {
-      // unit failure:
+      // add info
       final Value v = ex.value();
-      if(v.isItem()) {
-        // add attached value
-        if(v.type.isNode()) {
-          error.add((ANode) v);
-        } else {
-          error.add(((Item) v).string(null));
-        }
+      if(v instanceof Item) {
+        error.add(element((Item) v, INFO, -1));
       } else {
         // otherwise, add error message
-        error.add(ex.getLocalizedMessage());
+        error.add(new FElem(INFO).add(ex.getLocalizedMessage()));
       }
-    } else {
-      // any other exception: add type and error message
-      error.add(TYPE, ex.qname().prefixId(QueryText.ERRORURI));
-      error.add(ex.getLocalizedMessage());
+      testcase.add(error);
     }
   }
 
@@ -242,19 +227,22 @@ public final class Unit {
    * Creates a new element.
    * @param it item
    * @param name name (expected/returned)
-   * @param c item count
+   * @param c item count (ignore it {@code -1})
    * @return new element
-   * @throws QueryException query exception
    */
-  private static FElem elem(final Item it, final byte[] name, final int c) throws QueryException {
+  private static FElem element(final Item it, final byte[] name, final int c) {
     final FElem exp = new FElem(name);
     if(it != null) {
       if(it instanceof ANode) {
         exp.add((ANode) it);
       } else {
-        exp.add(it.string(null));
+        try {
+          exp.add(it.string(null));
+        } catch(final QueryException ignored) {
+          exp.add(chop(it.toString(), null));
+        }
       }
-      exp.add(ITEM, token(c)).add(TYPE, it.type.toString());
+      if(c != -1) exp.add(ITEM, token(c)).add(TYPE, it.type.toString());
     }
     return exp;
   }
@@ -271,23 +259,29 @@ public final class Unit {
     qctx.listen = proc.listen;
     try {
       qctx.parse(input, file.path(), null);
-
-      // wrap function with a function call
-      final StaticFuncCall sfc = new StaticFuncCall(
-          func.name, new Expr[0], func.sc, func.info).init(func);
-      final MainModule mm = new MainModule(sfc, new VarScope(func.sc), null, func.sc);
-
-      // assign main module and http context and register process
-      qctx.mainModule(mm);
+      qctx.mainModule(new MainModule(find(qctx, func), new Expr[0]));
       qctx.compile();
 
       final Iter iter = qctx.iter();
-      while(iter.next() != null) throw UNIT_EMPTY.get(null, func.name.local());
+      while(iter.next() != null) throw UNIT_EMPTY_X.get(null, func.name.local());
 
     } finally {
       proc.proc(null);
       qctx.close();
     }
+  }
+
+  /**
+   * Returns the specified function from the given query context.
+   * @param qctx query context.
+   * @param func function to be found
+   * @return function
+   */
+  private static StaticFunc find(final QueryContext qctx, final StaticFunc func) {
+    for(final StaticFunc sf : qctx.funcs.funcs()) {
+      if(func.info.equals(sf.info)) return sf;
+    }
+    return null;
   }
 
   /**
@@ -306,7 +300,7 @@ public final class Unit {
     for(int a = 0; a < as; a++) {
       final QNm nm = ann.names[a];
       if(eq(nm.uri(), QueryText.UNITURI) && eq(nm.local(), name)) {
-        if(pos != -1) throw UNIT_TWICE.get(null, '%', nm.local());
+        if(pos != -1) throw UNIT_TWICE_X_X.get(null, '%', nm.local());
         pos = a;
       }
     }

@@ -11,7 +11,6 @@ import org.basex.build.xml.*;
 import org.basex.core.*;
 import org.basex.io.*;
 import org.basex.query.*;
-import org.basex.query.util.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
@@ -49,7 +48,7 @@ public enum NodeType implements Type {
       if(value instanceof ProcessingInstruction) return new FPI((ProcessingInstruction) value);
       final Matcher m = Pattern.compile("<\\?(.*?) (.*)\\?>").matcher(value.toString());
       if(m.find()) return new FPI(m.group(1), m.group(2));
-      throw NODEERR.get(ii, this, chop(value, ii));
+      throw NODEERR_X_X.get(ii, this, chop(value, ii));
     }
   },
 
@@ -63,7 +62,7 @@ public enum NodeType implements Type {
       try {
         return new DBNode(new IOContent(value.toString())).children().next();
       } catch(final IOException ex) {
-        throw NODEERR.get(ii, this, ex);
+        throw NODEERR_X_X.get(ii, this, ex);
       }
     }
   },
@@ -91,7 +90,7 @@ public enum NodeType implements Type {
         if(string.startsWith("<")) return new DBNode(new IOContent(string));
         return new FDoc().add(new FTxt(string));
       } catch(final IOException ex) {
-        throw NODEERR.get(ii, this, ex);
+        throw NODEERR_X_X.get(ii, this, ex);
       }
     }
   },
@@ -114,7 +113,7 @@ public enum NodeType implements Type {
       if(value instanceof Attr) return new FAttr((Attr) value);
       final Matcher m = Pattern.compile(" (.*?)=\"(.*)\"").matcher(value.toString());
       if(m.find()) return new FAttr(m.group(1), m.group(2));
-      throw NODEERR.get(ii, this, chop(value, ii));
+      throw NODEERR_X_X.get(ii, this, chop(value, ii));
     }
   },
 
@@ -127,7 +126,7 @@ public enum NodeType implements Type {
       if(value instanceof Comment) return new FComm((Comment) value);
       final Matcher m = Pattern.compile("<!--(.*?)-->").matcher(value.toString());
       if(m.find()) return new FComm(m.group(1));
-      throw NODEERR.get(ii, this, chop(value, ii));
+      throw NODEERR_X_X.get(ii, this, chop(value, ii));
     }
   },
 
@@ -162,11 +161,6 @@ public enum NodeType implements Type {
     this.name = Token.token(name);
     this.parent = parent;
     this.id = id;
-  }
-
-  @Override
-  public final boolean isNode() {
-    return true;
   }
 
   @Override
@@ -226,7 +220,7 @@ public enum NodeType implements Type {
 
   @Override
   public final Type union(final Type t) {
-    return t.isNode() ? this == t ? this : NOD : AtomType.ITEM;
+    return t instanceof NodeType ? this == t ? this : NOD : AtomType.ITEM;
   }
 
   @Override
@@ -258,7 +252,7 @@ public enum NodeType implements Type {
    * @throws QueryException query exception
    */
   final Item error(final Item it, final InputInfo ii) throws QueryException {
-    throw Err.castError(ii, it, this);
+    throw castError(ii, it, this);
   }
 
   @Override

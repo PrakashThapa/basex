@@ -7,6 +7,7 @@ import org.basex.query.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
+import org.basex.query.value.type.SeqType.Occ;
 import org.basex.query.var.*;
 import org.basex.util.*;
 import org.basex.util.hash.*;
@@ -40,34 +41,35 @@ public final class Unary extends Single {
 
   @Override
   public Expr optimize(final QueryContext qc, final VarScope scp) throws QueryException {
-    seqType = expr.seqType();
-    if(!seqType.type.isNumber()) {
-      // expression will always yield a number, empty sequence or error
-      seqType = seqType.mayBeZero() ? SeqType.ITR_ZO : SeqType.ITR;
-    }
-    return expr.isValue() ? preEval(qc) : this;
+    if(expr.isValue()) return preEval(qc);
+
+    final SeqType st = expr.seqType();
+    final Type t = st.type;
+    seqType = SeqType.get(t.isUntyped() ? AtomType.DBL : t.isNumber() ? t : AtomType.ITR,
+      st.one() && !st.mayBeArray() ? Occ.ONE : Occ.ZERO_ONE);
+    return this;
   }
 
   @Override
   public Item item(final QueryContext qc, final InputInfo ii) throws QueryException {
-    final Item it = expr.item(qc, info);
+    final Item it = expr.atomItem(qc, info);
     if(it == null) return null;
-    final Type ip = it.type;
 
-    if(!ip.isNumberOrUntyped()) throw numberError(this, it);
-    final double d = it.dbl(info);
-    if(ip.isUntyped()) return Dbl.get(minus ? -d : d);
+    final Type ip = it.type;
+    if(ip.isUntyped()) {
+      final double d = it.dbl(info);
+      return Dbl.get(minus ? -d : d);
+    }
+    if(!ip.isNumber()) throw numberError(this, it);
 
     if(!minus) return it;
-    switch((AtomType) ip) {
-      case DBL: return Dbl.get(-d);
-      case FLT: return Flt.get(-it.flt(info));
-      case DEC: return Dec.get(it.dec(info).negate());
-      default:
-        final long l = it.itr(info);
-        if(l == Long.MIN_VALUE) throw RANGE.get(info, it);
-        return Int.get(-l);
-    }
+    if(ip == AtomType.DBL) return Dbl.get(-it.dbl(info));
+    if(ip == AtomType.FLT) return Flt.get(-it.flt(info));
+    if(ip == AtomType.DEC) return Dec.get(it.dec(info).negate());
+    // default: integer
+    final long l = it.itr(info);
+    if(l == Long.MIN_VALUE) throw RANGE_X.get(info, it);
+    return Int.get(-l);
   }
 
   @Override

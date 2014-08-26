@@ -2,6 +2,7 @@ package org.basex.http.restxq;
 
 import static org.basex.http.HTTPMethod.*;
 import static org.basex.http.restxq.RestXqText.*;
+import static org.basex.query.util.Err.*;
 import static org.basex.util.Token.*;
 
 import java.io.*;
@@ -17,11 +18,10 @@ import org.basex.io.*;
 import org.basex.io.serial.*;
 import org.basex.query.*;
 import org.basex.query.expr.*;
+import org.basex.query.expr.path.*;
+import org.basex.query.expr.path.Test.Kind;
 import org.basex.query.func.*;
 import org.basex.query.iter.*;
-import org.basex.query.path.*;
-import org.basex.query.path.Test.Kind;
-import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.seq.*;
@@ -54,7 +54,7 @@ final class RestXqFunction implements Comparable<RestXqFunction> {
   RestXqPath path;
 
   /** Error. */
-  RestXqError error;
+  private RestXqError error;
   /** Query parameters. */
   private final ArrayList<RestXqParam> errorParams = new ArrayList<>();
 
@@ -68,7 +68,7 @@ final class RestXqFunction implements Comparable<RestXqFunction> {
   private final ArrayList<RestXqParam> cookieParams = new ArrayList<>();
 
   /** Query context. */
-  private final QueryContext context;
+  private final QueryContext qc;
   /** Consumed media types. */
   private final StringList consumes = new StringList();
   /** Returned media types. */
@@ -78,14 +78,14 @@ final class RestXqFunction implements Comparable<RestXqFunction> {
 
   /**
    * Constructor.
-   * @param uf associated user function
+   * @param function associated user function
    * @param qc query context
-   * @param m associated module
+   * @param module associated module
    */
-  RestXqFunction(final StaticFunc uf, final QueryContext qc, final RestXqModule m) {
-    function = uf;
-    context = qc;
-    module = m;
+  RestXqFunction(final StaticFunc function, final QueryContext qc, final RestXqModule module) {
+    this.function = function;
+    this.qc = qc;
+    this.module = module;
     output = qc.serParams();
   }
 
@@ -315,7 +315,7 @@ final class RestXqFunction implements Comparable<RestXqFunction> {
    * @return exception
    */
   private static QueryException error(final InputInfo info, final String msg, final Object... ext) {
-    return Err.BASX_RESTXQ.get(info, Util.info(msg, ext));
+    return BASX_RESTXQ_X.get(info, Util.info(msg, ext));
   }
 
   @Override
@@ -429,8 +429,8 @@ final class RestXqFunction implements Comparable<RestXqFunction> {
         // casts and binds the value
         final SeqType decl = var.declaredType();
         final Value val = value.seqType().instanceOf(decl) ? value :
-          decl.cast(value, context, function.sc, null);
-        args[f] = var.checkType(val, context, null, false);
+          decl.cast(value, qc, function.sc, null);
+        args[f] = var.checkType(val, qc, null, false);
         break;
       }
     }

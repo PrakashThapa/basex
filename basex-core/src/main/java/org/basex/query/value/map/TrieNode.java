@@ -23,20 +23,15 @@ abstract class TrieNode {
   /** The empty node. */
   static final TrieNode EMPTY = new TrieNode(0) {
     @Override
-    StringBuilder toString(final StringBuilder sb, final String ind) {
-      return sb.append("{ }"); }
+    StringBuilder toString(final StringBuilder sb, final String ind) { return sb.append("{ }"); }
     @Override
-    TrieNode delete(final int h, final Item k, final int l, final InputInfo i) {
-      return this; }
+    TrieNode delete(final int h, final Item k, final int l, final InputInfo i) { return this; }
     @Override
-    Value get(final int h, final Item k, final int l, final InputInfo i) {
-      return null; }
+    Value get(final int h, final Item k, final int l, final InputInfo i) { return null; }
     @Override
-    boolean contains(final int h, final Item k, final int l, final InputInfo ii) {
-      return false; }
+    boolean contains(final int h, final Item k, final int l, final InputInfo ii) { return false; }
     @Override
-    TrieNode addAll(final TrieNode o, final int l, final InputInfo ii) {
-      return o; }
+    TrieNode addAll(final TrieNode o, final int l, final InputInfo ii) { return o; }
     @Override
     TrieNode add(final Leaf o, final int l, final InputInfo ii) { return o; }
     @Override
@@ -52,13 +47,15 @@ abstract class TrieNode {
     @Override
     int hash(final InputInfo ii) { return 0; }
     @Override
-    boolean deep(final InputInfo ii, final TrieNode o) { return this == o; }
+    boolean deep(final InputInfo ii, final TrieNode o, final Collation coll) { return this == o; }
     @Override
-    public TrieNode insert(final int h, final Item k, final Value v,
-        final int l, final InputInfo i) {
-      return new Leaf(h, k, v); }
+    public TrieNode insert(final int h, final Item k, final Value v, final int l,
+        final InputInfo i) { return new Leaf(h, k, v); }
     @Override
     StringBuilder toString(final StringBuilder sb) { return sb; }
+    @Override
+    void apply(final ValueBuilder vb, final FItem func, final QueryContext qc, final InputInfo ii)
+        throws QueryException { }
   };
 
   /** Size of this node. */
@@ -178,6 +175,17 @@ abstract class TrieNode {
   abstract void keys(final ValueBuilder ks);
 
   /**
+   * Applies a function on all entries.
+   * @param vb value builder
+   * @param func function to apply on keys and values
+   * @param qc query context
+   * @param ii input info
+   * @throws QueryException TODO
+   */
+  abstract void apply(final ValueBuilder vb, final FItem func, QueryContext qc, InputInfo ii)
+      throws QueryException;
+
+  /**
    * Calculates the hash key for the given level.
    * @param hash hash value
    * @param lvl current level
@@ -213,12 +221,14 @@ abstract class TrieNode {
    * Compares two values.
    * @param a first value
    * @param b second value
+   * @param coll collation
    * @param ii input info
    * @return {@code true} if both values are deep equal, {@code false} otherwise
    * @throws QueryException query exception
    */
-  static boolean deep(final Value a, final Value b, final InputInfo ii) throws QueryException {
-    return a.size() == b.size() && Compare.deep(a, b, ii);
+  static boolean deep(final Value a, final Value b, final Collation coll, final InputInfo ii)
+      throws QueryException {
+    return a.size() == b.size() && new DeepCompare(ii).collation(coll).equal(a, b);
   }
 
   /**
@@ -230,7 +240,7 @@ abstract class TrieNode {
    * @throws QueryException query exception
    */
   static boolean eq(final Item a, final Item b, final InputInfo ii) throws QueryException {
-    return a.comparable(b) && a.eq(b, null, ii);
+    return a.equiv(b, null, ii);
   }
 
   /**
@@ -245,10 +255,12 @@ abstract class TrieNode {
    * Checks if this node is indistinguishable from the given node.
    * @param ii input info
    * @param o other node
+   * @param coll collation
    * @return result of check
    * @throws QueryException query exception
    */
-  abstract boolean deep(final InputInfo ii, final TrieNode o) throws QueryException;
+  abstract boolean deep(final InputInfo ii, final TrieNode o, final Collation coll)
+      throws QueryException;
 
   /**
    * Recursive helper for {@link Map#toString()}.

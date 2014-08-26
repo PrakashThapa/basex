@@ -95,18 +95,18 @@ public final class CmpN extends Cmp {
 
   @Override
   public Expr optimize(final QueryContext qc, final VarScope scp) throws QueryException {
-    seqType = SeqType.get(AtomType.BLN, exprs[0].size() == 1 && exprs[1].size() == 1 ?
-        Occ.ONE : Occ.ZERO_ONE);
+    seqType = SeqType.get(AtomType.BLN,
+        exprs[0].size() == 1 && exprs[1].size() == 1 ? Occ.ONE : Occ.ZERO_ONE);
     return optPre(oneIsEmpty() ? null : allAreValues() ? item(qc, info) : this, qc);
   }
 
   @Override
   public Bln item(final QueryContext qc, final InputInfo ii) throws QueryException {
-    final Item it1 = exprs[0].item(qc, info);
-    if(it1 == null) return null;
-    final Item it2 = exprs[1].item(qc, info);
-    if(it2 == null) return null;
-    return Bln.get(op.eval(checkNode(it1), checkNode(it2)));
+    final ANode n1 = toEmptyNode(exprs[0], qc);
+    if(n1 == null) return null;
+    final ANode n2 = toEmptyNode(exprs[1], qc);
+    if(n2 == null) return null;
+    return Bln.get(op.eval(n1, n2));
   }
 
   @Override

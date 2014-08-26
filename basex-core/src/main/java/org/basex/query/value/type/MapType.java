@@ -1,6 +1,7 @@
 package org.basex.query.value.type;
 
 import static org.basex.query.QueryText.*;
+import static org.basex.query.util.Err.*;
 
 import org.basex.query.*;
 import org.basex.query.util.*;
@@ -34,19 +35,19 @@ public final class MapType extends FuncType {
   }
 
   @Override
-  public Map cast(final Item item, final QueryContext qc, final StaticContext sc, final InputInfo ii)
-      throws QueryException {
+  public Map cast(final Item item, final QueryContext qc, final StaticContext sc,
+      final InputInfo ii) throws QueryException {
     if(item instanceof Map) {
       final Map m = (Map) item;
       if(m.hasType(this)) return m;
     }
-    throw Err.castError(ii, item, this);
+    throw castError(ii, item, this);
   }
 
   @Override
   public boolean eq(final Type t) {
     if(this == t) return true;
-    if(t.getClass() != MapType.class) return false;
+    if(!(t instanceof MapType)) return false;
     final MapType mt = (MapType) t;
     return keyType.eq(mt.keyType) && retType.eq(mt.retType);
   }
@@ -67,7 +68,7 @@ public final class MapType extends FuncType {
       final AtomType a = (AtomType) keyType.intersect(mt.keyType);
       return a != null ? get(a, retType.union(mt.retType)) : ANY_FUN;
     }
-    return t instanceof FuncType ? t.union(this) : AtomType.ITEM;
+    return t instanceof ArrayType ? ANY_FUN : t instanceof FuncType ? t.union(this) : AtomType.ITEM;
   }
 
   @Override

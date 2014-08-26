@@ -9,7 +9,8 @@ import org.basex.core.*;
 import org.basex.query.*;
 import org.basex.query.expr.*;
 import org.basex.query.expr.Expr.Flag;
-import org.basex.query.gflwor.*;
+import org.basex.query.expr.gflwor.*;
+import org.basex.query.func.fn.*;
 import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
@@ -80,7 +81,7 @@ public final class StaticFunc extends StaticDecl implements XQFunction {
         }
       }
     } catch(final QueryException qe) {
-      expr = FNInfo.error(qe, expr.seqType());
+      expr = FnError.get(qe, expr.seqType());
     } finally {
       scope.cleanUp(this);
       qc.value = cv;
@@ -115,7 +116,7 @@ public final class StaticFunc extends StaticDecl implements XQFunction {
   public String toString() {
     final TokenBuilder tb = new TokenBuilder(DECLARE).add(' ').addExt(ann);
     tb.add(FUNCTION).add(' ').add(name.string());
-    tb.add(PAR1).addSep(args, SEP).add(PAR2);
+    tb.add(PAREN1).addSep(args, SEP).add(PAREN2);
     if(declType != null) tb.add(' ' + AS + ' ' + declType);
     if(expr != null) tb.add(" { ").addExt(expr).add(" }; ");
     else tb.add(" external; ");
@@ -226,7 +227,7 @@ public final class StaticFunc extends StaticDecl implements XQFunction {
       if(!u && !expr.isVacuous()) throw UPEXPECTF.get(ii);
     } else if(u) {
       // uses updates, but is not declared as such
-      throw UPNOT.get(ii, description());
+      throw UPNOT_X.get(ii, description());
     }
   }
 

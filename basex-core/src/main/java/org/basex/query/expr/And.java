@@ -73,7 +73,7 @@ public final class And extends Logical {
     if(el.isEmpty()) return optPre(Bln.TRUE, qc);
 
     if(es != el.size()) qc.compInfo(OPTWRITE, this);
-    exprs = el.array();
+    exprs = el.finish();
     compFlatten(qc);
 
     boolean not = true;
@@ -89,7 +89,7 @@ public final class And extends Logical {
       final Expr[] inner = new Expr[exprs.length];
       for(int i = 0; i < inner.length; i++) inner[i] = ((Arr) exprs[i]).exprs[0];
       final Expr or = new Or(info, inner).optimize(qc, scp);
-      return Function.NOT.get(null, or).optimize(qc, scp);
+      return Function.NOT.get(null, info, or).optimize(qc, scp);
     }
 
     // return single expression if it yields a boolean
@@ -98,8 +98,9 @@ public final class And extends Logical {
 
   @Override
   public Item item(final QueryContext qc, final InputInfo ii) throws QueryException {
-    for(int i = 0; i < exprs.length - 1; i++)
+    for(int i = 0; i < exprs.length - 1; i++) {
       if(!exprs[i].ebv(qc, info).bool(info)) return Bln.FALSE;
+    }
     final Expr last = exprs[exprs.length - 1];
     return tailCall ? last.item(qc, ii) : last.ebv(qc, ii).bool(ii) ? Bln.TRUE : Bln.FALSE;
   }

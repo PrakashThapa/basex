@@ -1,18 +1,20 @@
 package org.basex.query.expr;
 
 import static org.basex.query.QueryText.*;
+import static org.basex.util.Token.*;
 
 import org.basex.data.*;
 import org.basex.index.name.*;
 import org.basex.index.query.*;
 import org.basex.index.stats.*;
 import org.basex.query.*;
+import org.basex.query.expr.path.*;
+import org.basex.query.expr.path.Test.Kind;
 import org.basex.query.iter.*;
-import org.basex.query.path.*;
-import org.basex.query.path.Test.Kind;
 import org.basex.query.util.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
+import org.basex.query.value.seq.*;
 import org.basex.query.value.type.*;
 import org.basex.query.var.*;
 import org.basex.util.*;
@@ -26,13 +28,13 @@ import org.basex.util.hash.*;
  */
 public final class CmpR extends Single {
   /** Minimum. */
-  private final double min;
+  public final double min;
   /** Include minimum value. */
-  private final boolean mni;
+  public final boolean mni;
   /** Maximum. */
-  private final double max;
+  public final double max;
   /** Include maximum value. */
-  private final boolean mxi;
+  public final boolean mxi;
   /** Flag for atomic evaluation. */
   private final boolean atomic;
 
@@ -54,7 +56,8 @@ public final class CmpR extends Single {
     this.max = max;
     this.mxi = mxi;
     seqType = SeqType.BLN;
-    atomic = expr.seqType().zeroOrOne();
+    final SeqType st = expr.seqType();
+    atomic = st.zeroOrOne() && !st.mayBeArray();
   }
 
   /**
@@ -62,15 +65,36 @@ public final class CmpR extends Single {
    * @param cmp expression to be converted
    * @return new or original expression
    */
-  static Expr get(final CmpG cmp) {
-    if(!(cmp.exprs[1] instanceof ANum)) return cmp;
-    final double d = ((ANum) cmp.exprs[1]).dbl();
-    final Expr expr = cmp.exprs[0];
-    switch(cmp.op.op) {
-      case GE: return new CmpR(expr, d, true, Double.POSITIVE_INFINITY, true, cmp.info);
-      case GT: return new CmpR(expr, d, false, Double.POSITIVE_INFINITY, true, cmp.info);
-      case LE: return new CmpR(expr, Double.NEGATIVE_INFINITY, true, d, true, cmp.info);
-      case LT: return new CmpR(expr, Double.NEGATIVE_INFINITY, true, d, false, cmp.info);
+  static ParseExpr get(final CmpG cmp) {
+    final Expr e = cmp.exprs[1];
+    if(e instanceof RangeSeq) {
+      final RangeSeq rs = (RangeSeq) e;
+      return get(cmp, rs.start(), rs.end());
+    }
+    if(e instanceof ANum) {
+      final double d = ((ANum) cmp.exprs[1]).dbl();
+      return get(cmp, d, d);
+    }
+    return cmp;
+  }
+
+  /**
+   * Tries to convert the specified expression into a range expression.
+   * @param cmp expression to be converted
+   * @param start start
+   * @param end end (must be larger than end)
+   * @return new or original expression
+   */
+  private static ParseExpr get(final CmpG cmp, final double start, final double end) {
+    final Expr e = cmp.exprs[0];
+    // type must be numeric
+    if(!e.seqType().type.isNumberOrUntyped()) return cmp;
+    switch(cmp.op) {
+      case EQ: return new CmpR(e, start, true, end, true, cmp.info);
+      case GE: return new CmpR(e, start, true, Double.POSITIVE_INFINITY, true, cmp.info);
+      case GT: return new CmpR(e, start, false, Double.POSITIVE_INFINITY, true, cmp.info);
+      case LE: return new CmpR(e, Double.NEGATIVE_INFINITY, true, end, true, cmp.info);
+      case LT: return new CmpR(e, Double.NEGATIVE_INFINITY, true, end, false, cmp.info);
       default: return cmp;
     }
   }
@@ -86,7 +110,7 @@ public final class CmpR extends Single {
     }
 
     // iterative evaluation
-    final Iter ir = qc.iter(expr);
+    final Iter ir = expr.atomIter(qc, info);
     for(Item it; (it = ir.next()) != null;) {
       final double d = it.dbl(info);
       if((mni ? d >= min : d > min) && (mxi ? d <= max : d < max)) return Bln.TRUE;
@@ -126,13 +150,24 @@ public final class CmpR extends Single {
     // estimate costs for range access; all values out of range: no results
     final NumericRange nr = new NumericRange(ii.text,
         Math.max(min, key.min), Math.min(max, key.max));
-    ii.costs = nr.min > nr.max || nr.max < key.min || nr.min > key.max ? 0 :
-      Math.max(1, data.meta.size / 5);
 
     // skip queries with no results
-    if(ii.costs == 0) return true;
+    if(nr.min > nr.max || nr.max < key.min || nr.min > key.max) {
+      ii.costs = 0;
+      return true;
+    }
+
+    // skip if numbers are negative, doubles, or of different string length
+    final int mnl = min >= 0 && (long) min == min ? token(min).length : -1;
+    final int mxl = max >= 0 && (long) max == max ? token(max).length : -1;
+    if(mnl != mxl || mnl == -1) return false;
+
+    // estimate costs (you conservative value)
+    ii.costs = Math.max(1, data.meta.size / 3);
+
     // don't use index if min/max values are infinite
-    if(min == Double.NEGATIVE_INFINITY && max == Double.POSITIVE_INFINITY) return false;
+    if(min == Double.NEGATIVE_INFINITY && max == Double.POSITIVE_INFINITY ||
+        Token.token((int) nr.min).length != Token.token((int) nr.max).length) return false;
 
     final TokenBuilder tb = new TokenBuilder();
     tb.add(mni ? '[' : '(').addExt(min).add(',').addExt(max).add(mxi ? ']' : ')');
@@ -149,7 +184,7 @@ public final class CmpR extends Single {
   private Stats key(final IndexInfo ii, final boolean text) {
     // statistics are not up-to-date
     final Data data = ii.ic.data;
-    if(!data.meta.uptodate || data.nspaces.size() != 0) return null;
+    if(!data.meta.uptodate || data.nspaces.size() != 0 || !(expr instanceof AxisPath)) return null;
 
     byte[] name = ii.name;
     if(name == null) {
@@ -166,7 +201,7 @@ public final class CmpR extends Single {
       name = ((NameTest) step.test).local;
     }
 
-    final Names names = text ? data.elmindex : data.atnindex;
+    final Names names = text ? data.elemNames : data.attrNames;
     final Stats key = names.stat(names.id(name));
     return key == null || key.type == StatsType.INTEGER ||
         key.type == StatsType.DOUBLE ? key : null;
@@ -185,9 +220,13 @@ public final class CmpR extends Single {
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
-    if(min != Double.NEGATIVE_INFINITY) sb.append(min).append(mni ? " <= " : " < ");
-    sb.append(expr);
-    if(max != Double.POSITIVE_INFINITY) sb.append(mxi ? " <= " : " < ").append(max);
+    if(min == max) {
+      sb.append(expr).append(" = ").append(min);
+    } else {
+      if(min != Double.NEGATIVE_INFINITY) sb.append(min).append(mni ? " <= " : " < ");
+      sb.append(expr);
+      if(max != Double.POSITIVE_INFINITY) sb.append(mxi ? " <= " : " < ").append(max);
+    }
     return sb.toString();
   }
 }

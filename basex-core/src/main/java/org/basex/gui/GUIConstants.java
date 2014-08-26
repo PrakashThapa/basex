@@ -1,6 +1,6 @@
 package org.basex.gui;
 
-import static org.basex.gui.GUIPopupCmd.*;
+import static org.basex.gui.GUICommand.*;
 import static org.basex.gui.GUIMenuCmd.*;
 
 import java.awt.*;
@@ -262,7 +262,7 @@ public final class GUIConstants {
   /** Bold character widths. */
   private static int[] bwidth;
   /** Monospace character widths. */
-  public static int[] mfwidth;
+  private static int[] mfwidth;
 
   // KEYS =====================================================================
 

@@ -35,7 +35,7 @@ public abstract class AQuery extends Command {
   private QueryInfo info;
 
   /** Query result. */
-  protected Result result;
+  Result result;
 
   /**
    * Protected constructor.
@@ -168,7 +168,7 @@ public abstract class AQuery extends Command {
 
   /**
    * Evaluates the query and returns the result as {@link DBNodes} instance.
-   * @return result, or {@code null} if result cannot be represented as {@link DBNodes} instance.
+   * @return result or {@code null} if result cannot be represented as {@link DBNodes} instance.
    */
   final DBNodes dbNodes() {
     try {
@@ -204,17 +204,17 @@ public abstract class AQuery extends Command {
    * @param ctx context
    * @return serialization parameters
    */
-  public SerializerOptions parameters(final Context ctx) {
-    SerializerOptions params = Serializer.OPTIONS;
+  public String parameters(final Context ctx) {
     try {
       qp(args[0], ctx);
       parse(null);
-      params = qp.qc.serParams();
+      return qp.qc.serParams().toString();
     } catch(final QueryException ex) {
       error(Util.message(ex));
+    } finally {
+      qp = null;
     }
-    qp = null;
-    return params;
+    return SerializerOptions.get(true).toString();
   }
 
   /**

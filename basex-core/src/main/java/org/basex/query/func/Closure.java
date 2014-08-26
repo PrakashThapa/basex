@@ -8,7 +8,8 @@ import java.util.Map.Entry;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
-import org.basex.query.gflwor.*;
+import org.basex.query.expr.gflwor.*;
+import org.basex.query.func.fn.*;
 import org.basex.query.iter.*;
 import org.basex.query.util.*;
 import org.basex.query.value.*;
@@ -159,7 +160,7 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
     try {
       expr = expr.compile(qc, scope);
     } catch(final QueryException qe) {
-      expr = FNInfo.error(qe, ret != null ? ret : expr.seqType());
+      expr = FnError.get(qe, ret != null ? ret : expr.seqType());
     } finally {
       scope.cleanUp(this);
     }
@@ -173,8 +174,8 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
   @Override
   public Expr optimize(final QueryContext qc, final VarScope scp) throws QueryException {
     final SeqType r = expr.seqType();
-    final SeqType retType = updating ? SeqType.EMP : ret == null || r.instanceOf(ret) ? r : ret;
-    seqType = FuncType.get(ann, args, retType).seqType();
+    final SeqType rt = updating ? SeqType.EMP : ret == null || r.instanceOf(ret) ? r : ret;
+    seqType = FuncType.get(ann, args, rt).seqType();
     size = 1;
 
     try {
@@ -185,7 +186,7 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
         if (inlined != null) expr = inlined;
       }
     } catch(final QueryException qe) {
-      expr = FNInfo.error(qe, ret != null ? ret : expr.seqType());
+      expr = FnError.get(qe, ret != null ? ret : expr.seqType());
     } finally {
       scope.cleanUp(this);
     }
@@ -338,12 +339,12 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
         sb.append("let ").append(e.getKey()).append(" := ").append(e.getValue()).append(' ');
       sb.append(RETURN).append(' ');
     }
-    sb.append(FUNCTION).append(PAR1);
+    sb.append(FUNCTION).append(PAREN1);
     for(int i = 0; i < args.length; i++) {
       if(i > 0) sb.append(", ");
       sb.append(args[i]);
     }
-    sb.append(PAR2).append(' ');
+    sb.append(PAREN2).append(' ');
     if(ret != null) sb.append("as ").append(ret).append(' ');
     sb.append("{ ").append(expr).append(" }");
     if(!nonLocal.isEmpty()) sb.append(')');
@@ -361,7 +362,7 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
       if(!u && !expr.isVacuous()) throw UPEXPECTF.get(ii);
     } else if(u) {
       // uses updates, but is not declared as such
-      throw UPNOT.get(ii, description());
+      throw UPNOT_X.get(ii, description());
     }
   }
 

@@ -15,7 +15,6 @@ import org.basex.io.*;
 import org.basex.io.out.*;
 import org.basex.io.serial.*;
 import org.basex.query.*;
-import org.basex.query.iter.*;
 import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
@@ -400,12 +399,9 @@ public abstract class W3CTS extends Main {
 
           if(xml || frag) {
             try {
-              final ValueIter vb = toIter(expect.replaceAll(
-                  "^<\\?xml.*?\\?>", "").trim(), frag);
-              if(Compare.deep(value.iter(), vb, (InputInfo) null)) break;
-              vb.reset();
-              final ValueIter ia = toIter(actual, frag);
-              if(Compare.deep(ia, vb, (InputInfo) null)) break;
+              final Value v = toValue(expect.replaceAll("^<\\?xml.*?\\?>", "").trim(), frag);
+              if(new DeepCompare().equal(value.iter(), v.iter())) break;
+              if(new DeepCompare().equal(toValue(actual, frag).iter(), v.iter())) break;
             } catch(final Throwable ex) {
               Util.errln('\n' + outname + ':');
               Util.stack(ex);
@@ -496,20 +492,20 @@ public abstract class W3CTS extends Main {
   }
 
   /**
-   * Creates an item iterator for the given XML fragment.
+   * Creates the given XML fragments as XQuery value.
    * @param xml fragment
    * @param frag fragment flag
    * @return iterator
    */
-  private ValueIter toIter(final String xml, final boolean frag) {
+  private Value toValue(final String xml, final boolean frag) {
     try {
       final String str = frag ? "<X>" + xml + "</X>" : xml;
       final Data d = MemBuilder.build(IO.get(str));
       final IntList il = new IntList();
       for(int p = frag ? 2 : 0; p < d.meta.size; p += d.size(p, d.kind(p))) il.add(p);
-      return DBNodeSeq.get(il, d, false, false).iter();
+      return DBNodeSeq.get(il, d, false, false);
     } catch(final IOException ex) {
-      return Str.get(Long.toString(System.nanoTime())).iter();
+      return Str.get(Long.toString(System.nanoTime()));
     }
   }
 

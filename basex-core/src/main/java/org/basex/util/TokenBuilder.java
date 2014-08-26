@@ -175,11 +175,7 @@ public final class TokenBuilder {
     final int s = size;
     final int cl = chars.length;
     final int l = cp <= 0x7F ? 1 : cp <= 0x7FF ? 2 : cp <= 0xFFF ? 3 : 4;
-
-    if(s + l > cl) {
-      final int ns = Math.max(s + l, (int) (cl * Array.RESIZE));
-      chars = Arrays.copyOf(chars, ns);
-    }
+    if(s + l > cl) chars = Arrays.copyOf(chars, Math.max(s + l, (int) (cl * Array.RESIZE)));
     Array.move(chars, pos, l, size - pos);
     size = pos;
     add(cp);
@@ -283,14 +279,12 @@ public final class TokenBuilder {
    * @return self reference
    */
   public TokenBuilder add(final byte[] value, final int start, final int end) {
-    final int l = end - start;
-    final int cl = chars.length;
-    if(size + l > cl) {
-      final int ns = Math.max(size + l, (int) (cl * Array.RESIZE));
-      chars = Arrays.copyOf(chars, ns);
-    }
-    System.arraycopy(value, start, chars, size, l);
-    size += l;
+    byte[] chrs = chars;
+    final int cl = chrs.length, l = end - start, s = size, ns = s + l;
+    if(ns > cl) chrs = Arrays.copyOf(chrs, Array.newSize(ns));
+    System.arraycopy(value, start, chrs, s, l);
+    chars = chrs;
+    size = ns;
     return this;
   }
 
@@ -375,8 +369,9 @@ public final class TokenBuilder {
    */
   public TokenBuilder trim() {
     final byte[] chrs = chars;
-    int s = size, c = -1;
+    int s = size;
     while(s > 0 && ws(chrs[s - 1])) --s;
+    int c = -1;
     while(++c < s && ws(chrs[c]));
     if(c != 0 && c != s) Array.move(chrs, c, -c, s - c);
     size = s - c;

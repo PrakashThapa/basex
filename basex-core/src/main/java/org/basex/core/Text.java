@@ -2,7 +2,13 @@ package org.basex.core;
 
 import static org.basex.core.Lang.*;
 
-import org.basex.core.parse.Commands.*;
+import org.basex.core.parse.Commands.CmdCreate;
+import org.basex.core.parse.Commands.CmdDrop;
+import org.basex.core.parse.Commands.CmdIndex;
+import org.basex.core.parse.Commands.CmdInfo;
+import org.basex.core.parse.Commands.CmdPerm;
+import org.basex.core.parse.Commands.CmdRepo;
+import org.basex.core.parse.Commands.CmdShow;
 import org.basex.util.*;
 
 /**
@@ -531,8 +537,6 @@ public interface Text {
 
   /** Database created. */
   String DB_CREATED_X_X = lang("db_created_%_%");
-  /** Path added. */
-  String PATH_ADDED_X_X = lang("path_added_%_%");
   /** Parse error. */
   String NOT_PARSED_X = lang("not_parsed_%");
 
@@ -546,6 +550,8 @@ public interface Text {
   String RES_RENAMED_X_X = lang("res_renamed_%_%");
   /** Resource replaced. */
   String RES_REPLACED_X_X = lang("res_replaced_%_%");
+  /** Resource added. */
+  String RES_ADDED_X = lang("res_added_%");
   /** "Resource Properties". */
   String RES_PROPS = lang("res_props");
 
@@ -1060,6 +1066,8 @@ public interface Text {
   String FILE_OR_DIR = lang("file_or_dir");
   /** Use Catalog file Checkbox. */
   String USE_CATALOG_FILE = lang("use_catalog_file");
+  /** Use XInclude. */
+  String USE_XINCLUDE = lang("use_xinclude");
   /** Use Catalog file not found on CP. */
   String HELP1_USE_CATALOG = lang("help1_use_catalog");
   /** Use Catalog file not found on CP. */

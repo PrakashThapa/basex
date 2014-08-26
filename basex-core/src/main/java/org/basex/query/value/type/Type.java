@@ -141,7 +141,7 @@ public interface Type {
   }
 
   /**
-   * Casts the specified item to this type.
+   * Casts the specified item to this item type.
    * @param item item to be converted
    * @param qc query context
    * @param sc static context
@@ -153,31 +153,31 @@ public interface Type {
       throws QueryException;
 
   /**
-   * Casts the specified Java value to this type.
+   * Casts the specified Java value to this item type.
    * @param value Java value
-   * @param ctx query context
+   * @param qc query context
    * @param sc static context
    * @param ii input info
    * @return new item
    * @throws QueryException query exception
    */
-  Value cast(final Object value, QueryContext ctx, final StaticContext sc, final InputInfo ii)
+  Value cast(final Object value, QueryContext qc, final StaticContext sc, final InputInfo ii)
       throws QueryException;
 
   /**
-   * Casts the specified string to this type.
+   * Casts the specified string to this item type.
    * @param value string object
-   * @param ctx query context
+   * @param qc query context
    * @param sc static context
    * @param ii input info
    * @return new item
    * @throws QueryException query exception
    */
-  Value castString(final String value, QueryContext ctx, final StaticContext sc, final InputInfo ii)
+  Value castString(final String value, QueryContext qc, final StaticContext sc, final InputInfo ii)
       throws QueryException;
 
   /**
-   * Returns the sequence type of items with this type.
+   * Returns a sequence type with this item type.
    * @return sequence type
    */
   SeqType seqType();
@@ -214,12 +214,6 @@ public interface Type {
    * @return intersection type or {@code null}
    */
   Type intersect(final Type type);
-
-  /**
-   * Checks if the type refers to a node.
-   * @return result of check
-   */
-  boolean isNode();
 
   /**
    * Checks if the type refers to a number.

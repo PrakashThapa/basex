@@ -1,14 +1,15 @@
 package org.basex.query.value.item;
 
 import static org.basex.query.QueryText.*;
+import static org.basex.query.util.Err.*;
 
 import java.util.*;
 
 import org.basex.core.*;
 import org.basex.query.*;
 import org.basex.query.expr.*;
+import org.basex.query.expr.gflwor.*;
 import org.basex.query.func.*;
-import org.basex.query.gflwor.*;
 import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.node.*;
@@ -26,7 +27,7 @@ import org.basex.util.hash.*;
 public final class FuncItem extends FItem implements Scope {
   /** Static context. */
   private final StaticContext sc;
-  /** Function name. */
+  /** Function name (may be {@code null}). */
   private final QNm name;
   /** Formal parameters. */
   private final Var[] params;
@@ -47,7 +48,7 @@ public final class FuncItem extends FItem implements Scope {
    * Constructor.
    * @param sc static context
    * @param ann function annotations
-   * @param name function name
+   * @param name function name (may be {@code null})
    * @param params function arguments
    * @param type function type
    * @param expr function body
@@ -62,7 +63,7 @@ public final class FuncItem extends FItem implements Scope {
    * Constructor.
    * @param sc static context
    * @param ann function annotations
-   * @param name function name
+   * @param name function name (may be {@code null})
    * @param params function arguments
    * @param type function type
    * @param expr function body
@@ -153,7 +154,7 @@ public final class FuncItem extends FItem implements Scope {
   public FItem coerceTo(final FuncType ft, final QueryContext qc, final InputInfo ii,
       final boolean opt) throws QueryException {
 
-    if(params.length != ft.argTypes.length) throw Err.castError(ii, this, ft);
+    if(params.length != ft.argTypes.length) throw castError(ii, this, ft);
     final FuncType tp = funcType();
     if(tp.instanceOf(ft)) return this;
 

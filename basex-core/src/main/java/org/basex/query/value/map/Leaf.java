@@ -2,6 +2,7 @@ package org.basex.query.value.map;
 
 import org.basex.query.*;
 import org.basex.query.iter.*;
+import org.basex.query.util.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
@@ -36,11 +37,10 @@ final class Leaf extends TrieNode {
   }
 
   @Override
-  TrieNode insert(final int h, final Item k, final Value v, final int l,
-      final InputInfo ii) throws QueryException {
+  TrieNode insert(final int h, final Item k, final Value v, final int l, final InputInfo ii)
+      throws QueryException {
     // same hash, replace or merge
-    if(h == hash) return eq(k, key, ii) ?
-        new Leaf(h, k, v) : new List(hash, key, value, k, v);
+    if(h == hash) return eq(k, key, ii) ? new Leaf(h, k, v) : new List(hash, key, value, k, v);
 
     // different hash, branch
     final TrieNode[] ch = new TrieNode[KIDS];
@@ -76,8 +76,7 @@ final class Leaf extends TrieNode {
 
   @Override
   StringBuilder toString(final StringBuilder sb, final String ind) {
-    return sb.append(ind).append("`-- ").append(key).append(
-        " => ").append(value).append('\n');
+    return sb.append(ind).append("`-- ").append(key).append(" => ").append(value).append('\n');
   }
 
   @Override
@@ -91,8 +90,7 @@ final class Leaf extends TrieNode {
         this : new List(hash, key, value, o.key, o.value);
 
     final TrieNode[] ch = new TrieNode[KIDS];
-    final int k = key(hash, l), ok = key(o.hash, l);
-    final int nu;
+    final int k = key(hash, l), ok = key(o.hash, l), nu;
 
     // same key? add recursively
     if(k == ok) {
@@ -103,7 +101,6 @@ final class Leaf extends TrieNode {
       ch[ok] = o;
       nu = 1 << k | 1 << ok;
     }
-
     return new Branch(ch, nu, 2);
   }
 
@@ -136,7 +133,6 @@ final class Leaf extends TrieNode {
       ch[ok] = o;
       nu = 1 << k | 1 << ok;
     }
-
     return new Branch(ch, nu, o.size + 1);
   }
 
@@ -146,8 +142,7 @@ final class Leaf extends TrieNode {
     final TrieNode[] ch = o.copyKids();
     final TrieNode old = ch[k];
     ch[k] = old == null ? this : old.addAll(this, l + 1, ii);
-    return new Branch(ch, o.used | 1 << k,
-        o.size + ch[k].size - (old != null ? old.size : 0));
+    return new Branch(ch, o.used | 1 << k, o.size + ch[k].size - (old != null ? old.size : 0));
   }
 
   @Override
@@ -165,15 +160,20 @@ final class Leaf extends TrieNode {
   }
 
   @Override
-  boolean hasType(final AtomType kt, final SeqType vt) {
-    return (kt == null || key.type.instanceOf(kt))
-        && (vt == null || vt.instance(value));
+  void apply(final ValueBuilder vb, final FItem func, final QueryContext qc, final InputInfo ii)
+      throws QueryException {
+    vb.add(func.invokeValue(qc, ii, key, value));
   }
 
   @Override
-  boolean deep(final InputInfo ii, final TrieNode o) throws QueryException {
-    return o instanceof Leaf && eq(key, ((Leaf) o).key, ii)
-        && deep(value, ((Leaf) o).value, ii);
+  boolean hasType(final AtomType kt, final SeqType vt) {
+    return (kt == null || key.type.instanceOf(kt)) && (vt == null || vt.instance(value));
+  }
+
+  @Override
+  boolean deep(final InputInfo ii, final TrieNode o, final Collation coll) throws QueryException {
+    return o instanceof Leaf && eq(key, ((Leaf) o).key, ii) &&
+        deep(value, ((Leaf) o).value, coll, ii);
   }
 
   @Override

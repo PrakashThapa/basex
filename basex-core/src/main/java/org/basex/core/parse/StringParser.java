@@ -213,7 +213,7 @@ public final class StringParser extends CmdParser {
         }
         break;
     }
-    throw Util.notExpected("command specified, but not implemented yet");
+    throw Util.notExpected("Command specified, but not implemented yet");
   }
 
   /**
@@ -375,9 +375,9 @@ public final class StringParser extends CmdParser {
 
   /**
    * Parses and returns a string result.
-   * @param input input string, or {@code null} if invalid
+   * @param input input string or {@code null} if invalid
    * @param cmd referring command; if specified, the result must not be empty
-   * @return string result, or {@code null}
+   * @return string result or {@code null}
    * @throws QueryException query exception
    */
   private String finish(final StringBuilder input, final Cmd cmd) throws QueryException {

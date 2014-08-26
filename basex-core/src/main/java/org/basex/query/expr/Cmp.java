@@ -2,8 +2,8 @@ package org.basex.query.expr;
 
 import org.basex.query.*;
 import org.basex.query.expr.CmpV.OpV;
+import org.basex.query.expr.path.*;
 import org.basex.query.func.*;
-import org.basex.query.path.*;
 import org.basex.query.util.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
@@ -64,7 +64,7 @@ public abstract class Cmp extends Arr {
   final Expr compCount(final OpV o) throws QueryException {
     // evaluate argument
     final Expr a = exprs[1];
-    if(!a.isItem()) return this;
+    if(!(a instanceof Item)) return this;
     final Item it = (Item) a;
     if(!it.type.isNumberOrUntyped()) return this;
 

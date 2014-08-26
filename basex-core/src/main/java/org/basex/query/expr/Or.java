@@ -58,7 +58,7 @@ public final class Or extends Logical {
 
     if(exprs.length != el.size()) {
       qc.compInfo(OPTWRITE, this);
-      exprs = el.array();
+      exprs = el.finish();
     }
     compFlatten(qc);
 
@@ -75,7 +75,7 @@ public final class Or extends Logical {
       final Expr[] inner = new Expr[exprs.length];
       for(int i = 0; i < inner.length; i++) inner[i] = ((Arr) exprs[i]).exprs[0];
       final Expr and = new And(info, inner).optimize(qc, scp);
-      return Function.NOT.get(null, and).optimize(qc, scp);
+      return Function.NOT.get(null, info, and).optimize(qc, scp);
     }
 
     // return single expression if it yields a boolean
@@ -110,7 +110,7 @@ public final class Or extends Logical {
     // use summarized costs for estimation
     ii.costs = costs;
     // no expressions means no costs: expression will later be ignored
-    ii.expr = el.size() == 1 ? el.get(0) : new Union(info, el.array());
+    ii.expr = el.size() == 1 ? el.get(0) : new Union(info, el.finish());
     return true;
   }
 

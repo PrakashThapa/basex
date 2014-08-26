@@ -101,7 +101,7 @@ public enum AtomType implements Type {
     @Override
     public Str cast(final Item item, final QueryContext qc, final StaticContext sc,
         final InputInfo ii) throws QueryException {
-      return new Str(norm(item.string(ii)), this);
+      return new Str(normalize(item.string(ii)), this);
     }
     @Override
     public Str cast(final Object value, final QueryContext qc, final StaticContext sc,
@@ -115,7 +115,7 @@ public enum AtomType implements Type {
     @Override
     public Str cast(final Item item, final QueryContext qc, final StaticContext sc,
         final InputInfo ii) throws QueryException {
-      final byte[] v = norm(item.string(ii));
+      final byte[] v = normalize(item.string(ii));
       if(!LANGPATTERN.matcher(Token.string(v)).matches()) invValue(item, ii);
       return new Str(v, this);
     }
@@ -131,7 +131,7 @@ public enum AtomType implements Type {
     @Override
     public Str cast(final Item item, final QueryContext qc, final StaticContext sc,
         final InputInfo ii) throws QueryException {
-      final byte[] v = norm(item.string(ii));
+      final byte[] v = normalize(item.string(ii));
       if(!XMLToken.isNMToken(v)) invValue(item, ii);
       return new Str(v, this);
     }
@@ -147,7 +147,7 @@ public enum AtomType implements Type {
     @Override
     public Str cast(final Item item, final QueryContext qc, final StaticContext sc,
         final InputInfo ii) throws QueryException {
-      final byte[] v = norm(item.string(ii));
+      final byte[] v = normalize(item.string(ii));
       if(!XMLToken.isName(v)) invValue(item, ii);
       return new Str(v, this);
     }
@@ -257,7 +257,7 @@ public enum AtomType implements Type {
   },
 
   /** Precision decimal type. */
-  PDC("precisionDecimal", null, XSURI, false, false, false, Type.ID.PDC),
+  PDC("precisionDecimal", null, XSURI, true, false, false, Type.ID.PDC),
 
   /** Integer type. */
   ITR("integer", DEC, XSURI, true, false, false, Type.ID.ITR) {
@@ -374,19 +374,18 @@ public enum AtomType implements Type {
   /** Unsigned long type. */
   ULN("unsignedLong", NNI, XSURI, true, false, false, Type.ID.ULN) {
     @Override
-    public Dec cast(final Item item, final QueryContext qc, final StaticContext sc,
+    public Uln cast(final Item item, final QueryContext qc, final StaticContext sc,
         final InputInfo ii) throws QueryException {
       return cast((Object) item, qc, sc, ii);
     }
     @Override
-    public Dec cast(final Object value, final QueryContext qc, final StaticContext sc,
+    public Uln cast(final Object value, final QueryContext qc, final StaticContext sc,
         final InputInfo ii) throws QueryException {
       final Item it = value instanceof Item ? (Item) value : Str.get(value.toString());
-      final BigDecimal v = checkNum(it, ii).dec(ii);
-      final BigDecimal i = v.setScale(0, BigDecimal.ROUND_DOWN);
-      if(v.signum() < 0 || v.compareTo(Dec.MAXULNG) > 0 ||
+      final BigDecimal v = checkNum(it, ii).dec(ii), i = v.setScale(0, BigDecimal.ROUND_DOWN);
+      if(v.signum() < 0 || v.compareTo(Uln.MAXULN) > 0 ||
         it.type.isStringOrUntyped() && !v.equals(i)) throw funCastError(ii, this, it);
-      return new Dec(i, this);
+      return Uln.get(i.toBigInteger());
     }
   },
 
@@ -697,7 +696,7 @@ public enum AtomType implements Type {
       final byte[] nm = trim(item.string(ii));
       if(!XMLToken.isQName(nm)) throw funCastError(ii, this, nm);
       final QNm qn = new QNm(nm, sc);
-      if(!qn.hasURI() && qn.hasPrefix()) throw NSDECL.get(ii, qn.prefix());
+      if(!qn.hasURI() && qn.hasPrefix()) throw NSDECL_X.get(ii, qn.prefix());
       return qn;
     }
     @Override
@@ -846,11 +845,6 @@ public enum AtomType implements Type {
   }
 
   @Override
-  public final boolean isNode() {
-    return false;
-  }
-
-  @Override
   public final Type.ID id() {
     return id;
   }
@@ -896,9 +890,9 @@ public enum AtomType implements Type {
     final Type ip = it.type;
     if(ip == DBL || ip == FLT) {
       final double d = it.dbl(ii);
-      if(Double.isNaN(d) || Double.isInfinite(d)) throw valueError(ii, this, it);
+      if(Double.isNaN(d) || Double.isInfinite(d)) throw valueError(ii, this, it.string(ii));
       if(min != max && (d < min || d > max)) throw funCastError(ii, this, it);
-      if(d < Long.MIN_VALUE || d > Long.MAX_VALUE) throw INTRANGE.get(ii, d);
+      if(d < Long.MIN_VALUE || d > Long.MAX_VALUE) throw INTRANGE_X.get(ii, d);
       return (long) d;
     }
     if(min == max) {
@@ -929,7 +923,7 @@ public enum AtomType implements Type {
    * @return name
    */
   final byte[] checkName(final Item it, final InputInfo ii) throws QueryException {
-    final byte[] v = norm(it.string(ii));
+    final byte[] v = normalize(it.string(ii));
     if(!XMLToken.isNCName(v)) invValue(it, ii);
     return v;
   }
@@ -953,7 +947,7 @@ public enum AtomType implements Type {
    * @throws QueryException query exception
    */
   final Item invValue(final Item it, final InputInfo ii) throws QueryException {
-    throw FUNCCASTEX.get(ii, it.type, this, it);
+    throw FUNCCAST_X_X_X.get(ii, it.type, this, it);
   }
 
   @Override

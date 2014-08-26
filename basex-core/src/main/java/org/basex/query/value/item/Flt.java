@@ -46,7 +46,7 @@ public final class Flt extends ANum {
   }
 
   @Override
-  public byte[] string() {
+  protected byte[] string() {
     return Token.token(value);
   }
 
@@ -72,9 +72,31 @@ public final class Flt extends ANum {
 
   @Override
   public BigDecimal dec(final InputInfo ii) throws QueryException {
-    if(Float.isNaN(value) || Float.isInfinite(value))
-      throw valueError(ii, AtomType.DEC, Dbl.get(value));
+    if(Float.isNaN(value) || Float.isInfinite(value)) throw valueError(ii, AtomType.DEC, string());
     return BigDecimal.valueOf(value);
+  }
+
+  @Override
+  public Flt abs() {
+    return value > 0d || 1 / value > 0 ? this : Flt.get(-value);
+  }
+
+  @Override
+  public Flt ceiling() {
+    final float v = (float) Math.ceil(value);
+    return v == value ? this : Flt.get(v);
+  }
+
+  @Override
+  public Flt floor() {
+    final float v = (float) Math.floor(value);
+    return v == value ? this : Flt.get(v);
+  }
+
+  @Override
+  public Flt round(final int scale, final boolean even) {
+    final float v = Dbl.get(value).round(scale, even).flt();
+    return value == v ? this : Flt.get(v);
   }
 
   @Override
@@ -85,8 +107,7 @@ public final class Flt extends ANum {
   @Override
   public int diff(final Item it, final Collation coll, final InputInfo ii) throws QueryException {
     final float n = it.flt(ii);
-    if(Float.isNaN(n) || Float.isNaN(value)) return UNDEF;
-    return value < n ? -1 : value > n ? 1 : 0;
+    return Float.isNaN(n) || Float.isNaN(value) ? UNDEF : value < n ? -1 : value > n ? 1 : 0;
   }
 
   @Override
@@ -100,10 +121,10 @@ public final class Flt extends ANum {
   }
 
   /**
-   * Converts the given token into a double value.
+   * Converts the given token into a float value.
    * @param value value to be converted
    * @param ii input info
-   * @return double value
+   * @return float value
    * @throws QueryException query exception
    */
   static float parse(final byte[] value, final InputInfo ii) throws QueryException {

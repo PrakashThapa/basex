@@ -14,8 +14,6 @@ import org.basex.query.expr.*;
 import org.basex.query.iter.*;
 import org.basex.query.util.*;
 import org.basex.query.value.item.*;
-import org.basex.query.value.node.*;
-import org.basex.query.value.seq.*;
 import org.basex.query.value.type.*;
 import org.basex.query.var.*;
 import org.basex.util.*;
@@ -74,21 +72,37 @@ public abstract class Value extends Expr implements Iterable<Item> {
   }
 
   /**
-   * Returns the data reference (if) attached to this value. This method is overwritten
-   * by {@link DBNode} and {@link DBNodeSeq}.
-   * @return data reference
+   * Materializes streamable values, or returns a self reference.
+   * @param ii input info
+   * @return materialized item
+   * @throws QueryException query exception
    */
-  public Data data() {
-    return null;
+  public abstract Value materialize(final InputInfo ii) throws QueryException;
+
+  /**
+   * Evaluates the expression and returns the atomized items.
+   * @param ii input info
+   * @return materialized item
+   * @throws QueryException query exception
+   */
+  public abstract Value atomValue(final InputInfo ii) throws QueryException;
+
+  @Override
+  public final Value atomValue(final QueryContext qc, final InputInfo ii) throws QueryException {
+    return atomValue(ii);
   }
+
+  /**
+   * Computes the number of atomized items.
+   * @return atomized item
+   * @throws QueryException query exception
+   */
+  public abstract long atomSize() throws QueryException;
 
   @Override
   public final boolean isValue() {
     return true;
   }
-
-  @Override
-  public abstract long size();
 
   /**
    * Returns a Java representation of the value.
@@ -163,14 +177,26 @@ public abstract class Value extends Expr implements Iterable<Item> {
    * @throws QueryIOException query I/O exception
    */
   public final ArrayOutput serialize() throws QueryIOException {
+    return serialize(null);
+  }
+
+  /**
+   * Serializes the value with the specified serialization parameters and returns the cached result.
+   * @param options serialization parameters (may be {@code null})
+   * @return serialized value
+   * @throws QueryIOException query I/O exception
+   */
+  public final ArrayOutput serialize(final SerializerOptions options) throws QueryIOException {
     final ArrayOutput ao = new ArrayOutput();
     try {
-      final Serializer ser = Serializer.get(ao);
+      final Serializer ser = Serializer.get(ao, options);
       final ValueIter vi = iter();
       for(Item it; (it = vi.next()) != null;) ser.serialize(it);
       ser.close();
+    } catch(final QueryIOException ex) {
+      throw ex;
     } catch(final IOException ex) {
-      throw SERANY.getIO(ex);
+      throw SER_X.getIO(ex);
     }
     return ao;
   }

@@ -75,7 +75,7 @@ public enum ListType implements Type {
   public final Value cast(final Item item, final QueryContext qc, final StaticContext sc,
       final InputInfo ii) throws QueryException {
 
-    final byte[][] values = split(norm(item.string(ii)), ' ');
+    final byte[][] values = split(normalize(item.string(ii)), ' ');
     final ValueBuilder vb = new ValueBuilder(values.length);
     for(final byte[] v : values) vb.add(type.cast(Str.get(v), qc, sc, ii));
     return vb.value();
@@ -117,11 +117,6 @@ public enum ListType implements Type {
   @Override
   public final Type intersect(final Type t) {
     return this == t ? this : t.instanceOf(this) ? t : null;
-  }
-
-  @Override
-  public final boolean isNode() {
-    return false;
   }
 
   @Override

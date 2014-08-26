@@ -25,6 +25,7 @@ public final class NSGlobal {
     NS.add(FN, FNURI);
     NS.add(MATH, MATHURI);
     NS.add(MAP, MAPURI);
+    NS.add(ARRAY, ARRAYURI);
     NS.add(ANN, XQURI);
     RESERVED = NS.size();
 
@@ -81,7 +82,7 @@ public final class NSGlobal {
   /**
    * Finds the specified namespace uri.
    * @param pref prefix of the namespace
-   * @return uri, or {@code null}
+   * @return uri or {@code null}
    */
   public static byte[] uri(final byte[] pref) {
     for(int s = NS.size() - 1; s >= 0; s--) {

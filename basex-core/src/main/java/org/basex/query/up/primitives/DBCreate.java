@@ -72,7 +72,7 @@ public final class DBCreate extends NameUpdate {
 
       // add initial documents and optimize database
       if(add.md != null) {
-        if(!data.startUpdate()) throw BXDB_OPENED.get(null, data.meta.name);
+        data.startUpdate();
         try {
           data.insert(data.meta.size, -1, new DataClip(add.md));
           Optimize.optimize(data, null);
@@ -83,7 +83,7 @@ public final class DBCreate extends NameUpdate {
       Close.close(data, qc.context);
 
     } catch(final IOException ex) {
-      throw UPDBOPTERR.get(info, ex);
+      throw UPDBOPTERR_X.get(info, ex);
     } finally {
       updates.reset(opts);
     }

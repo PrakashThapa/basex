@@ -178,11 +178,13 @@ public final class CmpV extends Cmp {
     }
 
     final Expr e1 = exprs[0], e2 = exprs[1];
-    seqType = SeqType.get(AtomType.BLN, e1.size() == 1 && e2.size() == 1 ? Occ.ONE : Occ.ZERO_ONE);
+    final SeqType st1 = e1.seqType(), st2 = e2.seqType();
+    seqType = SeqType.get(AtomType.BLN, st1.one() && !st1.mayBeArray() &&
+        st2.one() && !st2.mayBeArray() ? Occ.ONE : Occ.ZERO_ONE);
 
     Expr e = this;
     if(oneIsEmpty()) {
-      e = optPre(null, qc);
+      e = optPre(qc);
     } else if(allAreValues()) {
       e = preEval(qc);
     } else if(e1.isFunction(Function.COUNT)) {
@@ -192,7 +194,7 @@ public final class CmpV extends Cmp {
       // position() CMP number
       e = Pos.get(op, e2, e, info);
       if(e != this) qc.compInfo(OPTWRITE, this);
-    } else if(e1.seqType().eq(SeqType.BLN) && (op == OpV.EQ && e2 == Bln.FALSE ||
+    } else if(st1.eq(SeqType.BLN) && (op == OpV.EQ && e2 == Bln.FALSE ||
         op == OpV.NE && e2 == Bln.TRUE)) {
       // (A eq false()) -> not(A)
       e = Function.NOT.get(null, info, e1);
@@ -201,7 +203,7 @@ public final class CmpV extends Cmp {
   }
 
   @Override
-  public Expr compEbv(final QueryContext qc) {
+  public Expr optimizeEbv(final QueryContext qc, final VarScope scp) throws QueryException {
     // e.g.: if($x eq true()) -> if($x)
     // checking one direction is sufficient, as operators may have been swapped
     return (op == OpV.EQ && exprs[1] == Bln.TRUE || op == OpV.NE && exprs[1] == Bln.FALSE) &&
@@ -210,21 +212,22 @@ public final class CmpV extends Cmp {
 
   @Override
   public Bln item(final QueryContext qc, final InputInfo ii) throws QueryException {
-    final Item it1 = exprs[0].item(qc, info);
+    final Item it1 = exprs[0].atomItem(qc, ii);
     if(it1 == null) return null;
-    final Item it2 = exprs[1].item(qc, info);
+    final Item it2 = exprs[1].atomItem(qc, ii);
     if(it2 == null) return null;
     if(it1.comparable(it2)) return Bln.get(op.eval(it1, it2, coll, info));
 
-    if(it1 instanceof FItem) throw FIEQ.get(info, it1.type);
-    if(it2 instanceof FItem) throw FIEQ.get(info, it2.type);
+    if(it1 instanceof FItem) throw FIEQ_X.get(info, it1.type);
+    if(it2 instanceof FItem) throw FIEQ_X.get(info, it2.type);
     throw diffError(info, it1, it2);
   }
 
   @Override
   public CmpV invert() {
-    return exprs[0].size() != 1 || exprs[1].size() != 1 ? this :
-      new CmpV(exprs[0], exprs[1], op.invert(), coll, info);
+    final Expr e1 = exprs[0], e2 = exprs[1];
+    return e1.size() != 1 || e1.seqType().mayBeArray() || e2.size() != 1 ||
+        e2.seqType().mayBeArray() ? this : new CmpV(e1, e2, op.invert(), coll, info);
   }
 
   @Override

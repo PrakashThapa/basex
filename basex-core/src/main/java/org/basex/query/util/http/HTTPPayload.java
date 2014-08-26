@@ -75,7 +75,7 @@ public final class HTTPPayload {
     if(isMultipart(ct)) {
       // multipart response
       final byte[] boundary = boundary(ctype);
-      if(boundary == null) throw HC_REQ.get(info, "No separation boundary specified");
+      if(boundary == null) throw HC_REQ_X.get(info, "No separation boundary specified");
 
       body = new FElem(Q_MULTIPART).add(MEDIA_TYPE, ct).add(BOUNDARY, boundary);
       final ANodeList parts = new ANodeList();
@@ -136,7 +136,7 @@ public final class HTTPPayload {
     try {
       return value(new IOContent(payload), options, ctype, null);
     } catch(final IOException ex) {
-      throw HC_PARSE.get(info, ex);
+      throw HC_PARSE_X.get(info, ex);
     }
   }
 
@@ -154,7 +154,7 @@ public final class HTTPPayload {
       // RFC 1341: Preamble is to be ignored -> read till 1st boundary
       while(true) {
         final byte[] l = readLine();
-        if(l == null) throw HC_REQ.get(info, "No body specified for http:part");
+        if(l == null) throw HC_REQ_X.get(info, "No body specified for http:part");
         if(eq(sep, l)) break;
       }
       while(extractPart(sep, concat(sep, DASHES), parts));
@@ -208,7 +208,7 @@ public final class HTTPPayload {
 
   /**
    * Reads the next line of an HTTP multipart content.
-   * @return line, or {@code null} if end of stream is reached
+   * @return line or {@code null} if end of stream is reached
    * @throws IOException I/O Exception
    */
   private byte[] readLine() throws IOException {
@@ -254,12 +254,12 @@ public final class HTTPPayload {
   /**
    * Extracts the encapsulation boundary from the content type.
    * @param ct content type
-   * @return boundary, or {@code null}
+   * @return boundary or {@code null}
    * @throws QueryException query exception
    */
   private byte[] boundary(final String ct) throws QueryException {
     int i = ct.toLowerCase(Locale.ENGLISH).indexOf(BOUNDARY_IS);
-    if(i == -1) throw HC_REQ.get(info, "No separation boundary specified");
+    if(i == -1) throw HC_REQ_X.get(info, "No separation boundary specified");
 
     String b = ct.substring(i + BOUNDARY_IS.length());
     if(b.charAt(0) == '"') {
@@ -273,7 +273,7 @@ public final class HTTPPayload {
   /**
    * Returns a map with multipart form data.
    * @param ext content type extension (may be {@code null})
-   * @return map, or {@code null}
+   * @return map or {@code null}
    * @throws IOException I/O exception
    * @throws QueryException query exception
    */

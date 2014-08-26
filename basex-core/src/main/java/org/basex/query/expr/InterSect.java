@@ -27,14 +27,14 @@ public final class InterSect extends Set {
   @Override
   public Expr optimize(final QueryContext qc, final VarScope scp) throws QueryException {
     super.optimize(qc, scp);
-    return oneIsEmpty() ? optPre(null, qc) : this;
+    return oneIsEmpty() ? optPre(qc) : this;
   }
 
   @Override
   protected NodeSeqBuilder eval(final Iter[] iter) throws QueryException {
     NodeSeqBuilder nc = new NodeSeqBuilder();
 
-    for(Item it; (it = iter[0].next()) != null;) nc.add(checkNode(it));
+    for(Item it; (it = iter[0].next()) != null;) nc.add(toNode(it));
     final boolean db = nc.dbnodes();
 
     final int el = exprs.length;
@@ -42,7 +42,7 @@ public final class InterSect extends Set {
       final NodeSeqBuilder nt = new NodeSeqBuilder().check();
       final Iter ir = iter[e];
       for(Item it; (it = ir.next()) != null;) {
-        final ANode n = checkNode(it);
+        final ANode n = toNode(it);
         final int i = nc.indexOf(n, db);
         if(i != -1) nt.add(n);
       }

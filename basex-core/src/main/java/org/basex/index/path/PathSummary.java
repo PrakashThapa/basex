@@ -130,7 +130,7 @@ public final class PathSummary implements Index {
 
   /**
    * Returns all parents of the specified nodes.
-   * Used by the query optimizers.
+   * Called by the query optimizer.
    * @param nodes input nodes
    * @return parent nodes
    */
@@ -142,7 +142,7 @@ public final class PathSummary implements Index {
 
   /**
    * Returns all children or descendants of the specified nodes.
-   * Called from the query parser and optimizer.
+   * Called by the query parser and optimizer.
    * @param nodes input nodes
    * @param desc if false, return only children
    * @return descendant nodes
@@ -159,21 +159,21 @@ public final class PathSummary implements Index {
   }
 
   /**
-   * Returns all children or descendants of the specified nodes with the
-   * specified element or attribute names. Called from the query optimizer.
-   * @param name name reference
-   * @param kind node kind
+   * Returns all descendants with the specified element name.
+   * Called by the query optimizer.
+   * @param name local name
    * @return descendant nodes
    */
-  public ArrayList<PathNode> desc(final int name, final int kind) {
+  public ArrayList<PathNode> desc(final byte[] name) {
+    final int id = data.elemNames.id(name);
     final ArrayList<PathNode> nodes = new ArrayList<>();
-    for(final PathNode child : root.children) child.addDesc(nodes, name, kind);
+    for(final PathNode child : root.children) child.addDesc(nodes, id);
     return nodes;
   }
 
   /**
    * Returns descendant element and attribute names for the specified start key.
-   * Used by the GUI.
+   * Called by the GUI.
    * @param name input key
    * @param desc if false, return only children
    * @param occ true/false: sort by occurrence/lexicographically
@@ -187,7 +187,7 @@ public final class PathSummary implements Index {
 
   /**
    * Returns descendant element and attribute names for the specified descendant path.
-   * Used by the GUI.
+   * Called by the GUI.
    * @param names input steps
    * @param desc if false, return only children
    * @param occ true/false: sort by occurrence/lexicographically
@@ -200,7 +200,7 @@ public final class PathSummary implements Index {
     for(final byte[] name : names) {
       final boolean attr = startsWith(name, '@');
       final byte kind = attr ? Data.ATTR : Data.ELEM;
-      final int id = attr ? data.atnindex.id(substring(name, 1)) : data.elmindex.id(name);
+      final int id = attr ? data.attrNames.id(substring(name, 1)) : data.elemNames.id(name);
 
       final ArrayList<PathNode> tmp = new ArrayList<>();
       for(final PathNode node : nodes) {
@@ -240,6 +240,11 @@ public final class PathSummary implements Index {
   }
 
   // Unsupported methods ======================================================
+
+  @Override
+  public boolean drop() {
+    throw Util.notExpected();
+  }
 
   @Override
   public IndexIterator iter(final IndexToken token) {

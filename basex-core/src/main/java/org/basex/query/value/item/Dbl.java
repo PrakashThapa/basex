@@ -57,7 +57,7 @@ public final class Dbl extends ANum {
   }
 
   @Override
-  public byte[] string() {
+  protected byte[] string() {
     return Token.token(value);
   }
 
@@ -84,8 +84,61 @@ public final class Dbl extends ANum {
   @Override
   public BigDecimal dec(final InputInfo ii) throws QueryException {
     if(Double.isNaN(value) || Double.isInfinite(value))
-      throw valueError(ii, AtomType.DEC, Dbl.get(value));
+      throw valueError(ii, AtomType.DEC, string());
     return BigDecimal.valueOf(value);
+  }
+
+  @Override
+  public Dbl abs() {
+    return value > 0d || 1 / value > 0 ? this : Dbl.get(-value);
+  }
+
+  @Override
+  public Dbl ceiling() {
+    final double d = Math.ceil(value);
+    return d == value ? this : Dbl.get(d);
+  }
+
+  @Override
+  public Dbl floor() {
+    final double d = Math.floor(value);
+    return d == value ? this : Dbl.get(d);
+  }
+
+  @Override
+  public Dbl round(final int scale, final boolean even) {
+    final double v = rnd(scale, even);
+    return v == value ? this : Dbl.get(v);
+  }
+
+  /**
+   * Returns a rounded value.
+   * @param s scale
+   * @param e half-to-even flag
+   * @return result
+   */
+  private double rnd(final int s, final boolean e) {
+    double v = value;
+    if(v == .0 || v == -.0 || Double.isNaN(v) || Double.isInfinite(v) || s > 322) return v;
+    if(s < -308) return 0;
+    if(!e & s == 0) {
+      if(v >= -.5 && v < .0) return -.0;
+      if(v > Long.MIN_VALUE && v < Long.MAX_VALUE) return Math.round(v);
+    }
+
+    final boolean n = v < 0;
+    final double f = Math.pow(10, s + 1);
+    v = (n ? -v : v) * f;
+    if(Double.isInfinite(v)) {
+      final int m = e ? BigDecimal.ROUND_HALF_EVEN : BigDecimal.ROUND_HALF_UP;
+      v = new BigDecimal(value).setScale(s, m).doubleValue();
+    } else {
+      final double r = v % 10;
+      v += r < 5 ? -r : (e ? r > 5 : r >= 5) ? 10 - r : e ? v % 20 == 15 ? 5 : -5 : 0;
+      v /= f;
+      if(n) v = -v;
+    }
+    return v;
   }
 
   @Override
@@ -96,8 +149,7 @@ public final class Dbl extends ANum {
   @Override
   public int diff(final Item it, final Collation coll, final InputInfo ii) throws QueryException {
     final double n = it.dbl(ii);
-    if(Double.isNaN(n) || Double.isNaN(value)) return UNDEF;
-    return value < n ? -1 : value > n ? 1 : 0;
+    return Double.isNaN(n) || Double.isNaN(value) ? UNDEF : value < n ? -1 : value > n ? 1 : 0;
   }
 
   @Override

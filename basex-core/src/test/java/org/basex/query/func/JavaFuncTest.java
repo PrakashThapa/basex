@@ -1,6 +1,7 @@
 package org.basex.query.func;
 
-import org.basex.query.util.*;
+import static org.basex.query.util.Err.*;
+
 import org.basex.query.*;
 import org.junit.*;
 
@@ -80,7 +81,7 @@ public class JavaFuncTest extends AdvancedQueryTest {
   public void importError() {
     // handle {@link Jav} type
     error("declare namespace string = 'java.lang.String';" +
-        "string:concat(string:new(), Q{java.awt.Point}new())", Err.JAVAMTH);
+        "string:concat(string:new(), Q{java.awt.Point}new())", JAVAMETHOD_X_X);
 
     query("declare namespace qm='java:org.basex.query.func.QueryModuleTest';" +
         "try{qm:error(qm:new())} catch * {local-name-from-QName($err:code)}", "BASX0000");
@@ -91,16 +92,17 @@ public class JavaFuncTest extends AdvancedQueryTest {
   /** Tests ambiguous function signatures. */
   @Test
   public void ambiguousSignature() {
-    error("import module namespace n='java:java.lang.StringBuilder'; n:append('x')", Err.JAVAAMBIG);
+    error("import module namespace n='java:java.lang.StringBuilder'; n:append('x')",
+        JAVAAMBIG_X);
   }
 
   /** Ensure that items cannot be cast to Java. */
   @Test
   public void javaCast() {
-    error("xs:java('x')", Err.FUNCUNKNOWN);
-    error("java('x')", Err.FUNCUNKNOWN);
-    error("'x' cast as xs:java", Err.TYPEUNKNOWN30);
-    error("'x' cast as java", Err.TYPEUNKNOWN30);
+    error("xs:java('x')", FUNCUNKNOWN_X);
+    error("java('x')", FUNCUNKNOWN_X);
+    error("'x' cast as xs:java", TYPE30_X);
+    error("'x' cast as java", TYPE30_X);
   }
 
   /** Pass on Java items to functions. */

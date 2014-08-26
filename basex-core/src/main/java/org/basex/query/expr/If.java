@@ -4,6 +4,7 @@ import static org.basex.query.QueryText.*;
 
 import org.basex.query.*;
 import org.basex.query.func.*;
+import org.basex.query.func.fn.*;
 import org.basex.query.iter.*;
 import org.basex.query.util.*;
 import org.basex.query.value.*;
@@ -44,7 +45,7 @@ public final class If extends Arr {
 
   @Override
   public Expr compile(final QueryContext qc, final VarScope scp) throws QueryException {
-    cond = cond.compile(qc, scp).compEbv(qc);
+    cond = cond.compile(qc, scp).optimizeEbv(qc, scp);
     // static condition: return branch in question
     if(cond.isValue()) return optPre(eval(qc).compile(qc, scp), qc);
 
@@ -55,7 +56,7 @@ public final class If extends Arr {
         exprs[e] = exprs[e].compile(qc, scp);
       } catch(final QueryException ex) {
         // replace original expression with error
-        exprs[e] = FNInfo.error(ex, seqType);
+        exprs[e] = FnError.get(ex, seqType);
       }
     }
     return optimize(qc, scp);
@@ -96,18 +97,18 @@ public final class If extends Arr {
         if(b == Bln.FALSE) {
           // if(A) then false() else true() -> not(A)
           qc.compInfo(OPTPRE, this);
-          return Function.NOT.get(null, a).optimize(qc, scp);
+          return Function.NOT.get(null, info, a).optimize(qc, scp);
         }
         // if(A) then B else true() -> not(A) or B
         qc.compInfo(OPTWRITE, this);
-        final Expr notA = Function.NOT.get(null, a).optimize(qc, scp);
+        final Expr notA = Function.NOT.get(null, info, a).optimize(qc, scp);
         return new Or(info, notA, b).optimize(qc, scp);
       }
 
       if(b == Bln.FALSE) {
         // if(A) then false() else C -> not(A) and C
         qc.compInfo(OPTWRITE, this);
-        final Expr notA = Function.NOT.get(null, a).optimize(qc, scp);
+        final Expr notA = Function.NOT.get(null, info, a).optimize(qc, scp);
         return new And(info, notA, c).optimize(qc, scp);
       }
 
@@ -175,7 +176,7 @@ public final class If extends Arr {
       try {
         nw = exprs[i].inline(qc, scp, var, ex);
       } catch(final QueryException qe) {
-        nw = FNInfo.error(qe, seqType);
+        nw = FnError.get(qe, seqType);
       }
       if(nw != null) {
         exprs[i] = nw;
@@ -232,7 +233,7 @@ public final class If extends Arr {
       try {
         exprs[i] = tc.check(exprs[i], qc, scp);
       } catch(final QueryException ex) {
-        exprs[i] = FNInfo.error(ex, tp);
+        exprs[i] = FnError.get(ex, tp);
       }
     }
     return optimize(qc, scp);

@@ -63,7 +63,10 @@ public final class ExprList extends ElementList {
    * @return self reference
    */
   public ExprList add(final Expr... elements) {
-    for(final Expr e : elements) add(e);
+    final int l = elements.length, s = size, ns = s + l;
+    if(ns > list.length) resize(newSize(ns));
+    System.arraycopy(elements, 0, list, s, l);
+    size = ns;
     return this;
   }
 
@@ -79,6 +82,16 @@ public final class ExprList extends ElementList {
   }
 
   /**
+   * Checks if the specified element is found in the list.
+   * @param element element to be found
+   * @return result of check
+   */
+  public boolean contains(final Expr element) {
+    for(int i = 0; i < size; ++i) if(list[i].sameAs(element)) return true;
+    return false;
+  }
+
+  /**
    * Resizes the array.
    * @param sz new size
    */
@@ -89,17 +102,18 @@ public final class ExprList extends ElementList {
   }
 
   /**
-   * Returns an array with all elements.
+   * Returns an array with all elements and invalidates the internal array.
    * Warning: the function must only be called if the list is discarded afterwards.
-   * @return internal or internal array
+   * @return array (internal representation!)
    */
-  public Expr[] array() {
-    Expr[] tmp = list;
-    if(size != list.length) {
-      tmp = new Expr[size];
-      System.arraycopy(list, 0, tmp, 0, size);
+  public Expr[] finish() {
+    Expr[] lst = list;
+    final int s = size;
+    if(s != lst.length) {
+      lst = new Expr[s];
+      System.arraycopy(list, 0, lst, 0, s);
     }
     list = null;
-    return tmp;
+    return lst;
   }
 }

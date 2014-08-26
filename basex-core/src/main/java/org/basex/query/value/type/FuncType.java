@@ -1,6 +1,7 @@
 package org.basex.query.value.type;
 
 import static org.basex.query.QueryText.*;
+import static org.basex.query.util.Err.*;
 import static org.basex.util.Token.*;
 
 import java.util.*;
@@ -44,11 +45,6 @@ public class FuncType implements Type {
   }
 
   @Override
-  public final boolean isNode() {
-    return false;
-  }
-
-  @Override
   public final boolean isNumber() {
     return false;
   }
@@ -83,7 +79,7 @@ public class FuncType implements Type {
   public FItem cast(final Item item, final QueryContext qc, final StaticContext sc,
       final InputInfo ii) throws QueryException {
 
-    if(!(item instanceof FItem)) throw Err.castError(ii, item, this);
+    if(!(item instanceof FItem)) throw castError(ii, item, this);
     final FItem f = (FItem) item;
     return this == ANY_FUN ? f : f.coerceTo(this, qc, ii, false);
   }
@@ -121,10 +117,10 @@ public class FuncType implements Type {
   public boolean instanceOf(final Type t) {
     // the only non-function super-type of function is item()
     if(!(t instanceof FuncType)) return t == AtomType.ITEM;
-    if(t instanceof MapType) return false;
-    final FuncType ft = (FuncType) t;
+    if(t instanceof MapType || t instanceof ArrayType) return false;
 
     // check annotations
+    final FuncType ft = (FuncType) t;
     for(int i = 0; i < ft.ann.size(); i++)
       if(!ann.contains(ft.ann.names[i], ft.ann.values[i])) return false;
 
@@ -154,7 +150,7 @@ public class FuncType implements Type {
   @Override
   public Type intersect(final Type t) {
     // ensure commutativity
-    if(t instanceof MapType) return t.intersect(this);
+    if(t instanceof MapType || t instanceof ArrayType) return t.intersect(this);
 
     // the easy cases
     if(instanceOf(t)) return this;
@@ -205,6 +201,7 @@ public class FuncType implements Type {
       final byte[] ln = type.local();
       if(Token.eq(ln, token(FUNCTION))) return ANY_FUN;
       if(Token.eq(ln, MAP)) return SeqType.ANY_MAP;
+      if(Token.eq(ln, ARRAY)) return SeqType.ANY_ARRAY;
     }
     return null;
   }

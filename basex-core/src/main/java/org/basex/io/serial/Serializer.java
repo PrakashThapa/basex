@@ -28,9 +28,6 @@ import org.basex.util.list.*;
  * @author Christian Gruen
  */
 public abstract class Serializer {
-  /** Default serialization parameters. */
-  public static final SerializerOptions OPTIONS = new SerializerOptions();
-
   /** Stack with names of opened elements. */
   protected final TokenList elems = new TokenList();
   /** Current level. */
@@ -57,13 +54,13 @@ public abstract class Serializer {
    * @throws IOException I/O exception
    */
   public static XMLSerializer get(final OutputStream os) throws IOException {
-    return new XMLSerializer(os, OPTIONS);
+    return new XMLSerializer(os, SerializerOptions.get(true));
   }
 
   /**
    * Returns a specific serializer.
    * @param os output stream reference
-   * @param sopts serialization parameters (can be {@code null})
+   * @param sopts serialization parameters (may be {@code null})
    * @return serializer
    * @throws IOException I/O exception
    */
@@ -129,12 +126,12 @@ public abstract class Serializer {
     if(item instanceof ANode) {
       final Type type = item.type;
       if(!atts) {
-        if(type == NodeType.ATT) throw SERATTR.getIO(item);
-        if(type == NodeType.NSP) throw SERNS.getIO(item);
+        if(type == NodeType.ATT) throw SERATTR_X.getIO(item);
+        if(type == NodeType.NSP) throw SERNS_X.getIO(item);
       }
       serialize((ANode) item);
     } else if(item instanceof FItem) {
-      throw SERFUNC.getIO(item.seqType());
+      throw SERFUNC_X.getIO(item.seqType());
     } else {
       finishElement();
       atomic(item, iter);
@@ -390,7 +387,7 @@ public abstract class Serializer {
     final Data data = node.data;
     int p = node.pre;
     int k = data.kind(p);
-    if(k == Data.ATTR) throw SERATTR.getIO(node);
+    if(k == Data.ATTR) throw SERATTR_X.getIO(node);
 
     boolean doc = false;
     final TokenSet nsp = data.nspaces.size() == 0 ? null : new TokenSet();

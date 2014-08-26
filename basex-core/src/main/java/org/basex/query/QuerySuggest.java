@@ -6,7 +6,7 @@ import java.util.*;
 
 import org.basex.data.*;
 import org.basex.index.path.*;
-import org.basex.query.path.*;
+import org.basex.query.expr.path.*;
 import org.basex.query.util.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
@@ -71,7 +71,7 @@ public final class QuerySuggest extends QueryParser {
   }
 
   @Override
-  protected void checkAxis(final Axis axis) {
+  void checkAxis(final Axis axis) {
     all = axis != Axis.CHILD && axis != Axis.DESC ?
       new ArrayList<PathNode>() : PathSummary.desc(curr, axis == Axis.DESC);
     curr = all;

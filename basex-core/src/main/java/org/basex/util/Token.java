@@ -7,9 +7,9 @@ import java.util.*;
 
 /**
  * <p>This class provides convenience operations for handling 'Tokens'.
- * Tokens are UTF-8 encoded strings, stored in a byte array.</p>
+ * A token is a UTF-8 encoded string. It is represented as a byte array.</p>
  *
- * <p>Note that, to guarantee a consistent string representation, all string
+ * <p>In order to ensure a consistent representation of tokens in the project, all string
  * conversions should be done via the methods of this class.</p>
  *
  * @author BaseX Team 2005-14, BSD License
@@ -334,11 +334,11 @@ public final class Token {
   }
 
   /**
-   * Returns the token length.
+   * Returns the number of codepoints in the token.
    * @param token token
-   * @return length
+   * @return number of codepoints
    */
-  public static int len(final byte[] token) {
+  public static int length(final byte[] token) {
     int l = 0;
     for(int t = 0; t < token.length; t += cl(token, t)) ++l;
     return l;
@@ -463,7 +463,7 @@ public final class Token {
   /**
    * Checks if the specified value equals a constant token.
    * @param dbl value to be converted
-   * @return byte array or zero, or {@code null}
+   * @return byte array or zero or {@code null}
    */
   private static byte[] tok(final double dbl) {
     if(dbl == Double.POSITIVE_INFINITY) return INF;
@@ -1137,7 +1137,7 @@ public final class Token {
    * @param token token
    * @return normalized token
    */
-  public static byte[] norm(final byte[] token) {
+  public static byte[] normalize(final byte[] token) {
     final int l = token.length;
     final byte[] tmp = new byte[l];
     int c = 0;

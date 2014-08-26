@@ -8,7 +8,7 @@ import java.util.zip.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
 import org.basex.query.*;
-import org.basex.query.func.*;
+import org.basex.query.func.archive.*;
 import org.basex.util.*;
 
 /**
@@ -35,7 +35,7 @@ public abstract class ArchiveOut {
       if(format.equals(FNArchive.ZIP)) return new ZIPOut();
       if(format.equals(FNArchive.GZIP)) return new GZIPOut();
     } catch(final IOException ex) {
-      throw ARCH_FAIL.get(info, ex);
+      throw ARCH_FAIL_X.get(info, ex);
     }
     throw ARCH_UNKNOWN.get(info);
   }

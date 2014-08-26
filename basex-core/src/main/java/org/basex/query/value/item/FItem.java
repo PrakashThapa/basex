@@ -62,18 +62,37 @@ public abstract class FItem extends Item implements XQFunction {
 
   @Override
   public final byte[] string(final InputInfo ii) throws QueryException {
-    throw FIVALUE.get(ii, type);
+    throw FIATOM_X.get(ii, type);
   }
 
   @Override
   public final boolean eq(final Item it, final Collation coll, final InputInfo ii)
       throws QueryException {
-    throw FIEQ.get(ii, type);
+    throw FIEQ_X.get(ii, type);
   }
 
   @Override
   public boolean has(final Flag flag) {
     return flag == Flag.UPD && annotations().contains(Ann.Q_UPDATING) || super.has(flag);
+  }
+
+  @Override
+  public Item atomItem(final InputInfo ii) throws QueryException {
+    throw FIATOM_X.get(ii, type);
+  }
+
+  /**
+   * Performs a deep comparison of two items.
+   * @param item item to be compared
+   * @param ii input info
+   * @param coll collation
+   * @return result of check
+   * @throws QueryException query exception
+   */
+  @SuppressWarnings("unused")
+  public boolean deep(final Item item, final InputInfo ii, final Collation coll)
+      throws QueryException {
+    throw FICMP_X.get(ii, type);
   }
 
   @Override

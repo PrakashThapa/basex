@@ -60,7 +60,7 @@ public final class TokenList extends ElementList implements Iterable<byte[]> {
   public TokenList add(final byte[] element) {
     byte[][] lst = list;
     int s = size;
-    if(s == lst.length) lst = Arrays.copyOf(lst, newSize());
+    if(s == lst.length) lst = Array.copyOf(lst, newSize());
     lst[s++] = element;
     list = lst;
     size = s;
@@ -73,7 +73,12 @@ public final class TokenList extends ElementList implements Iterable<byte[]> {
    * @return self reference
    */
   public TokenList add(final byte[]... elements) {
-    for(final byte[] s : elements) add(s);
+    byte[][] lst = list;
+    final int l = elements.length, s = size, ns = s + l;
+    if(ns > lst.length) lst = Array.copyOf(lst, newSize(ns));
+    System.arraycopy(elements, 0, lst, s, l);
+    list = lst;
+    size = ns;
     return this;
   }
 
@@ -186,21 +191,21 @@ public final class TokenList extends ElementList implements Iterable<byte[]> {
    * @return array
    */
   public byte[][] next() {
-    final byte[][] lst = Arrays.copyOf(list, size);
+    final byte[][] lst = Array.copyOf(list, size);
     reset();
     return lst;
   }
 
   /**
    * Returns the token as byte array, and invalidates the internal array.
-   * Warning: the function must only be called if the builder is discarded afterwards.
+   * Warning: the function must only be called if the list is discarded afterwards.
    * @return token
    */
   public byte[][] finish() {
     final byte[][] lst = list;
     list = null;
     final int s = size;
-    return s == lst.length ? lst : Arrays.copyOf(lst, s);
+    return s == lst.length ? lst : Array.copyOf(lst, s);
   }
 
   /**

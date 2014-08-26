@@ -60,7 +60,7 @@ public final class List extends Arr {
     }
 
     if(size >= 0) {
-      if(size == 0 && !has(Flag.NDT) && !has(Flag.UPD)) return optPre(null, qc);
+      if(size == 0 && !has(Flag.NDT) && !has(Flag.UPD)) return optPre(qc);
       if(allAreValues() && size <= MAX_MAT_SIZE) {
         Type all = null;
         final Value[] vs = new Value[exprs.length];
@@ -98,7 +98,7 @@ public final class List extends Arr {
       SeqType st = null;
       for(final Expr e : exprs) {
         final SeqType et = e.seqType();
-        if(!e.isEmpty() && et.occ != Occ.ZERO) st = st == null ? et : st.union(et);
+        if(et.occ != Occ.ZERO) st = st == null ? et : st.union(et);
       }
       seqType = SeqType.get(st == null ? AtomType.ITEM : st.type, o);
     }

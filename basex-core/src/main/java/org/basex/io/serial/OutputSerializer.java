@@ -12,6 +12,7 @@ import java.nio.charset.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
+import org.basex.io.serial.SerializerOptions.YesNoOmit;
 import org.basex.query.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
@@ -99,7 +100,7 @@ public abstract class OutputSerializer extends Serializer {
   protected OutputSerializer(final OutputStream os, final SerializerOptions sopts,
       final String... versions) throws IOException {
 
-    final SerializerOptions opts = sopts == null ? OPTIONS : sopts;
+    final SerializerOptions opts = sopts == null ? SerializerOptions.get(true) : sopts;
     final String ver = supported(VERSION, opts, versions);
     final String htmlver = supported(HTML_VERSION, opts, V40, V401, V50);
     html5 = htmlver.equals(V50) || ver.equals(V50);
@@ -114,7 +115,7 @@ public abstract class OutputSerializer extends Serializer {
     try {
       encoding = Charset.forName(enc);
     } catch(final Exception ex) {
-      throw SERENCODING.getIO(enc);
+      throw SERENCODING_X.getIO(enc);
     }
     utf8 = enc == UTF8;
     if(!utf8) {
@@ -142,7 +143,7 @@ public abstract class OutputSerializer extends Serializer {
     indent  = opts.yes(INDENT) && format;
 
     webdav = "webdav".equals(maps);
-    if(!webdav && !maps.isEmpty()) throw SERMAP.getIO(maps);
+    if(!webdav && !maps.isEmpty()) throw SERMAP_X.getIO(maps);
 
     if(docsys.isEmpty()) docsys = null;
     if(docpub.isEmpty()) docpub = null;
@@ -165,8 +166,8 @@ public abstract class OutputSerializer extends Serializer {
 
     final String supp = opts.get(SUPPRESS_INDENTATION);
     if(!supp.isEmpty()) {
-      for(final String c : supp.split("\\s+")) {
-        if(!c.isEmpty()) suppress.add(c);
+      for(final byte[] c : split(normalize(token(supp)), ' ')) {
+        if(c.length != 0) suppress.add(c);
       }
     }
 
@@ -175,9 +176,11 @@ public abstract class OutputSerializer extends Serializer {
     final boolean xml = this instanceof XMLSerializer || this instanceof XHTMLSerializer;
     if(xml || html) {
       final String cdse = opts.get(CDATA_SECTION_ELEMENTS);
-      for(final String c : cdse.split("\\s+")) {
-        if(c.isEmpty()) continue;
-        if(!html || c.contains(":") && (!html5 || !c.contains("html:"))) cdata.add(c);
+      if(!cdse.isEmpty()) {
+        for(final byte[] c :  split(normalize(token(cdse)), ' ')) {
+          if(c.length == 0) continue;
+          if(!html || contains(c, ':') && (!html5 || !string(c).contains("html:"))) cdata.add(c);
+        }
       }
 
       if(undecl && ver.equals(V10)) throw SERUNDECL.getIO();
@@ -415,7 +418,7 @@ public abstract class OutputSerializer extends Serializer {
 
   /**
    * Prints the document type declaration.
-   * @param type document type, or {@code null} for html type
+   * @param type document type or {@code null} for html type
    * @return true if doctype was added
    * @throws IOException I/O exception
    */
@@ -482,7 +485,7 @@ public abstract class OutputSerializer extends Serializer {
   protected void print(final int ch) throws IOException {
     // comparison by reference
     if(utf8) {
-      out.utf8(ch);
+      out.print(ch);
     } else {
       encbuffer.reset();
       encoder.reset();
@@ -562,6 +565,6 @@ public abstract class OutputSerializer extends Serializer {
     final String val = opts.get(option);
     if(val.isEmpty()) return allowed.length > 0 ? allowed[0] : val;
     for(final String a : allowed) if(a.equals(val)) return val;
-    throw SERNOTSUPP.getIO(Options.allowed(option, (Object[]) allowed));
+    throw SERNOTSUPP_X.getIO(Options.allowed(option, (Object[]) allowed));
   }
 }

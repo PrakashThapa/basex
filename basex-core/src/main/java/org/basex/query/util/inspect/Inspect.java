@@ -64,7 +64,7 @@ public abstract class Inspect {
       module = QueryProcessor.isLibrary(input) ? qp.parseLibrary(true) : qp.parseMain();
       return qp;
     } catch(final IOException | QueryException ex) {
-      throw IOERR.get(info, ex);
+      throw IOERR_X.get(info, ex);
     } finally {
       qctx.close();
     }
@@ -136,7 +136,7 @@ public abstract class Inspect {
   }
 
   /**
-   * Returns a value for the specified parameter, or {@code null}.
+   * Returns a value for the specified parameter or {@code null}.
    * @param doc documentation
    * @param name parameter name
    * @return documentation of specified variable

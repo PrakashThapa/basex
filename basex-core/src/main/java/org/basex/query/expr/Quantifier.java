@@ -5,7 +5,7 @@ import static org.basex.query.QueryText.*;
 import java.util.*;
 
 import org.basex.query.*;
-import org.basex.query.gflwor.*;
+import org.basex.query.expr.gflwor.*;
 import org.basex.query.iter.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
@@ -76,8 +76,9 @@ public final class Quantifier extends Single {
   @Override
   public Bln item(final QueryContext qc, final InputInfo ii) throws QueryException {
     final Iter iter = expr.iter(qc);
-    for(Item it; (it = iter.next()) != null;)
+    for(Item it; (it = iter.next()) != null;) {
       if(every ^ it.ebv(qc, ii).bool(ii)) return Bln.get(!every);
+    }
     return Bln.get(every);
   }
 

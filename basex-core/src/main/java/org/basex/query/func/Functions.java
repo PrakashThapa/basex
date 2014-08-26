@@ -17,7 +17,7 @@ import org.basex.util.*;
 import org.basex.util.hash.*;
 
 /**
- * This class provides access to built-in functions.
+ * This class provides access to built-in and user-defined functions.
  *
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
@@ -67,7 +67,7 @@ public final class Functions extends TokenSet {
     // no constructor function found, or abstract type specified
     if(type != null && type != AtomType.NOT && type != AtomType.AAT) {
       if(arity == 1) return type;
-      throw FUNCTYPES.get(ii, name.string(), arity, "s", 1);
+      throw FUNCTYPES_X_X_X_X.get(ii, name.string(), arity, "s", 1);
     }
 
     // include similar function name in error message
@@ -76,10 +76,10 @@ public final class Functions extends TokenSet {
       if(t.parent == null) continue;
       final byte[] u = t.name.uri();
       if(eq(u, XSURI) && t != AtomType.NOT && t != AtomType.AAT && ls.similar(
-          lc(ln), lc(t.string()))) throw FUNCSIMILAR.get(ii, name.string(), t.string());
+          lc(ln), lc(t.string()))) throw FUNCSIMILAR_X_X.get(ii, name.string(), t.string());
     }
     // no similar name: constructor function found, or abstract type specified
-    throw FUNCUNKNOWN.get(ii, name.string());
+    throw FUNCUNKNOWN_X.get(ii, name.string());
   }
 
   /**
@@ -99,7 +99,7 @@ public final class Functions extends TokenSet {
     if(!eq(fl.uri(), name.uri())) return null;
     // check number of arguments
     if(arity >= fl.min && arity <= fl.max) return fl;
-    throw FUNCARGS.get(ii, fl, arity, arity == 1 ? "" : "s");
+    throw FUNCARGS_X_X_X.get(ii, fl, arity, arity == 1 ? "" : "s");
   }
 
   /**
@@ -112,7 +112,7 @@ public final class Functions extends TokenSet {
    * @throws QueryException query exception
    */
   public StandardFunc get(final QNm name, final Expr[] args, final StaticContext sc,
-                           final InputInfo ii) throws QueryException {
+      final InputInfo ii) throws QueryException {
     final Function fl = getBuiltIn(name, args.length, ii);
     return fl == null ? null : fl.get(sc, ii, args);
   }
@@ -155,7 +155,7 @@ public final class Functions extends TokenSet {
         calls[i] = new VarRef(ii, args[i]);
       }
 
-      final StandardFunc sf = fn.get(sc, calls);
+      final StandardFunc sf = fn.get(sc, ii, calls);
       if(sf.has(Flag.UPD)) {
         qc.updating();
         ann.add(Ann.Q_UPDATING, Empty.SEQ, ii);
@@ -184,9 +184,7 @@ public final class Functions extends TokenSet {
       refs[i] = new VarRef(ii, vs[i]);
     }
     final Expr jm = JavaMapping.get(name, refs, qc, sc, ii);
-    if(jm != null) return new FuncLit(new Ann(), name, vs, jm, jt, scp, sc, ii);
-
-    return null;
+    return jm == null ? null : new FuncLit(new Ann(), name, vs, jm, jt, scp, sc, ii);
   }
 
 
@@ -260,9 +258,7 @@ public final class Functions extends TokenSet {
     if(jf != null) return TypedFunc.java(jf);
 
     // add user-defined function that has not been declared yet
-    if(!dyn && FuncType.find(name) == null) {
-      return qc.funcs.getFuncRef(name, args, sc, ii);
-    }
+    if(!dyn && FuncType.find(name) == null) return qc.funcs.getFuncRef(name, args, sc, ii);
 
     // no function found
     return null;
@@ -272,7 +268,7 @@ public final class Functions extends TokenSet {
    * Returns an exception if the name of a built-in function is similar to the specified name.
    * @param name name of input function
    * @param ii input info
-   * @return query exception, or {@code null}
+   * @return query exception or {@code null}
    */
   QueryException similarError(final QNm name, final InputInfo ii) {
     // find functions with identical local names
@@ -306,7 +302,7 @@ public final class Functions extends TokenSet {
    */
   private static QueryException similarError(final QNm name, final InputInfo ii, final byte[] key) {
     final int i = indexOf(key, '}');
-    return FUNCSIMILAR.get(ii, name.prefixId(FNURI), new TokenBuilder(
+    return FUNCSIMILAR_X_X.get(ii, name.prefixId(FNURI), new TokenBuilder(
         NSGlobal.prefix(substring(key, 2, i))).add(':').add(substring(key, i + 1)).finish());
   }
 

@@ -267,7 +267,7 @@ public final class QueryContext extends Proc {
       try {
         context.options.assign(o.get(s).toUpperCase(Locale.ENGLISH), o.get(s + 1));
       } catch(final BaseXException ex) {
-        throw BASX_VALUE.get(null, o.get(s), o.get(s + 1));
+        throw BASX_VALUE_X_X.get(null, o.get(s), o.get(s + 1));
       }
     }
     // set tail call option after assignment database option
@@ -282,7 +282,7 @@ public final class QueryContext extends Proc {
         ctxItem.compile(this);
         value = ctxItem.cache(this).value();
       } catch(final QueryException ex) {
-        if(ex.err() != NOCTX) throw ex;
+        if(ex.err() != NOCTX_X) throw ex;
         // only {@link ParseExpr} instances may cause this error
         throw CIRCCTX.get(ctxItem.info);
       }
@@ -290,12 +290,12 @@ public final class QueryContext extends Proc {
       // cache the initial context nodes
       final DBNodes nodes = context.current();
       if(nodes != null) {
-        if(!context.perm(Perm.READ, nodes.data.meta)) throw BASX_PERM.get(null, Perm.READ);
+        if(!context.perm(Perm.READ, nodes.data.meta)) throw BASX_PERM_X.get(null, Perm.READ);
         value = resources.compile(nodes);
       }
     }
 
-    // if specified, convert context item to specified type
+    // if specified, convert context value to specified type
     // [LW] should not be necessary
     if(value != null && root.sc.contextType != null) {
       value = root.sc.contextType.promote(this, root.sc, null, value, true);
@@ -406,7 +406,7 @@ public final class QueryContext extends Proc {
   }
 
   /**
-   * Returns the current data reference of the context value, or {@code null}.
+   * Returns the current data reference of the context value or {@code null}.
    * @return data reference
    */
   public Data data() {
@@ -434,7 +434,7 @@ public final class QueryContext extends Proc {
   }
 
   /**
-   * Binds a value to the context item, using the same rules as for
+   * Binds the context value, using the same rules as for
    * {@link #bind(String, Object, String) binding variables}.
    * @param val value to be bound
    * @param type type (may be {@code null})
@@ -447,7 +447,7 @@ public final class QueryContext extends Proc {
   }
 
   /**
-   * Binds a value to the context item.
+   * Binds the context value.
    * @param val value to be bound
    * @param sc static context
    */
@@ -493,7 +493,7 @@ public final class QueryContext extends Proc {
       nm = m.group(6);
     }
     final byte[] ln = token(nm);
-    if(nm.isEmpty() || !XMLToken.isNCName(ln)) throw BINDNAME.get(null, nm);
+    if(nm.isEmpty() || !XMLToken.isNCName(ln)) throw BINDNAME_X.get(null, nm);
 
     // bind variable
     bindings.put(new QNm(ln, uri), val);
@@ -529,7 +529,8 @@ public final class QueryContext extends Proc {
    * @return serialization parameters
    */
   public SerializerOptions serParams() {
-    return serialOpts != null ? serialOpts : context.options.get(MainOptions.SERIALIZER);
+    return serialOpts != null ? serialOpts :
+      new SerializerOptions(context.options.get(MainOptions.SERIALIZER));
   }
 
   /**
@@ -569,8 +570,9 @@ public final class QueryContext extends Proc {
     }
 
     // reassign original database options
-    for(final Entry<Option<?>, Object> e : staticOpts.entrySet())
+    for(final Entry<Option<?>, Object> e : staticOpts.entrySet()) {
       context.options.put(e.getKey(), e.getValue());
+    }
   }
 
   @Override
@@ -713,7 +715,7 @@ public final class QueryContext extends Proc {
     // convert to the specified type
     // [LW] type should be parsed properly
     final QNm nm = new QNm(token(type.replaceAll("\\(.*?\\)$", "")), sc);
-    if(!nm.hasURI() && nm.hasPrefix()) throw NOURI.get(null, nm.string());
+    if(!nm.hasURI() && nm.hasPrefix()) throw NOURI_X.get(null, nm.string());
 
     Type tp;
     if(type.endsWith(")")) {
@@ -724,7 +726,7 @@ public final class QueryContext extends Proc {
       tp = ListType.find(nm);
       if(tp == null) tp = AtomType.find(nm, false);
     }
-    if(tp == null) throw NOTYPE.get(null, type);
+    if(tp == null) throw WHICHTYPE_X.get(null, type);
 
     // cast XDM values
     if(vl instanceof Value) {

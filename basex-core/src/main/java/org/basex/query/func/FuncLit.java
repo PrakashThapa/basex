@@ -4,6 +4,7 @@ import static org.basex.query.util.Err.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
+import org.basex.query.func.fn.*;
 import org.basex.query.util.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
@@ -63,7 +64,7 @@ public final class FuncLit extends Single implements Scope {
 
     if(check) {
       final StaticFunc sf = qc.funcs.get(name, args.length, info, true);
-      if(sf == null) throw FUNCUNKNOWN.get(info, name.string());
+      if(sf == null) throw FUNCUNKNOWN_X.get(info, name.string());
       ann = sf.ann;
       seqType = sf.funcType().seqType();
     }
@@ -72,7 +73,7 @@ public final class FuncLit extends Single implements Scope {
       expr = expr.compile(qc, scope);
       expr.markTailCalls(null);
     } catch(final QueryException e) {
-      expr = FNInfo.error(e, seqType);
+      expr = FnError.get(e, seqType);
     } finally {
       scope.cleanUp(this);
     }

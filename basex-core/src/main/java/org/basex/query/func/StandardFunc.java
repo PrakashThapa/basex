@@ -29,30 +29,40 @@ import org.basex.util.hash.*;
 import org.basex.util.options.*;
 
 /**
- * Standard (built-in) functions.
+ * Built-in functions.
  *
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
 public abstract class StandardFunc extends Arr {
   /** Function signature. */
-  Function func;
+  public Function func;
   /** Static context. */
-  final StaticContext sc;
+  protected StaticContext sc;
 
   /**
    * Constructor.
-   * @param sc static context
-   * @param info input info
-   * @param func function definition
-   * @param args arguments
    */
-  protected StandardFunc(final StaticContext sc, final InputInfo info, final Function func,
-      final Expr... args) {
-    super(info, args);
-    this.sc = sc;
-    this.func = func;
-    this.seqType = func.ret;
+  protected StandardFunc() {
+    super(null);
+  }
+
+  /**
+   * Constructor.
+   * @param ii input info
+   * @param sctx static context
+   * @param f function definition
+   * @param args function arguments
+   * @return self reference
+   */
+  public StandardFunc init(final StaticContext sctx, final InputInfo ii, final Function f,
+      final Expr[] args) {
+    sc = sctx;
+    func = f;
+    info = ii;
+    exprs = args;
+    seqType = f.ret;
+    return this;
   }
 
   @Override
@@ -77,7 +87,7 @@ public abstract class StandardFunc extends Arr {
    * @throws QueryException query exception
    */
   @SuppressWarnings("unused")
-  Expr opt(final QueryContext qc, final VarScope scp) throws QueryException {
+  protected Expr opt(final QueryContext qc, final VarScope scp) throws QueryException {
     return this;
   }
 
@@ -91,19 +101,6 @@ public abstract class StandardFunc extends Arr {
   }
 
   /**
-   * Atomizes the specified item.
-   * @param it input item
-   * @param ii input info
-   * @return atomized item
-   * @throws QueryException query exception
-   */
-  public static Item atom(final Item it, final InputInfo ii) throws QueryException {
-    final Type ip = it.type;
-    return it instanceof ANode ? ip == NodeType.PI || ip == NodeType.COM ?
-        Str.get(it.string(ii)) : new Atm(it.string(ii)) : it.materialize(ii);
-  }
-
-  /**
    * Serializes the data from the specified iterator.
    * @param ir data to serialize
    * @param opts serialization parameters
@@ -111,7 +108,7 @@ public abstract class StandardFunc extends Arr {
    * @return result
    * @throws QueryException query exception
    */
-  byte[] serialize(final Iter ir, final SerializerOptions opts, final Err err)
+  protected byte[] serialize(final Iter ir, final SerializerOptions opts, final Err err)
       throws QueryException {
 
     final ArrayOutput ao = new ArrayOutput();
@@ -138,7 +135,7 @@ public abstract class StandardFunc extends Arr {
   }
 
   @Override
-  public final boolean isVacuous() {
+  public boolean isVacuous() {
     return !has(Flag.UPD) && seqType.eq(SeqType.EMP);
   }
 
@@ -156,20 +153,42 @@ public abstract class StandardFunc extends Arr {
   public final String toString() {
     final String desc = func.toString();
     return new TokenBuilder(desc.substring(0,
-        desc.indexOf('(') + 1)).addSep(exprs, SEP).add(PAR2).toString();
+       desc.indexOf('(') + 1)).addSep(exprs, SEP).add(PAREN2).toString();
   }
 
   /**
-   * Returns a database instance for the first string argument of the function.
-   * This method assumes that the function has at least one argument.
+   * Returns the specified argument, or the context value if it does not exist.
+   * @param index argument index
    * @param qc query context
-   * @return data instance
+   * @return expression
    * @throws QueryException query exception
    */
-  protected final Data checkData(final QueryContext qc) throws QueryException {
-    final String name = string(checkStr(exprs[0], qc));
-    if(!Databases.validName(name)) throw INVDB.get(info, name);
-    return qc.resources.database(name, info);
+  protected Expr arg(final int index, final QueryContext qc) throws QueryException {
+    return exprs.length == index ? ctxValue(qc) : exprs[index];
+  }
+
+  /**
+   * Checks if the specified expression is a database node.
+   * Returns the node or an exception.
+   * @param it item to be checked
+   * @return item
+   * @throws QueryException query exception
+   */
+  protected final DBNode toDBNode(final Item it) throws QueryException {
+    if(checkNoEmpty(it, NodeType.NOD) instanceof DBNode) return (DBNode) it;
+    throw BXDB_NODB_X_X.get(info, it.type, it);
+  }
+
+  /**
+   * Checks if the specified collation is supported.
+   * @param i argument index
+   * @param qc query context
+   * @return collator or {@code null} (default collation)
+   * @throws QueryException query exception
+   */
+  protected final Collation toCollation(final int i, final QueryContext qc) throws QueryException {
+    final byte[] coll = i >= exprs.length ? null : toToken(exprs[i], qc);
+    return Collation.get(coll, qc, sc, info, WHICHCOLL_X);
   }
 
   /**
@@ -179,13 +198,13 @@ public abstract class StandardFunc extends Arr {
    * @return file instance
    * @throws QueryException query exception
    */
-  protected Path checkPath(final int i, final QueryContext qc) throws QueryException {
+  protected Path toPath(final int i, final QueryContext qc) throws QueryException {
     if(i >= exprs.length) return null;
-    final String file = string(checkStr(exprs[i], qc));
+    final String file = string(toToken(exprs[i], qc));
     try {
       return Paths.get(IOUrl.isFileURL(file) ? IOUrl.toFile(file) : file);
     } catch(final InvalidPathException ex) {
-      throw FILE_INVALID_PATH.get(info, file);
+      throw FILE_INVALID_PATH_X.get(info, file);
     }
   }
 
@@ -198,7 +217,7 @@ public abstract class StandardFunc extends Arr {
    * @throws QueryException query exception
    */
   protected IO checkPath(final Expr path, final QueryContext qc) throws QueryException {
-    return QueryResources.checkPath(new QueryInput(string(checkStr(path, qc))), sc.baseIO(), info);
+    return QueryResources.checkPath(new QueryInput(string(toToken(path, qc))), sc.baseIO(), info);
   }
 
   /**
@@ -209,11 +228,11 @@ public abstract class StandardFunc extends Arr {
    * @return text entry
    * @throws QueryException query exception
    */
-  protected final String checkEncoding(final int i, final Err err, final QueryContext qc)
+  protected final String toEncoding(final int i, final Err err, final QueryContext qc)
       throws QueryException {
 
     if(i >= exprs.length) return null;
-    final String enc = string(checkStr(exprs[i], qc));
+    final String enc = string(toToken(exprs[i], qc));
     try {
       if(Charset.isSupported(enc)) return normEncoding(enc);
     } catch(final IllegalArgumentException ignored) {
@@ -232,10 +251,100 @@ public abstract class StandardFunc extends Arr {
    * @return passed on options
    * @throws QueryException query exception
    */
-  protected <E extends Options> E checkOptions(final int i, final QNm qnm, final E opts,
+  protected <E extends Options> E toOptions(final int i, final QNm qnm, final E opts,
       final QueryContext qc) throws QueryException {
     if(i < exprs.length) new FuncOptions(qnm, info).parse(exprs[i].item(qc, info), opts);
     return opts;
+  }
+
+  /**
+   * Returns all keys and values of the specified binding argument.
+   * @param i index of argument
+   * @param qc query context
+   * @return resulting map
+   * @throws QueryException query exception
+   */
+  protected final HashMap<String, Value> toBindings(final int i, final QueryContext qc)
+      throws QueryException {
+
+    final HashMap<String, Value> hm = new HashMap<>();
+    final int es = exprs.length;
+    if(i < es) {
+      final Map map = toMap(exprs[i], qc);
+      for(final Item it : map.keys()) {
+        final byte[] key;
+        if(it instanceof Str) {
+          key = it.string(null);
+        } else {
+          final QNm qnm = toQNm(it, sc, false);
+          final TokenBuilder tb = new TokenBuilder();
+          if(qnm.uri() != null) tb.add('{').add(qnm.uri()).add('}');
+          key = tb.add(qnm.local()).finish();
+        }
+        hm.put(string(key), map.get(it, info));
+      }
+    }
+    return hm;
+  }
+
+  /**
+   * Returns a database instance for the first string argument of the function.
+   * This method assumes that the function has at least one argument.
+   * @param qc query context
+   * @return data instance
+   * @throws QueryException query exception
+   */
+  protected final Data checkData(final QueryContext qc) throws QueryException {
+    final String name = string(toToken(exprs[0], qc));
+    if(!Databases.validName(name)) throw INVDB_X.get(info, name);
+    return qc.resources.database(name, info);
+  }
+
+  /**
+   * Checks if the current user has create permissions. If negative, an
+   * exception is thrown.
+   * @param qc query context
+   * @throws QueryException query exception
+   */
+  protected final void checkAdmin(final QueryContext qc) throws QueryException {
+    checkPerm(qc, Perm.ADMIN);
+  }
+
+  /**
+   * Checks if the current user has create permissions. If negative, an
+   * exception is thrown.
+   * @param qc query context
+   * @throws QueryException query exception
+   */
+  protected final void checkCreate(final QueryContext qc) throws QueryException {
+    checkPerm(qc, Perm.CREATE);
+  }
+
+  /**
+   * Checks if the current user has given permissions. If negative, an
+   * exception is thrown.
+   * @param qc query context
+   * @param p permission
+   * @throws QueryException query exception
+   */
+  private void checkPerm(final QueryContext qc, final Perm p) throws QueryException {
+    if(!qc.context.user.has(p)) throw BASX_PERM_X.get(info, p);
+  }
+
+  /**
+   * Casts and checks the function item for its arity.
+   * @param e expression
+   * @param a arity
+   * @param qc query context
+   * @return function item
+   * @throws QueryException query exception
+   */
+  protected FItem checkArity(final Expr e, final int a, final QueryContext qc)
+      throws QueryException {
+
+    final FItem it = toFunc(e, qc);
+    if(it.arity() == a) return it;
+    throw castError(info, it, FuncType.arity(a));
   }
 
   /**
@@ -246,8 +355,8 @@ public abstract class StandardFunc extends Arr {
    * @throws QueryException query exception
    */
   protected final long dateTimeToMs(final Expr ex, final QueryContext qc) throws QueryException {
-    final Dtm dtm = (Dtm) checkType(checkItem(ex, qc), AtomType.DTM);
-    if(dtm.yea() > 292278993) throw INTRANGE.get(info, dtm.yea());
+    final Dtm dtm = (Dtm) checkAtomic(ex, qc, AtomType.DTM);
+    if(dtm.yea() > 292278993) throw INTRANGE_X.get(info, dtm.yea());
     return dtm.toJava().toGregorianCalendar().getTimeInMillis();
   }
 
@@ -266,36 +375,6 @@ public abstract class StandardFunc extends Arr {
   }
 
   /**
-   * Returns all keys and values of the specified binding argument.
-   * @param i index of argument
-   * @param qc query context
-   * @return resulting map
-   * @throws QueryException query exception
-   */
-  protected final HashMap<String, Value> bindings(final int i, final QueryContext qc)
-      throws QueryException {
-
-    final HashMap<String, Value> hm = new HashMap<>();
-    final int es = exprs.length;
-    if(i < es) {
-      final Map map = checkMap(checkItem(exprs[i], qc));
-      for(final Item it : map.keys()) {
-        final byte[] key;
-        if(it instanceof Str) {
-          key = it.string(null);
-        } else {
-          final QNm qnm = (QNm) checkType(it, AtomType.QNM);
-          final TokenBuilder tb = new TokenBuilder();
-          if(qnm.uri() != null) tb.add('{').add(qnm.uri()).add('}');
-          key = tb.add(qnm.local()).finish();
-        }
-        hm.put(string(key), map.get(it, info));
-      }
-    }
-    return hm;
-  }
-
-  /**
    * Caches and materializes all items of the specified iterator.
    * @param iter iterator
    * @param vb value builder
@@ -307,7 +386,7 @@ public abstract class StandardFunc extends Arr {
 
     for(Item it; (it = iter.next()) != null;) {
       qc.checkStop();
-      if(it instanceof FItem) throw FIVALUE.get(info, it.type);
+      if(it instanceof FItem) throw FISTRING_X.get(info, it.type);
       vb.add(it.materialize(info));
     }
   }

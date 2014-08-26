@@ -35,7 +35,7 @@ public final class Except extends Set {
     for(final Expr ex : exprs) {
       if(ex.isEmpty()) {
         // remove empty operands (return empty sequence if first value is empty)
-        if(el.isEmpty()) return optPre(null, qc);
+        if(el.isEmpty()) return optPre(qc);
         qc.compInfo(OPTREMOVE, this, ex);
       } else {
         el.add(ex);
@@ -44,7 +44,7 @@ public final class Except extends Set {
     // ensure that results are always sorted
     if(el.size() == 1 && iterable) return el.get(0);
     // replace expressions with optimized list
-    exprs = el.array();
+    exprs = el.finish();
     return this;
   }
 
@@ -59,13 +59,13 @@ public final class Except extends Set {
   protected NodeSeqBuilder eval(final Iter[] iter) throws QueryException {
     final NodeSeqBuilder nc = new NodeSeqBuilder().check();
 
-    for(Item it; (it = iter[0].next()) != null;) nc.add(checkNode(it));
+    for(Item it; (it = iter[0].next()) != null;) nc.add(toNode(it));
     final boolean db = nc.dbnodes();
 
     for(int e = 1; e != exprs.length && nc.size() != 0; ++e) {
       final Iter ir = iter[e];
       for(Item it; (it = ir.next()) != null;) {
-        final int i = nc.indexOf(checkNode(it), db);
+        final int i = nc.indexOf(toNode(it), db);
         if(i != -1) nc.delete(i);
       }
     }

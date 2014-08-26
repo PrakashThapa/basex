@@ -11,7 +11,7 @@ import org.basex.core.cmd.Set;
 import org.basex.io.*;
 import org.basex.query.*;
 import org.basex.query.func.*;
-import org.basex.query.util.Compare.Mode;
+import org.basex.query.util.DeepCompare.Mode;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.tests.bxapi.*;
@@ -241,7 +241,7 @@ public abstract class QT3TestSet {
       tb.add(it.getString());
       c++;
     }
-    return result(exp.equals(norm ? string(norm(tb.finish())) : tb.toString()), exp);
+    return result(exp.equals(norm ? string(normalize(tb.finish())) : tb.toString()), exp);
   }
 
   /**

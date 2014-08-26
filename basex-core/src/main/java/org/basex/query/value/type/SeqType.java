@@ -4,11 +4,10 @@ import static org.basex.query.QueryText.*;
 import static org.basex.query.util.Err.*;
 
 import org.basex.query.*;
-import org.basex.query.func.*;
+import org.basex.query.expr.path.*;
 import org.basex.query.iter.*;
-import org.basex.query.path.*;
-import org.basex.query.util.*;
 import org.basex.query.value.*;
+import org.basex.query.value.array.Array;
 import org.basex.query.value.item.*;
 import org.basex.query.value.map.*;
 import org.basex.query.value.seq.*;
@@ -210,12 +209,18 @@ public final class SeqType {
   /** Namespace node. */
   public static final SeqType TXT_ZO = new SeqType(NodeType.TXT, Occ.ZERO_ONE);
 
+  /** The general array type. */
+  public static final ArrayType ANY_ARRAY = new ArrayType(ITEM_ZM);
   /** The general map type. */
   public static final MapType ANY_MAP = new MapType(AtomType.AAT, ITEM_ZM);
-  /** Single function. */
+  /** Zero or more maps. */
   public static final SeqType MAP_ZM = new SeqType(ANY_MAP, Occ.ZERO_MORE);
-  /** Single function. */
+  /** Single map. */
   public static final SeqType MAP_O = new SeqType(ANY_MAP);
+  /** Zero or more arrays. */
+  public static final SeqType ARRAY_ZM = new SeqType(ANY_ARRAY);
+  /** Single array. */
+  public static final SeqType ARRAY_O = new SeqType(ANY_ARRAY);
   /** One xs:hexBinary. */
   public static final SeqType HEX = AtomType.HEX.seqType();
   /** Single xs:base64Binary. */
@@ -330,10 +335,10 @@ public final class SeqType {
    * @return result of check
    */
   private boolean instance(final Item it, final boolean knd) {
-    // maps don't have type information attached to them, you have to look...
-    return type instanceof MapType
-      ? it instanceof Map && ((Map) it).hasType((MapType) type)
-      : it.type.instanceOf(type) && (!knd || kind == null || kind.eq(it));
+    // maps and arrays don't have type information attached to them, you have to look...
+    return type instanceof MapType ? it instanceof Map && ((Map) it).hasType((MapType) type) :
+      type instanceof ArrayType ? it instanceof Array && ((Array) it).hasType((ArrayType) type) :
+      it.type.instanceOf(type) && (!knd || kind == null || kind.eq(it));
   }
 
   /**
@@ -354,7 +359,7 @@ public final class SeqType {
       if(!error && info != null) info.check(true);
       final Value v = type.cast(it, qc, sc, info);
       if(kind != null) {
-        for(final Item i : v) if(!kind.eq(it)) throw Err.castError(info, i, type);
+        for(final Item i : v) if(!kind.eq(it)) throw castError(info, i, type);
       }
       return v;
     } catch(final QueryException ex) {
@@ -378,10 +383,10 @@ public final class SeqType {
       final InputInfo ii) throws QueryException {
 
     final long vs = val.size();
-    if(!occ.check(vs)) throw INVCASTEX.get(ii, val.seqType(), this, val);
+    if(!occ.check(vs)) throw INVCAST_X_X_X.get(ii, val.seqType(), this, val);
 
     if(val.isEmpty()) return Empty.SEQ;
-    if(val.isItem()) return cast((Item) val, qc, sc, ii, true);
+    if(val instanceof Item) return cast((Item) val, qc, sc, ii, true);
 
     final ValueBuilder vb = new ValueBuilder((int) vs);
     for(int v = 0; v < vs; v++) vb.add(cast(val.itemAt(v), qc, sc, ii, true));
@@ -398,7 +403,7 @@ public final class SeqType {
     if(val.seqType().instanceOf(this)) return;
 
     final int size = (int) val.size();
-    if(!occ.check(size)) throw Err.treatError(ii, val, this);
+    if(!occ.check(size)) throw treatError(ii, val, this);
 
     // empty sequence has all types
     if(size == 0) return;
@@ -408,45 +413,7 @@ public final class SeqType {
     // check heterogeneous sequences
     if(!val.homogeneous())
       for(int i = 1; ins && i < size; i++) ins = instance(val.itemAt(i), true);
-    if(!ins) throw Err.treatError(ii, val, this);
-  }
-
-  /**
-   * Promotes an item to the type of this sequence type.
-   * @param qc query context
-   * @param sc static context
-   * @param ii input info
-   * @param it item to promote
-   * @param opt if the result should be optimized
-   * @return promoted item
-   * @throws QueryException query exception
-   */
-  private Value promote(final QueryContext qc, final StaticContext sc, final InputInfo ii,
-      final Item it, final boolean opt) throws QueryException {
-
-    if(type instanceof AtomType) {
-      final Item atom = StandardFunc.atom(it, ii);
-      if(atom != it && atom.type.instanceOf(type)) return it;
-      if(atom.type == AtomType.ATM) {
-        if(type.nsSensitive()) {
-          if(sc.xquery3()) throw NSSENS.get(ii, it.type, type);
-          throw Err.treatError(ii, it, withOcc(Occ.ONE));
-        }
-        return type.cast(atom, qc, sc, ii);
-      }
-
-      final Type at = atom.type, tt = type;
-      if(tt == AtomType.DBL && (at.instanceOf(AtomType.FLT) || at.instanceOf(AtomType.DEC)))
-        return Dbl.get(atom.dbl(ii));
-      if(tt == AtomType.FLT && at.instanceOf(AtomType.DEC))
-        return Flt.get(atom.flt(ii));
-      if(tt == AtomType.STR && at.instanceOf(AtomType.URI))
-        return Str.get(atom.string(ii));
-    } else if(it instanceof FItem && type instanceof FuncType) {
-      return ((FItem) it).coerceTo((FuncType) type, qc, ii, opt);
-    }
-
-    throw Err.treatError(ii, it, withOcc(Occ.ONE));
+    if(!ins) throw treatError(ii, val, this);
   }
 
   /**
@@ -454,39 +421,74 @@ public final class SeqType {
    * @param qc query context
    * @param sc static context
    * @param ii input info
-   * @param val value to convert
+   * @param value value to convert
    * @param opt if the result should be optimized
    * @return converted value
    * @throws QueryException if the conversion was not possible
    */
   public Value promote(final QueryContext qc, final StaticContext sc, final InputInfo ii,
-      final Value val, final boolean opt) throws QueryException {
+      final Value value, final boolean opt) throws QueryException {
 
-    final long n = val.size();
-    if(!occ.check(n)) throw Err.treatError(ii, val, this);
+    final int n = (int) value.size();
+    if(!occ.check(n)) throw treatError(ii, value, this);
     if(n == 0) return Empty.SEQ;
-    if(val.isItem()) return instance((Item) val, true) ? val : promote(qc, sc, ii, (Item) val, opt);
 
     ValueBuilder vb = null;
-    final Item fst = val.itemAt(0);
-    if(!instance(fst, true)) {
-      vb = new ValueBuilder(new Item[(int) val.size()], 0);
-      vb.add(promote(qc, sc, ii, fst, opt));
-    } else if(val.homogeneous()) {
-      return val;
-    }
-
-    for(int i = 1; i < n; i++) {
-      final Item it = val.itemAt(i);
-      if(vb != null) {
-        vb.add(instance(it, true) ? it : promote(qc, sc, ii, it, opt));
-      } else if(!instance(it, true)) {
-        vb = new ValueBuilder(new Item[(int) val.size()], 0);
-        for(int j = 0; j < i; j++) vb.add(val.itemAt(j));
-        vb.add(promote(qc, sc, ii, it, opt));
+    for(int i = 0; i < n; i++) {
+      final Item it = value.itemAt(i);
+      if(instance(it, true)) {
+        if(i == 0 && value.homogeneous()) return value;
+        if(vb != null) vb.add(it);
+      } else {
+        if(vb == null) {
+          vb = new ValueBuilder(new Item[n], 0);
+          for(int j = 0; j < i; j++) vb.add(value.itemAt(j));
+        }
+        promote(qc, sc, ii, it, opt, vb);
       }
     }
-    return vb != null ? Seq.get(vb.items(), (int) vb.size(), type) : val;
+    return vb != null ? Seq.get(vb.items(), (int) vb.size(), type) : value;
+  }
+
+  /**
+   * Promotes an item to the type of this sequence type.
+   * @param qc query context
+   * @param sc static context
+   * @param ii input info
+   * @param item item to promote
+   * @param opt if the result should be optimized
+   * @param vb value builder
+   * @throws QueryException query exception
+   */
+  private void promote(final QueryContext qc, final StaticContext sc, final InputInfo ii,
+      final Item item, final boolean opt, final ValueBuilder vb) throws QueryException {
+
+    if(type instanceof AtomType) {
+      for(final Item atom : item.atomValue(ii)) {
+        final Type tp = atom.type;
+        if(tp.instanceOf(type)) {
+          vb.add(atom);
+        } else if(tp == AtomType.ATM) {
+          if(type.nsSensitive()) {
+            if(sc.xquery3()) throw NSSENS_X_X.get(ii, item.type, type);
+            throw treatError(ii, item, withOcc(Occ.ONE));
+          }
+          vb.add(type.cast(atom, qc, sc, ii));
+        } else if(type == AtomType.DBL && (tp == AtomType.FLT || tp.instanceOf(AtomType.DEC))) {
+          vb.add(Dbl.get(atom.dbl(ii)));
+        } else if(type == AtomType.FLT && tp.instanceOf(AtomType.DEC)) {
+          vb.add(Flt.get(atom.flt(ii)));
+        } else if(type == AtomType.STR && atom instanceof Uri) {
+          vb.add(Str.get(atom.string(ii)));
+        } else {
+          throw treatError(ii, item, withOcc(Occ.ONE));
+        }
+      }
+    } else if(item instanceof FItem && type instanceof FuncType) {
+      vb.add(((FItem) item).coerceTo((FuncType) type, qc, ii, opt));
+    } else {
+      throw treatError(ii, item, withOcc(Occ.ONE));
+    }
   }
 
   /**
@@ -576,11 +578,20 @@ public final class SeqType {
   }
 
   /**
-   * Tests if the type may be numeric.
+   * Tests if the type may be numeric. User for predicate rewritings.
    * @return result of check
    */
   public boolean mayBeNumber() {
     return type.isNumber() || AtomType.AAT.instanceOf(type);
+  }
+
+  /**
+   * Tests if the type may be an array.
+   * @return result of check
+   */
+  public boolean mayBeArray() {
+    return !(type.instanceOf(AtomType.AAT) || type instanceof ListType || type instanceof MapType ||
+        type instanceof NodeType);
   }
 
   /**
@@ -599,9 +610,9 @@ public final class SeqType {
    * @return result of check
    */
   public boolean instanceOf(final SeqType t) {
-    return (t.type == AtomType.ITEM || type.instanceOf(t.type)) && occ.instanceOf(t.occ)
+    return (t.type == AtomType.ITEM || type.instanceOf(t.type)) && occ.instanceOf(t.occ) &&
       // [LW] complete kind check
-      && (t.kind == null || kind != null && kind.intersect(t.kind) != null);
+      (t.kind == null || kind != null && kind.intersect(t.kind) != null);
   }
 
   /**

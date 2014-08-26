@@ -11,8 +11,6 @@ import org.basex.core.parse.Commands.Cmd;
 import org.basex.core.parse.Commands.CmdCreate;
 import org.basex.data.*;
 import org.basex.index.*;
-import org.basex.index.ft.*;
-import org.basex.index.value.*;
 import org.basex.io.*;
 import org.basex.io.in.*;
 import org.basex.util.*;
@@ -96,13 +94,15 @@ public final class CreateDB extends ACreate {
         // second step: open database and create index structures
         final Open open = new Open(name);
         if(!open.run(context)) return error(open.info());
+
         final Data data = context.data();
+        if(!startUpdate()) return false;
         try {
           if(data.meta.createtext) create(IndexType.TEXT,      data, this);
           if(data.meta.createattr) create(IndexType.ATTRIBUTE, data, this);
           if(data.meta.createftxt) create(IndexType.FULLTEXT,  data, this);
         } finally {
-          data.finishUpdate();
+          finishUpdate();
         }
       }
       if(options.get(MainOptions.CREATEONLY)) new Close().run(context);
@@ -162,23 +162,14 @@ public final class CreateDB extends ACreate {
     // database is currently locked by another process
     if(ctx.pinned(name)) throw new BaseXException(DB_PINNED_X, name);
 
-    // create disk builder, set database path
-    final DiskBuilder builder = new DiskBuilder(name, parser, ctx);
+    // create disk-based instance
+    new DiskBuilder(name, parser, ctx).build().close();
 
-    // build database and index structures
-    try {
-      final Data data = builder.build();
-      if(data.meta.createtext) data.setIndex(IndexType.TEXT,
-        new ValueIndexBuilder(data, true).build());
-      if(data.meta.createattr) data.setIndex(IndexType.ATTRIBUTE,
-        new ValueIndexBuilder(data, false).build());
-      if(data.meta.createftxt) data.setIndex(IndexType.FULLTEXT,
-        new FTBuilder(data).build());
-      data.close();
-    } finally {
-      builder.close();
-    }
-    return Open.open(name, ctx);
+    final Data data = Open.open(name, ctx);
+    if(data.meta.createtext) create(IndexType.TEXT,      data, null);
+    if(data.meta.createattr) create(IndexType.ATTRIBUTE, data, null);
+    if(data.meta.createftxt) create(IndexType.FULLTEXT,  data, null);
+    return data;
   }
 
   @Override

@@ -62,6 +62,20 @@ public class IntList extends ElementList {
     size = s;
     return this;
   }
+  /**
+   * Adds elements to the array.
+   * @param elements elements to be added
+   * @return self reference
+   */
+  public final IntList add(final int... elements) {
+    int[] lst = list;
+    final int l = elements.length, s = size, ns = s + l;
+    if(ns > lst.length) lst = Arrays.copyOf(lst, newSize(ns));
+    System.arraycopy(elements, 0, lst, s, l);
+    list = lst;
+    size = ns;
+    return this;
+  }
 
   /**
    * Returns the element at the specified position.
@@ -200,7 +214,7 @@ public class IntList extends ElementList {
 
   /**
    * Returns an array with all elements and invalidates the internal array.
-   * Warning: the function must only be called if the builder is discarded afterwards.
+   * Warning: the function must only be called if the list is discarded afterwards.
    * @return array (internal representation!)
    */
   public int[] finish() {

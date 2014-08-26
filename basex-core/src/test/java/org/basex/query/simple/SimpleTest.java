@@ -22,6 +22,8 @@ public final class SimpleTest extends QueryTest {
 
       { "Compare 1", "xs:QName('a') = attribute a { 'b' }" },
       { "Compare 2", booleans(false), "<a/>/x = (c, ())" },
+      { "Compare 3", booleans(false), "(4,5,6) < (1,2)" },
+      { "Compare 4", booleans(false), "(4,5) < (1,2,3)" },
 
       { "FLWOR 1", integers(3), "(for $i in 1 to 5 return $i)[3]" },
       { "FLWOR 2", integers(4),
@@ -94,6 +96,7 @@ public final class SimpleTest extends QueryTest {
       { "Filter 8", integers(1), "1[boolean(max((<a>1</a>, <b>2</b>)))]" },
       { "Filter 9", strings("x"), "string(<n><a/><a>x</a></n>/a/text()[.][.])" },
       { "Filter 10", strings("x"), "string(<n><a/><a>x</a></n>/a/text()[1][1])" },
+      { "Filter 11", "1[1 to 2]" },
 
       { "ContextItem 0", nodes(0), "." },
       { "ContextItem 1", nodes(0), "42[not(.)], ." },
@@ -168,14 +171,17 @@ public final class SimpleTest extends QueryTest {
       { "Limits 8", "-9223372036854775808 idiv -1" },
       { "Limits 9", "-9223372036854775807 - 1024" },
       { "Limits 10", "-9223372036854775808 - 1" },
-      // { "Limits 11", itr(-9223372036854775808L), "-9223372036854775808" },
 
       { "Empty 1", strings(""), "format-integer(let $x := random:integer() return (), '0')" },
       { "Empty 2", empty(), "math:sin(let $x := random:integer() return ())" },
       { "Empty 3", booleans(true), "let $a := () return empty($a)" },
       { "Empty 4", booleans(false), "let $a := () return exists($a)" },
       { "Empty 5", booleans(true), "declare function local:foo($x as empty-sequence())"
-          + "as xs:boolean { empty($x) }; local:foo(())" }
+          + "as xs:boolean { empty($x) }; local:foo(())" },
+
+      { "Map 1", strings("c", "a"), "<a/> ! (('b'!'c'), name())" },
+      { "Map 2", integers(5), "((1 to 100000000) ! 5)[1]" },
+      { "Map 3", strings("a", "b"), "<a><b/></a>/b ! ancestor-or-self::node() ! name()" },
     };
   }
 }

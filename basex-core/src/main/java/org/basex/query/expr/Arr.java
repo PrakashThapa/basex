@@ -94,7 +94,7 @@ public abstract class Arr extends ParseExpr {
    * Returns true if at least one argument is empty or will yield 0 results.
    * @return result of check
    */
-  final boolean oneIsEmpty() {
+  protected final boolean oneIsEmpty() {
     for(final Expr e : exprs) if(e.isEmpty()) return true;
     return false;
   }
@@ -110,7 +110,7 @@ public abstract class Arr extends ParseExpr {
    * @return string representation
    */
   protected String toString(final String sep) {
-    return new TokenBuilder(PAR1).addSep(exprs, sep).add(PAR2).toString();
+    return new TokenBuilder(PAREN1).addSep(exprs, sep).add(PAREN2).toString();
   }
 
   @Override

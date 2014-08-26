@@ -109,9 +109,9 @@ public final class FElem extends FNode {
    * Constructor for creating an element with nodes, attributes and
    * namespace declarations.
    * @param name element name
-   * @param ns namespaces; can be {@code null}
-   * @param children children; can be {@code null}
-   * @param atts attributes; can be {@code null}
+   * @param ns namespaces, may be {@code null}
+   * @param children children, may be {@code null}
+   * @param atts attributes, may be {@code null}
    */
   public FElem(final QNm name, final Atts ns, final ANodeList children, final ANodeList atts) {
     super(NodeType.ELM);
@@ -402,9 +402,9 @@ public final class FElem extends FNode {
     final ANodeList at = atts != null ? new ANodeList(atts.size()) : null;
     final Atts as = ns != null ? new Atts() : null;
     final FElem node = new FElem(name, as, ch, at);
-    if(ns != null) for(int n = 0; n < ns.size(); ++n) as.add(ns.name(n), ns.value(n));
-    if(atts != null) for(final ANode n : atts) at.add(n.copy());
-    if(children != null) for(final ANode n : children) ch.add(n.copy());
+    if(as != null) for(int n = 0; n < ns.size(); ++n) as.add(ns.name(n), ns.value(n));
+    if(at != null) for(final ANode n : atts) at.add(n.copy());
+    if(ch != null) for(final ANode n : children) ch.add(n.copy());
     node.parent(parent);
     return node.optimize();
   }

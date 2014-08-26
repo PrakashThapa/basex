@@ -238,7 +238,7 @@ final class QueryCompiler {
    * @throws QueryException if a variable directly calls itself
    */
   private int[] neighbors(final Scope curr) throws QueryException {
-    final IntList adj = new IntList();
+    final IntList adj = new IntList(0);
     final boolean ok = curr.visit(new ASTVisitor() {
       @Override
       public boolean staticVar(final StaticVar var) {
@@ -271,9 +271,10 @@ final class QueryCompiler {
         return true;
       }
     });
+
     if(!ok) {
       final StaticVar var = (StaticVar) curr;
-      throw Err.CIRCREF.get(var.info, "$" + var.name);
+      throw CIRCREF_X.get(var.info, "$" + var.name);
     }
     return adj.finish();
   }
