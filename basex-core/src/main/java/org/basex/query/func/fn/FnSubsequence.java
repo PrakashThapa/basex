@@ -74,7 +74,6 @@ public final class FnSubsequence extends StandardFunc {
     };
   }
 
-
   @Override
   public Value value(final QueryContext qc) throws QueryException {
     final double dstart = toDouble(exprs[1], qc);
@@ -123,7 +122,7 @@ public final class FnSubsequence extends StandardFunc {
   }
 
   @Override
-  protected Expr opt(final QueryContext qc, final VarScope scp) throws QueryException {
+  protected Expr opt(final QueryContext qc, final VarScope scp) {
     final SeqType st = exprs[0].seqType();
     seqType = SeqType.get(st.type, st.zeroOrOne() ? Occ.ZERO_ONE : Occ.ZERO_MORE);
     return this;

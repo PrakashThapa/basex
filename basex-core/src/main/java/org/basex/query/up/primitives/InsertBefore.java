@@ -3,7 +3,7 @@ package org.basex.query.up.primitives;
 import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.query.up.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
 
@@ -26,20 +26,15 @@ public final class InsertBefore extends NodeCopy {
   }
 
   @Override
-  public void merge(final Update up) {
-    final InsertBefore newOne = (InsertBefore) up;
+  public void merge(final Update update) {
+    final InsertBefore newOne = (InsertBefore) update;
     final ANodeList newInsert = newOne.nodes;
     for(final ANode n : newInsert) nodes.add(n);
   }
 
   @Override
-  public void addAtomics(final AtomicUpdateCache l) {
-    l.addInsert(pre, data.parent(pre, data.kind(pre)), insseq);
-  }
-
-  @Override
-  public NodeUpdate[] substitute(final MemData tmp) {
-    return new NodeUpdate[] { this };
+  public void addAtomics(final AtomicUpdateCache auc) {
+    auc.addInsert(pre, data.parent(pre, data.kind(pre)), insseq);
   }
 
   @Override

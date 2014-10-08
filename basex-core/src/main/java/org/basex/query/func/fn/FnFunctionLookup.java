@@ -18,7 +18,7 @@ import org.basex.util.*;
 public final class FnFunctionLookup extends StandardFunc {
   @Override
   public Item item(final QueryContext qc, final InputInfo ii) throws QueryException {
-    final QNm name = toQNm(exprs[0], qc, sc, false);
+    final QNm name = toQNm(exprs[0], qc, false);
     final long arity = toLong(exprs[1], qc);
     if(arity < 0 || arity > Integer.MAX_VALUE) throw FUNCUNKNOWN_X.get(ii, name);
 
@@ -32,7 +32,7 @@ public final class FnFunctionLookup extends StandardFunc {
   }
 
   @Override
-  protected Expr opt(final QueryContext qc, final VarScope scp) throws QueryException {
+  protected Expr opt(final QueryContext qc, final VarScope scp) {
     for(final StaticFunc sf : qc.funcs.funcs()) sf.compile(qc);
     return this;
   }

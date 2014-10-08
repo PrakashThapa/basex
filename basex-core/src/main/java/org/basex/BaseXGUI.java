@@ -69,14 +69,14 @@ public final class BaseXGUI extends Main {
     // reduce number of results to save memory
     context.options.set(MainOptions.MAXHITS, gopts.get(GUIOptions.MAXHITS));
 
+    // initialize look and feel
+    init(gopts);
     // initialize fonts and colors
     GUIConstants.init(gopts);
 
     SwingUtilities.invokeLater(new Runnable() {
       @Override
       public void run() {
-        // initialize look and feel
-        init(gopts);
         // open main window
         final GUI gui = new GUI(context, gopts);
         if(osxGUI != null) osxGUI.init(gui);
@@ -87,7 +87,7 @@ public final class BaseXGUI extends Main {
 
           final IOFile io = new IOFile(file);
           final boolean xml = file.endsWith(IO.XMLSUFFIX);
-          if(xml && BaseXDialog.confirm(gui, Util.info(Text.CREATE_DB_FILE, io))) {
+          if(xml && BaseXDialog.confirm(gui, Util.info(CREATE_DB_FILE, io))) {
             gopts.set(GUIOptions.INPUTPATH, io.path());
             gopts.set(GUIOptions.DBNAME, io.dbname());
             DialogProgress.execute(gui, new Check(file));

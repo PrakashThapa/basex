@@ -2,7 +2,7 @@ package org.basex.query.value.map;
 
 import org.basex.query.*;
 import org.basex.query.iter.*;
-import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
@@ -195,6 +195,11 @@ final class Branch extends TrieNode {
   @Override
   void keys(final ValueBuilder ks) {
     for(final TrieNode nd : kids) if(nd != null) nd.keys(ks);
+  }
+
+  @Override
+  void values(final ValueBuilder vs) {
+    for(final TrieNode nd : kids) if(nd != null) nd.values(vs);
   }
 
   @Override

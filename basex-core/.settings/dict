@@ -344,3 +344,6 @@ testsuite
 testinit
 subarrays
 jav
+quaternary
+ignorable
+javascript

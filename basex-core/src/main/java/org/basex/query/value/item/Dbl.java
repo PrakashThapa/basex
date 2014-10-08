@@ -6,7 +6,7 @@ import java.math.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
-import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
 
@@ -90,25 +90,25 @@ public final class Dbl extends ANum {
 
   @Override
   public Dbl abs() {
-    return value > 0d || 1 / value > 0 ? this : Dbl.get(-value);
+    return value > 0d || 1 / value > 0 ? this : get(-value);
   }
 
   @Override
   public Dbl ceiling() {
     final double d = Math.ceil(value);
-    return d == value ? this : Dbl.get(d);
+    return d == value ? this : get(d);
   }
 
   @Override
   public Dbl floor() {
     final double d = Math.floor(value);
-    return d == value ? this : Dbl.get(d);
+    return d == value ? this : get(d);
   }
 
   @Override
   public Dbl round(final int scale, final boolean even) {
     final double v = rnd(scale, even);
-    return v == value ? this : Dbl.get(v);
+    return v == value ? this : get(v);
   }
 
   /**
@@ -121,7 +121,7 @@ public final class Dbl extends ANum {
     double v = value;
     if(v == .0 || v == -.0 || Double.isNaN(v) || Double.isInfinite(v) || s > 322) return v;
     if(s < -308) return 0;
-    if(!e & s == 0) {
+    if(!e && s == 0) {
       if(v >= -.5 && v < .0) return -.0;
       if(v > Long.MIN_VALUE && v < Long.MAX_VALUE) return Math.round(v);
     }

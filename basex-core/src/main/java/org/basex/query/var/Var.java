@@ -56,7 +56,7 @@ public final class Var extends ExprInfo {
     this.sc = sc;
     this.name = name;
     this.param = param;
-    this.promote = param;
+    promote = param;
     this.declType = declType == null || declType.eq(SeqType.ITEM_ZM) ? null : declType;
     seqType = SeqType.ITEM_ZM;
     id = qc.varIDs++;
@@ -181,7 +181,7 @@ public final class Var extends ExprInfo {
         et.type.instanceOf(vt.type) && et.occ.instanceOf(vt.occ)) return;
 
     if(!promote || !(et.type instanceof NodeType) && !et.promotable(vt)) {
-      throw (vt.type.nsSensitive() && sc.xquery3() ? NSSENS_X_X : INVCAST_X_X).get(info, et, vt);
+      throw (vt.type.nsSensitive() ? NSSENS_X_X : INVCAST_X_X).get(info, et, vt);
     }
   }
 

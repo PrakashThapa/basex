@@ -78,7 +78,7 @@ public final class Add extends ACreate {
    */
   boolean build() {
     String name = MetaData.normPath(args[0]);
-    if(name == null) return error(NAME_INVALID_X, args[0]);
+    if(name == null) return error(PATH_INVALID_X, args[0]);
 
     // retrieve input
     final IO io;
@@ -121,7 +121,7 @@ public final class Add extends ACreate {
       } else {
         build = new MemBuilder(name, parser);
       }
-      clip = new DataClip(build.build());
+      clip = build.dataClip();
       return true;
     } catch(final IOException ex) {
       return error(Util.message(ex));

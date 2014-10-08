@@ -2,7 +2,6 @@ package org.basex.query.up.primitives;
 
 import java.util.*;
 
-import org.basex.core.*;
 import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.query.*;
@@ -18,8 +17,6 @@ import org.basex.util.options.*;
 public final class DBAdd extends DBUpdate {
   /** Database update options. */
   private final DBOptions options;
-  /** Query context. */
-  private final QueryContext qc;
   /** Container for new database documents. */
   private final DBNew add;
   /** Size. */
@@ -38,8 +35,7 @@ public final class DBAdd extends DBUpdate {
       final InputInfo info) throws QueryException {
 
     super(UpdateType.DBADD, data, info);
-    this.qc = qc;
-    options = new DBOptions(opts.free(), Arrays.asList(DBOptions.PARSING), info);
+    options = new DBOptions(opts, DBOptions.PARSING, info);
 
     final ArrayList<NewInput> docs = new ArrayList<>();
     docs.add(input);
@@ -47,26 +43,20 @@ public final class DBAdd extends DBUpdate {
   }
 
   @Override
-  public void merge(final Update up) {
-    final DBAdd a = (DBAdd) up;
+  public void merge(final Update update) {
+    final DBAdd a = (DBAdd) update;
     for(final NewInput input : a.add.inputs) add.inputs.add(input);
   }
 
   @Override
   public void prepare(final MemData tmp) throws QueryException {
     size = add.inputs.size();
-    final MainOptions opts = qc.context.options;
-    options.assign(opts);
-    try {
-      add.addDocs(new MemData(tmp), data.meta.name);
-    } finally {
-      options.reset(opts);
-    }
+    add.addDocs(tmp, data.meta.name, options);
   }
 
   @Override
   public void apply() {
-    data.insert(data.meta.size, -1, new DataClip(add.md));
+    data.insert(data.meta.size, -1, new DataClip(add.data));
   }
 
   @Override

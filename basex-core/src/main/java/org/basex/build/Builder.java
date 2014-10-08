@@ -8,6 +8,7 @@ import java.io.*;
 
 import org.basex.core.*;
 import org.basex.data.*;
+import org.basex.data.atomic.*;
 import org.basex.index.name.*;
 import org.basex.index.path.*;
 import org.basex.io.*;
@@ -93,7 +94,7 @@ public abstract class Builder extends Proc {
   public final void closeDoc() throws IOException {
     final int pre = pstack.get(--level);
     setSize(pre, meta.size - pre);
-    meta.ndocs++;
+    meta.ndocs.incrementAndGet();
     ns.close(meta.size);
   }
 
@@ -198,6 +199,13 @@ public abstract class Builder extends Proc {
   public abstract Data build() throws IOException;
 
   /**
+   * Returns a data clip with the parsed input.
+   * @return data data clip
+   * @throws IOException I/O exception
+   */
+  public abstract DataClip dataClip() throws IOException;
+
+  /**
    * Closes open references.
    * @throws IOException I/O exception
    */
@@ -274,7 +282,7 @@ public abstract class Builder extends Proc {
     // parse namespaces
     ns.prepare();
     final int nl = nsp.size();
-    for(int nx = 0; nx < nl; nx++) ns.add(nsp.name(nx), nsp.value(nx), meta.size);
+    for(int nx = 0; nx < nl; nx++) ns.add(nsp.name(nx), nsp.value(nx), pre);
 
     // get and store element references
     final int dis = level == 0 ? 1 : pre - pstack.get(level - 1);

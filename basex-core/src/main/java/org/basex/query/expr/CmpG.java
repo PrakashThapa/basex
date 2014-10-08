@@ -12,6 +12,7 @@ import org.basex.query.expr.CmpV.OpV;
 import org.basex.query.func.*;
 import org.basex.query.iter.*;
 import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
@@ -190,7 +191,7 @@ public final class CmpG extends Cmp {
   }
 
   @Override
-  public Expr optimizeEbv(final QueryContext qc, final VarScope scp) throws QueryException {
+  public Expr optimizeEbv(final QueryContext qc, final VarScope scp) {
     // e.g.: exists(...) = true() -> exists(...)
     // checking one direction is sufficient, as operators may have been swapped
     return (op == OpG.EQ && exprs[1] == Bln.TRUE || op == OpG.NE && exprs[1] == Bln.FALSE) &&

@@ -6,7 +6,7 @@ import java.math.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
-import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
 
@@ -78,25 +78,25 @@ public final class Flt extends ANum {
 
   @Override
   public Flt abs() {
-    return value > 0d || 1 / value > 0 ? this : Flt.get(-value);
+    return value > 0d || 1 / value > 0 ? this : get(-value);
   }
 
   @Override
   public Flt ceiling() {
     final float v = (float) Math.ceil(value);
-    return v == value ? this : Flt.get(v);
+    return v == value ? this : get(v);
   }
 
   @Override
   public Flt floor() {
     final float v = (float) Math.floor(value);
-    return v == value ? this : Flt.get(v);
+    return v == value ? this : get(v);
   }
 
   @Override
   public Flt round(final int scale, final boolean even) {
     final float v = Dbl.get(value).round(scale, even).flt();
-    return value == v ? this : Flt.get(v);
+    return value == v ? this : get(v);
   }
 
   @Override

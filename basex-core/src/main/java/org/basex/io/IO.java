@@ -40,6 +40,8 @@ public abstract class IO {
   public static final String JSONSUFFIX = ".json";
   /** JAR file suffix. */
   public static final String JARSUFFIX = ".jar";
+  /** JS file suffix. */
+  public static final String JSSUFFIX = ".js";
   /** TGZIP file suffix. */
   public static final String TARGZSUFFIX = ".tar.gz";
   /** TGZIP file suffix. */
@@ -111,7 +113,7 @@ public abstract class IO {
    * @param path file path
    */
   private void init(final String path) {
-    this.pth = path;
+    pth = path;
     final String n = path.substring(path.lastIndexOf('/') + 1);
     // use current time if no name is given
     nm = n.isEmpty() ? Long.toString(System.currentTimeMillis()) + BASEXSUFFIX + XMLSUFFIX : n;

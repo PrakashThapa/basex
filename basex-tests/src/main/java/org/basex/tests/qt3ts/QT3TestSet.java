@@ -11,11 +11,10 @@ import org.basex.core.cmd.Set;
 import org.basex.io.*;
 import org.basex.query.*;
 import org.basex.query.func.*;
-import org.basex.query.util.DeepCompare.Mode;
+import org.basex.query.func.fn.Compare.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.tests.bxapi.*;
-import org.basex.tests.bxapi.XQuery;
 import org.basex.tests.bxapi.xdm.*;
 import org.basex.util.*;
 import org.junit.*;
@@ -49,7 +48,6 @@ public abstract class QT3TestSet {
   public void buildUp() throws BaseXException {
     ctx = new Context();
     new Set(MainOptions.CHOP, false).execute(ctx);
-    new Set(MainOptions.XQUERY3, true).execute(ctx);
     result = null;
   }
 
@@ -59,11 +57,6 @@ public abstract class QT3TestSet {
     ctx.close();
     ctx = null;
     result = null;
-  }
-
-  /** Sets the XQuery version to 1.0. */
-  protected void xquery10() {
-    ctx.options.set(MainOptions.XQUERY3, false);
   }
 
   /**
@@ -203,7 +196,7 @@ public abstract class QT3TestSet {
     if(result.value != null) return fail(Util.info("Error: '%'", code));
     if(code.equals("*")) return true;
 
-    String name = code, uri = string(QueryText.ERRORURI);
+    String name = code, uri = string(QueryText.ERROR_URI);
     final Matcher m = BIND.matcher(code);
     if(m.find()) {
       uri = m.group(1);

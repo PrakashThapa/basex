@@ -4,7 +4,7 @@ import static org.basex.query.QueryText.*;
 import static org.basex.util.Token.*;
 
 import org.basex.query.iter.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
@@ -133,9 +133,9 @@ public final class FElem extends FNode {
 
     // general stuff
     final String nu = elem.getNamespaceURI();
-    this.name = new QNm(elem.getNodeName(), nu == null ? EMPTY : token(nu));
-    this.parent = par;
-    this.ns = new Atts();
+    name = new QNm(elem.getNodeName(), nu == null ? EMPTY : token(nu));
+    parent = par;
+    ns = new Atts();
 
     // attributes and namespaces
     final NamedNodeMap at = elem.getAttributes();
@@ -240,7 +240,6 @@ public final class FElem extends FNode {
     if(ns != null && ns.isEmpty()) ns = null;
     return this;
   }
-
 
   /**
    * Adds a namespace declaration for the namespace in the given QName.
@@ -366,7 +365,7 @@ public final class FElem extends FNode {
 
   @Override
   public byte[] baseURI() {
-    final byte[] b = attribute(new QNm(BASE, XMLURI));
+    final byte[] b = attribute(new QNm(BASE, XML_URI));
     return b != null ? b : EMPTY;
   }
 

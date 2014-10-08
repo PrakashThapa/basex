@@ -75,7 +75,7 @@ public final class Functions extends TokenSet {
     for(final AtomType t : AtomType.VALUES) {
       if(t.parent == null) continue;
       final byte[] u = t.name.uri();
-      if(eq(u, XSURI) && t != AtomType.NOT && t != AtomType.AAT && ls.similar(
+      if(eq(u, XS_URI) && t != AtomType.NOT && t != AtomType.AAT && ls.similar(
           lc(ln), lc(t.string()))) throw FUNCSIMILAR_X_X.get(ii, name.string(), t.string());
     }
     // no similar name: constructor function found, or abstract type specified
@@ -131,10 +131,10 @@ public final class Functions extends TokenSet {
       final StaticContext sc, final InputInfo ii) throws QueryException {
 
     // parse type constructors
-    if(eq(name.uri(), XSURI)) {
+    if(eq(name.uri(), XS_URI)) {
       final Type type = getCast(name, arity, ii);
       final VarScope scp = new VarScope(sc);
-      final Var[] args = { scp.newLocal(qc, new QNm(QueryText.ITEMM, ""), SeqType.AAT_ZO, true) };
+      final Var[] args = { scp.newLocal(qc, new QNm(ITEMM, ""), SeqType.AAT_ZO, true) };
       final Expr e = new Cast(sc, ii, new VarRef(ii, args[0]), type.seqType());
       final FuncType tp = FuncType.get(e.seqType(), SeqType.AAT_ZO);
       return new FuncItem(sc, new Ann(), name, args, tp, e, scp.stackSize());
@@ -187,7 +187,6 @@ public final class Functions extends TokenSet {
     return jm == null ? null : new FuncLit(new Ann(), name, vs, jm, jt, scp, sc, ii);
   }
 
-
   /**
    * Returns a function item for a user-defined function.
    * @param sf static function
@@ -219,19 +218,18 @@ public final class Functions extends TokenSet {
    * or {@code null}.
    * @param name name of the function
    * @param args optional arguments
-   * @param dyn compile-/run-time flag
    * @param qc query context
    * @param sc static context
    * @param ii input info
    * @return function instance
    * @throws QueryException query exception
    */
-  public static TypedFunc get(final QNm name, final Expr[] args, final boolean dyn,
-      final QueryContext qc, final StaticContext sc, final InputInfo ii) throws QueryException {
+  public static TypedFunc get(final QNm name, final Expr[] args, final QueryContext qc,
+      final StaticContext sc, final InputInfo ii) throws QueryException {
 
     // get namespace and local name
     // parse type constructors
-    if(eq(name.uri(), XSURI)) {
+    if(eq(name.uri(), XS_URI)) {
       final Type type = getCast(name, args.length, ii);
       final SeqType to = SeqType.get(type, Occ.ZERO_ONE);
       return TypedFunc.constr(new Cast(sc, ii, args[0], to));
@@ -240,7 +238,6 @@ public final class Functions extends TokenSet {
     // built-in functions
     final StandardFunc fun = get().get(name, args, sc, ii);
     if(fun != null) {
-      if(!sc.xquery3() && fun.has(Flag.X30)) throw FUNC30.get(ii);
       final Ann ann = new Ann();
       if(fun.func.has(Flag.UPD)) {
         ann.add(Ann.Q_UPDATING, Empty.SEQ, ii);
@@ -258,7 +255,7 @@ public final class Functions extends TokenSet {
     if(jf != null) return TypedFunc.java(jf);
 
     // add user-defined function that has not been declared yet
-    if(!dyn && FuncType.find(name) == null) return qc.funcs.getFuncRef(name, args, sc, ii);
+    if(FuncType.find(name) == null) return qc.funcs.getFuncRef(name, args, sc, ii);
 
     // no function found
     return null;
@@ -302,7 +299,7 @@ public final class Functions extends TokenSet {
    */
   private static QueryException similarError(final QNm name, final InputInfo ii, final byte[] key) {
     final int i = indexOf(key, '}');
-    return FUNCSIMILAR_X_X.get(ii, name.prefixId(FNURI), new TokenBuilder(
+    return FUNCSIMILAR_X_X.get(ii, name.prefixId(FN_URI), new TokenBuilder(
         NSGlobal.prefix(substring(key, 2, i))).add(':').add(substring(key, i + 1)).finish());
   }
 

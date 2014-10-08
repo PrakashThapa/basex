@@ -26,7 +26,7 @@ public final class DBCreate extends NameUpdate {
   /** Container for new database documents. */
   private final DBNew add;
   /** Database update options. */
-  private final DBOptions updates;
+  private final DBOptions options;
 
   /**
    * Constructor.
@@ -42,9 +42,9 @@ public final class DBCreate extends NameUpdate {
 
     super(UpdateType.DBCREATE, name, info, qc);
     final ArrayList<Option<?>> supported = new ArrayList<>();
-    for(final Option<?> option : DBOptions.INDEXING) supported.add(option);
-    for(final Option<?> option : DBOptions.PARSING) supported.add(option);
-    updates = new DBOptions(opts.free(), supported, info);
+    Collections.addAll(supported, DBOptions.INDEXING);
+    Collections.addAll(supported, DBOptions.PARSING);
+    options = new DBOptions(opts, supported, info);
     add = new DBNew(qc, input, info);
   }
 
@@ -53,11 +53,11 @@ public final class DBCreate extends NameUpdate {
     if(add.inputs == null || add.inputs.isEmpty()) return;
 
     final MainOptions opts = qc.context.options;
-    updates.assign(opts);
+    options.assign(opts);
     try {
       add.addDocs(new MemData(opts), name);
     } finally {
-      updates.reset(opts);
+      options.reset(opts);
     }
   }
 
@@ -66,15 +66,15 @@ public final class DBCreate extends NameUpdate {
     close();
 
     final MainOptions opts = qc.context.options;
-    updates.assign(opts);
+    options.assign(opts);
     try {
       final Data data = CreateDB.create(name, Parser.emptyParser(opts), qc.context);
 
       // add initial documents and optimize database
-      if(add.md != null) {
+      if(add.data != null) {
         data.startUpdate();
         try {
-          data.insert(data.meta.size, -1, new DataClip(add.md));
+          data.insert(data.meta.size, -1, new DataClip(add.data));
           Optimize.optimize(data, null);
         } finally {
           data.finishUpdate();
@@ -85,7 +85,7 @@ public final class DBCreate extends NameUpdate {
     } catch(final IOException ex) {
       throw UPDBOPTERR_X.get(info, ex);
     } finally {
-      updates.reset(opts);
+      options.reset(opts);
     }
   }
 

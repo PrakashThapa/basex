@@ -27,7 +27,7 @@ public final class Geo extends QueryModule {
   /** GML URI. */
   private static final byte[] URI = token("http://www.opengis.net/gml");
   /** Prefix: "gml". */
-  private static final String GML = "gml";
+  private static final byte[] GML = token("gml");
 
   /** QName gml:Point. */
   private static final QNm Q_GML_POINT = QNm.get(GML, "Point", URI);
@@ -69,7 +69,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public QNm geometryType(final ANode node) throws QueryException {
-    return new QNm(GML + ':' + checkGeo(node).getGeometryType(), URI);
+    return QNm.get(GML, checkGeo(node).getGeometryType(), URI);
   }
 
   /**
@@ -125,7 +125,9 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public Bln isEmpty(final ANode node) throws QueryException {
-    return Bln.get(node != null && checkGeo(node) != null);
+    if(node == null) return Bln.FALSE;
+    checkGeo(node);
+    return Bln.TRUE;
   }
 
   /**
@@ -418,10 +420,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public Dbl x(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_POINT);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Point");
-
+    final Geometry geo = geo(node, "Point", Q_GML_POINT);
     return Dbl.get(geo.getCoordinate().x);
   }
 
@@ -433,10 +432,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public Dbl y(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_POINT);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Point");
-
+    final Geometry geo = geo(node, "Point", Q_GML_POINT);
     return Dbl.get(geo.getCoordinate().y);
   }
 
@@ -448,10 +444,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public Dbl z(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_POINT);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Line");
-
+    final Geometry geo = geo(node, "Point", Q_GML_POINT);
     return Dbl.get(geo.getCoordinate().z);
   }
 
@@ -475,10 +468,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public ANode startPoint(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_LINEARRING, Q_GML_LINESTRING);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Line");
-
+    final Geometry geo = geo(node, "Line", Q_GML_LINEARRING, Q_GML_LINESTRING);
     return gmlWriter(((LineString) geo).getStartPoint());
   }
 
@@ -490,10 +480,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public ANode endPoint(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_LINEARRING, Q_GML_LINESTRING);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Line");
-
+    final Geometry geo = geo(node, "Line", Q_GML_LINEARRING, Q_GML_LINESTRING);
     return gmlWriter(((LineString) geo).getEndPoint());
   }
 
@@ -506,10 +493,8 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public Bln isClosed(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_LINEARRING, Q_GML_LINESTRING, Q_GML_MULTILINESTRING);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Line");
-
+    final Geometry geo = geo(node, "Line",
+        Q_GML_LINEARRING, Q_GML_LINESTRING, Q_GML_MULTILINESTRING);
     return Bln.get(geo instanceof LineString ? ((LineString) geo).isClosed() :
       ((MultiLineString) geo).isClosed());
   }
@@ -523,10 +508,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public Bln isRing(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_LINEARRING, Q_GML_LINESTRING);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Line");
-
+    final Geometry geo = geo(node, "Line", Q_GML_LINEARRING, Q_GML_LINESTRING);
     return Bln.get(((LineString) geo).isRing());
   }
 
@@ -550,10 +532,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public ANode pointN(final ANode node, final Int number) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_LINEARRING, Q_GML_LINESTRING);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Line");
-
+    final Geometry geo = geo(node, "Line", Q_GML_LINEARRING, Q_GML_LINESTRING);
     final int max = geo.getNumPoints();
     final long n = number.itr();
     if(n < 1 || n > max) throw GeoErrors.outOfRangeIdx(number);
@@ -605,10 +584,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public ANode exteriorRing(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_POLYGON);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Polygon");
-
+    final Geometry geo = geo(node, "Polygon", Q_GML_POLYGON);
     return gmlWriter(((Polygon) geo).getExteriorRing());
   }
 
@@ -620,10 +596,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public Int numInteriorRing(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_POLYGON);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Polygon");
-
+    final Geometry geo = geo(node, "Polygon", Q_GML_POLYGON);
     return Int.get(((Polygon) geo).getNumInteriorRing());
   }
 
@@ -636,10 +609,7 @@ public final class Geo extends QueryModule {
    */
   @Deterministic
   public ANode interiorRingN(final ANode node, final Int number) throws QueryException {
-    final Geometry geo = geo(node, Q_GML_POLYGON);
-    if(geo == null && checkGeo(node) != null)
-      throw GeoErrors.geoType(node.qname().local(), "Polygon");
-
+    final Geometry geo = geo(node, "Polygon", Q_GML_POLYGON);
     final long n = number.itr();
     final int max = ((Polygon) geo).getNumInteriorRing();
     if(n < 1 || n > max) throw GeoErrors.outOfRangeIdx(number);
@@ -655,21 +625,42 @@ public final class Geo extends QueryModule {
    * @return geometry
    * @throws QueryException query exception
    */
-  private Geometry checkGeo(final ANode node) throws QueryException {
+  private static Geometry checkGeo(final ANode node) throws QueryException {
     final Geometry geo = geo(node, QNAMES);
     if(geo == null) throw GeoErrors.unrecognizedGeo(node.qname().local());
     return geo;
   }
 
   /**
-   * Reads an element as a gml node. Returns a geometry element
-   * or {@code null} if the element does not match one of the specified types.
+   * Reads an element as a gml node. Returns a geometry element or raises an error if the element
+   * does not match one of the specified types.
+   * @param node xml node containing gml object(s)
+   * @param type expected type (can be {@code null})
+   * @param names allowed geometry types
+   * @return geometry, or {@code null}
+   * @throws QueryException query exception
+   */
+  private static Geometry geo(final ANode node, final String type, final QNm... names)
+      throws QueryException {
+
+    final Geometry geo = geo(node, names);
+    if(geo == null) {
+      checkGeo(node);
+      throw GeoErrors.geoType(node.qname().local(), type);
+    }
+    return geo;
+  }
+
+  /**
+   * Reads an element as a gml node. Returns a geometry element or {@code null}.
    * @param node xml node containing gml object(s)
    * @param names allowed geometry types
    * @return geometry, or {@code null}
    * @throws QueryException query exception
    */
-  private static Geometry geo(final ANode node, final QNm... names) throws QueryException {
+  private static Geometry geo(final ANode node, final QNm... names)
+      throws QueryException {
+
     if(node.type != NodeType.ELM) throw EXPTYPE_X_X_X.get(null, NodeType.ELM, node.type, node);
 
     final QNm qname = node.qname();

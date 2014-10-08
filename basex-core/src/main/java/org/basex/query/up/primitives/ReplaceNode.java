@@ -6,7 +6,7 @@ import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.query.*;
 import org.basex.query.up.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.util.*;
 
 /**
@@ -35,17 +35,12 @@ public final class ReplaceNode extends NodeCopy {
   }
 
   @Override
-  public void merge(final Update up) throws QueryException {
+  public void merge(final Update update) throws QueryException {
     throw UPMULTREPL_X.get(info, node());
   }
 
   @Override
-  public void addAtomics(final AtomicUpdateCache l) {
-    l.addReplace(pre, insseq);
-  }
-
-  @Override
-  public NodeUpdate[] substitute(final MemData tmp) {
-    return new NodeUpdate[] { this };
+  public void addAtomics(final AtomicUpdateCache auc) {
+    auc.addReplace(pre, insseq);
   }
 }

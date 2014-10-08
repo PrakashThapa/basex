@@ -1,5 +1,6 @@
 package org.basex.query.util;
 
+import static org.basex.query.QueryText.*;
 import static org.basex.query.util.Err.ErrType.*;
 
 import org.basex.core.*;
@@ -110,7 +111,7 @@ public enum Err {
   /** BXDB0013. */
   BXDB_CREATEARGS_X_X(BXDB, 13, "Number of specified inputs and paths differs: % vs. %."),
   /** BXDB0014. */
-  BXDB_DIR_X(BXDB, 14, "Database path '%' points to a directory."),
+  BXDB_REPLACE_X(BXDB, 14, "Invalid target path: %."),
   /** BXDB0015. */
   BXDB_NOBACKUP_X(BXDB, 15, "No backup found: %."),
   /** BXDB0016. */
@@ -542,6 +543,11 @@ public enum Err {
   /** FORG0008. */
   FUNZONE_X_X(FORG, 8, "% and % have different timezones."),
 
+  /** FORG0010. */
+  IETF_PARSE_X_X_X(FORG, 10, "Invalid input (% expected, '%' found): '%'."),
+  /** FORG0010. */
+  IETF_INIT_X(FORG, 10, "Invalid input: '%'."),
+
   /** FORX0001. */
   REGMOD_X(FORX, 1, "Invalid regular modifier: '%'."),
   /** FORX0002. */
@@ -852,8 +858,6 @@ public enum Err {
   JAVAAMBIG_X(XPST, 17, "Several implementations found for '%'."),
   /** XPST0017. */
   JAVAINIT_X(XPST, 17, "Class cannot be initialized: %."),
-  /** XPST0003. */
-  FUNC30(XPST, 17, "Function not available in XQuery 1.0."),
 
   /** XPST0051. */
   TYPEUNKNOWN_X(XPST, 51, "Unknown type: %."),
@@ -931,7 +935,7 @@ public enum Err {
   /** XQDY0044. */
   CAINV_(XQDY, 44, "Invalid attribute prefix/namespace: '%'."),
   /** XQDY0054. */
-  CIRCVAR30_X(XQDY, 54, "Static variable depends on itself: %"),
+  CIRCVAR_X(XQDY, 54, "Static variable depends on itself: %"),
   /** XQDY0054. */
   CIRCCTX(XQDY, 54, "Context value is not defined."),
   /** XQDY0064. */
@@ -956,12 +960,14 @@ public enum Err {
   CNINVNS_X(XQDY, 101, "Invalid namespace URI '%'."),
   /** XQDY0102. */
   DUPLNSCONS_X(XQDY, 102, "Duplicate namespace declaration: '%'."),
-  /** XQDY0136. */
-  MAPKEY_X(XQDY, 136, "Key must be a single atomic value: %."),
   /** XQDY0137. */
-  MAPDUPLKEY_X_X_X(XQDY, 137, "Key % already exists in map (value: % vs. %)."),
+  MAPDUPLKEY_X_X_X(XQDY, 137, "Key % already exists in map (values: % vs. %)."),
   /** XQDY0138. */
   ARRAYPOS_X(XQDY, 138, "No value exists at array index %."),
+  /** XQDY0138. */
+  MAPTZ(XQDY, 138, "Map contains keys with and without timezone."),
+  /** XQDY0140. */
+  CTXMAPARRAY(XQDY, 140, "Input of lookup operator is not a map or array: %."),
 
   /** XQST0009. */
   IMPLSCHEMA(XQST, 9, "Schema import not supported."),
@@ -997,8 +1003,6 @@ public enum Err {
   VARDUPL_X(XQST, 49, "Duplicate declaration of static variable $%."),
   /** XQST0052. */
   TYPE30_X(XQST, 52, "Unknown cast type: %."),
-  /** XQST0054. */
-  CIRCVAR_X(XQST, 54, "Global variable depends on itself: %"),
   /** XQST0055. */
   DUPLCOPYNS(XQST, 55, "Duplicate 'copy-namespace' declaration."),
   /** XQST0057. */
@@ -1111,6 +1115,8 @@ public enum Err {
   UPPATHREN_X(XUDY, 15, "Path can only be renamed once: '%'."),
   /** XUDY0016. */
   UPMULTREPL_X(XUDY, 16, "Node can only be replaced once: %."),
+  /** XUDY0016. */
+  UPMULTDOC_X(XUDY, 16, "Document can only be replaced once: %."),
   /** XUDY0017. */
   UPMULTREPV_X(XUDY, 17, "Node can only be replaced once: %"),
   /** XUDY0021. */
@@ -1252,34 +1258,34 @@ public enum Err {
   public enum ErrType {
     // Project errors
 
-    /** BASX Error type. */ BASX(QueryText.BXERR, QueryText.BXERRORS),
+    /** BASX Error type. */ BASX(BXERR_PREFIX, BXERRORS_URI),
 
-    /** BXCL Error type. */ BXCL(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXCO Error type. */ BXCO(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXCS Error type. */ BXCS(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXDB Error type. */ BXDB(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXFE Error type. */ BXFE(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXFT Error type. */ BXFT(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXHL Error type. */ BXHL(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXJS Error type. */ BXJS(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXPR Error type. */ BXPR(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXRA Error type. */ BXRA(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXRE Error type. */ BXRE(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXSL Error type. */ BXSL(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXSQ Error type. */ BXSQ(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXVA Error type. */ BXVA(QueryText.BXERR, QueryText.BXERRORS),
-    /** BXXQ Error type. */ BXXQ(QueryText.BXERR, QueryText.BXERRORS),
-    /** HASH Error type. */ HASH(QueryText.BXERR, QueryText.BXERRORS),
-    /** UNIT Error type. */ UNIT(QueryText.UNIT,  QueryText.UNITURI),
+    /** BXCL Error type. */ BXCL(BXERR_PREFIX, BXERRORS_URI),
+    /** BXCO Error type. */ BXCO(BXERR_PREFIX, BXERRORS_URI),
+    /** BXCS Error type. */ BXCS(BXERR_PREFIX, BXERRORS_URI),
+    /** BXDB Error type. */ BXDB(BXERR_PREFIX, BXERRORS_URI),
+    /** BXFE Error type. */ BXFE(BXERR_PREFIX, BXERRORS_URI),
+    /** BXFT Error type. */ BXFT(BXERR_PREFIX, BXERRORS_URI),
+    /** BXHL Error type. */ BXHL(BXERR_PREFIX, BXERRORS_URI),
+    /** BXJS Error type. */ BXJS(BXERR_PREFIX, BXERRORS_URI),
+    /** BXPR Error type. */ BXPR(BXERR_PREFIX, BXERRORS_URI),
+    /** BXRA Error type. */ BXRA(BXERR_PREFIX, BXERRORS_URI),
+    /** BXRE Error type. */ BXRE(BXERR_PREFIX, BXERRORS_URI),
+    /** BXSL Error type. */ BXSL(BXERR_PREFIX, BXERRORS_URI),
+    /** BXSQ Error type. */ BXSQ(BXERR_PREFIX, BXERRORS_URI),
+    /** BXVA Error type. */ BXVA(BXERR_PREFIX, BXERRORS_URI),
+    /** BXXQ Error type. */ BXXQ(BXERR_PREFIX, BXERRORS_URI),
+    /** HASH Error type. */ HASH(BXERR_PREFIX, BXERRORS_URI),
+    /** UNIT Error type. */ UNIT(UNIT_PREFIX,  UNIT_URI),
 
     // EXPath errors
 
-    /** ARCH Error type. */ ARCH(QueryText.EXPERR, QueryText.EXPERROR),
-    /** BIN  Error type. */ BIN(QueryText.BIN,     QueryText.BINURI),
-    /** CX   Error type. */ CX(QueryText.EXPERR,   QueryText.EXPERROR),
-    /** FILE Error type. */ FILE(QueryText.FILE,   QueryText.FILEURI),
-    /** HC   Error type. */ HC(QueryText.EXPERR,   QueryText.EXPERROR),
-    /** ZIP  Error type. */ ZIP(QueryText.EXPERR,  QueryText.EXPERROR),
+    /** ARCH Error type. */ ARCH(EXPERR_PREFIX, EXPERROR_URI),
+    /** BIN  Error type. */ BIN(BIN_PREFIX,     BIN_URI),
+    /** CX   Error type. */ CX(EXPERR_PREFIX,   EXPERROR_URI),
+    /** FILE Error type. */ FILE(FILE_PREFIX,   FILE_URI),
+    /** HC   Error type. */ HC(EXPERR_PREFIX,   EXPERROR_URI),
+    /** ZIP  Error type. */ ZIP(EXPERR_PREFIX,  EXPERROR_URI),
 
     // W3 errors
 
@@ -1334,7 +1340,7 @@ public enum Err {
      * {@code http://www.w3.org/2005/xqt-errors}.
      */
     ErrType() {
-      this(QueryText.ERR, QueryText.ERRORURI);
+      this(ERR_PREFIX, ERROR_URI);
     }
   }
 
@@ -1454,7 +1460,7 @@ public enum Err {
    * @return never
    */
   public static QueryException circVarError(final StaticVar var) {
-    return (var.sc.xquery3() ? CIRCVAR30_X : CIRCVAR_X).get(var.info, var);
+    return CIRCVAR_X.get(var.info, var);
   }
 
   /**

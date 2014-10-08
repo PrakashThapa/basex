@@ -61,7 +61,6 @@ public final class Resources implements Index {
 
   @Override
   public synchronized void init() {
-    docs.init();
   }
 
   /**
@@ -102,36 +101,25 @@ public final class Resources implements Index {
   }
 
   /**
-   * Returns the pre values of all document nodes starting with the specified path.
+   * Returns the pre values of all document nodes that start with the specified path.
    * @param path input path
-   * @return root nodes (internal representation!)
+   * @return pre values (internal representation!)
    */
   public synchronized IntList docs(final String path) {
     return docs.docs(path, false);
   }
 
   /**
-   * Returns the pre values of all document nodes matching the specified path.
+   * Returns the pre value of the document node that matches the specified path, or {@code -1}.
    * @param path input path
-   * @param exact exact (no prefix) matches
-   * @return root nodes (internal representation!)
-   */
-  public synchronized IntList docs(final String path, final boolean exact) {
-    return docs.docs(path, exact);
-  }
-
-  /**
-   * Returns the pre value of the node that matches the specified path, or {@code -1}.
-   * @param path input path
-   * @return pre value
+   * @return pre value, or {@code -1}
    */
   public int doc(final String path) {
-    return docs.doc(path, true);
+    return docs.doc(path);
   }
 
   /**
-   * Returns the database paths to all binary files that match the
-   * specified path.
+   * Returns the database paths to all binary files that start with the specified path.
    * @param path input path
    * @return root nodes
    */

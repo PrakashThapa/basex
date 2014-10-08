@@ -43,11 +43,12 @@ public final class GUIOptions extends Options {
   /** Default GUI Font. */
   public static final StringOption FONT = new StringOption("FONT", Font.SANS_SERIF);
   /** Default GUI Monospace Font. */
-  public static final StringOption MONOFONT = new StringOption("MONOFONT", Font.MONOSPACED);
+  public static final StringOption MONOFONT = new StringOption("MONOFONT",
+      Prop.WIN ? "Consolas" : Font.MONOSPACED);
   /** Font TYPE = plain, bold, italics). */
   public static final NumberOption FONTTYPE = new NumberOption("FONTTYPE", 0);
   /** Font size. */
-  public static final NumberOption FONTSIZE = new NumberOption("FONTSIZE", 13);
+  public static final NumberOption FONTSIZE = new NumberOption("FONTSIZE", GUIConstants.FONTSIZE);
 
   /** Red GUI color factor. */
   public static final NumberOption COLORRED = new NumberOption("COLORRED", 15);

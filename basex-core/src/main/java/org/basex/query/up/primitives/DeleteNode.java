@@ -41,7 +41,10 @@ public final class DeleteNode extends NodeUpdate {
   }
 
   @Override
-  public void merge(final Update up) {
+  public void prepare(final MemData tmp) { }
+
+  @Override
+  public void merge(final Update update) {
     /* Multiple delete primitives can operate on the same
      * target node, see XQUF. */
   }
@@ -62,12 +65,7 @@ public final class DeleteNode extends NodeUpdate {
   }
 
   @Override
-  public NodeUpdate[] substitute(final MemData tmp) {
-    return new NodeUpdate[] { this };
-  }
-
-  @Override
-  public void addAtomics(final AtomicUpdateCache l) {
-    l.addDelete(pre);
+  public void addAtomics(final AtomicUpdateCache auc) {
+    auc.addDelete(pre);
   }
 }

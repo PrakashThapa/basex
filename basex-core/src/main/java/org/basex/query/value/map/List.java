@@ -4,7 +4,7 @@ import static org.basex.query.QueryText.*;
 
 import org.basex.query.*;
 import org.basex.query.iter.*;
-import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
@@ -221,6 +221,11 @@ final class List extends TrieNode {
   @Override
   void keys(final ValueBuilder ks) {
     for(final Item k : keys) ks.add(k);
+  }
+
+  @Override
+  void values(final ValueBuilder vs) {
+    for(final Value v : values) vs.add(v);
   }
 
   @Override

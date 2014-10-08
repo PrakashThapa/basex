@@ -34,7 +34,6 @@ public abstract class Expr extends ExprInfo {
     /** Non-deterministic. Example: random:double(). */      NDT,
     /** Focus-dependent. Example: position(). */             FCS,
     /** Performs updates. Example: insert expression. */     UPD,
-    /** XQuery 3.0 function. Example: has-children(). */     X30,
     /** Invokes user-supplied functions. Example: fold. */   HOF,
   }
 
@@ -91,6 +90,7 @@ public abstract class Expr extends ExprInfo {
 
   /**
    * Evaluates the expression and returns the resulting value.
+   * The implementation of this method is optional.
    * @param qc query context
    * @return iterator
    * @throws QueryException query exception
@@ -272,17 +272,6 @@ public abstract class Expr extends ExprInfo {
       }
     }
     return change;
-  }
-
-  /**
-   * Copies an expression.
-   * Will be useful for inlining functions, or for copying static queries.
-   * @param qc query context
-   * @param scp variable scope for creating new variables
-   * @return copied expression
-   */
-  public final Expr copy(final QueryContext qc, final VarScope scp) {
-    return copy(qc, scp, new IntObjMap<Var>());
   }
 
   /**

@@ -38,7 +38,6 @@ public final class BaseXList extends BaseXBack {
   /** Numeric list. */
   private boolean num = true;
 
-
   /**
    * Default constructor.
    * @param choice the input values for the list
@@ -187,7 +186,7 @@ public final class BaseXList extends BaseXBack {
     list.addMouseListener(mouse);
     list.addMouseMotionListener(mouse);
     text.setFont(list.getFont());
-    BaseXLayout.setWidth(text, list.getWidth());
+    text.setPreferredSize(new Dimension(list.getWidth(), text.getPreferredSize().height));
     BaseXLayout.addInteraction(list, d);
 
     scroll = new JScrollPane(list);
@@ -279,8 +278,8 @@ public final class BaseXList extends BaseXBack {
 
   @Override
   public void setSize(final int w, final int h) {
-    BaseXLayout.setWidth(text, w);
-    BaseXLayout.setSize(scroll, w, h);
+    setWidth(w);
+    BaseXLayout.setHeight(scroll, h);
   }
 
   /**

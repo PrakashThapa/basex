@@ -8,7 +8,7 @@ import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.query.*;
 import org.basex.query.up.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
 
@@ -49,7 +49,10 @@ public final class ReplaceValue extends NodeUpdate {
   }
 
   @Override
-  public void merge(final Update up) throws QueryException {
+  public void prepare(final MemData tmp) { }
+
+  @Override
+  public void merge(final Update update) throws QueryException {
     throw UPMULTREPV_X.get(info, node());
   }
 
@@ -86,9 +89,8 @@ public final class ReplaceValue extends NodeUpdate {
   }
 
   @Override
-  public void addAtomics(final AtomicUpdateCache l) {
-    if(!substituted())
-      l.addUpdateValue(pre, value);
+  public void addAtomics(final AtomicUpdateCache auc) {
+    if(!substituted()) auc.addUpdateValue(pre, value);
   }
 
   @Override

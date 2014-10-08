@@ -1,8 +1,9 @@
 package org.basex.query.value.map;
 
 import org.basex.query.*;
+import org.basex.query.func.fn.*;
 import org.basex.query.iter.*;
-import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
@@ -43,6 +44,8 @@ abstract class TrieNode {
     @Override
     void keys(final ValueBuilder ks) { }
     @Override
+    void values(final ValueBuilder vs) { }
+    @Override
     boolean hasType(final AtomType kt, final SeqType vt) { return true; }
     @Override
     int hash(final InputInfo ii) { return 0; }
@@ -54,8 +57,8 @@ abstract class TrieNode {
     @Override
     StringBuilder toString(final StringBuilder sb) { return sb; }
     @Override
-    void apply(final ValueBuilder vb, final FItem func, final QueryContext qc, final InputInfo ii)
-        throws QueryException { }
+    void apply(final ValueBuilder vb, final FItem func, final QueryContext qc,
+        final InputInfo ii) { }
   };
 
   /** Size of this node. */
@@ -175,6 +178,12 @@ abstract class TrieNode {
   abstract void keys(final ValueBuilder ks);
 
   /**
+   * Collects all values in this subtree.
+   * @param vs value cache
+   */
+  abstract void values(final ValueBuilder vs);
+
+  /**
    * Applies a function on all entries.
    * @param vb value builder
    * @param func function to apply on keys and values
@@ -228,7 +237,7 @@ abstract class TrieNode {
    */
   static boolean deep(final Value a, final Value b, final Collation coll, final InputInfo ii)
       throws QueryException {
-    return a.size() == b.size() && new DeepCompare(ii).collation(coll).equal(a, b);
+    return a.size() == b.size() && new Compare(ii).collation(coll).equal(a, b);
   }
 
   /**

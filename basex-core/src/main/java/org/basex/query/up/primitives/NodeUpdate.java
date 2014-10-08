@@ -38,12 +38,20 @@ public abstract class NodeUpdate extends DataUpdate {
   }
 
   /**
+   * Prepares this update primitive before execution. This includes e.g. the
+   * preparation of insertion sequences.
+   * @param tmp temporary database
+   * @throws QueryException query exception
+   */
+  public abstract void prepare(final MemData tmp) throws QueryException;
+
+  /**
    * Merges two update primitives, as they have the same target node.
-   * @param p primitive to merge with
+   * @param update primitive to merge with
    * @throws QueryException exception
    */
   @Override
-  public abstract void merge(final Update p) throws QueryException;
+  public abstract void merge(final Update update) throws QueryException;
 
   /**
    * Updates the name pool, which is used to find duplicate attributes
@@ -54,9 +62,9 @@ public abstract class NodeUpdate extends DataUpdate {
 
   /**
    * Adds the atomic update operations for this update primitive to the given list.
-   * @param l list of atomic updates
+   * @param auc list of atomic updates
    */
-  public abstract void addAtomics(final AtomicUpdateCache l);
+  public abstract void addAtomics(final AtomicUpdateCache auc);
 
   /**
    * Substitutes the update primitive if necessary. For instance a 'Replace Value
@@ -74,5 +82,8 @@ public abstract class NodeUpdate extends DataUpdate {
    * @return An array that contains the substituting primitives or this update primitive
    * if no substitution is necessary.
    */
-  public abstract NodeUpdate[] substitute(final MemData tmp);
+  @SuppressWarnings("unused")
+  public NodeUpdate[] substitute(final MemData tmp) {
+    return new NodeUpdate[] { this };
+  }
 }

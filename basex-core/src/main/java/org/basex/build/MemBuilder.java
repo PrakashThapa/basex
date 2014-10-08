@@ -3,6 +3,7 @@ package org.basex.build;
 import java.io.*;
 
 import org.basex.data.*;
+import org.basex.data.atomic.*;
 import org.basex.io.*;
 
 /**
@@ -15,7 +16,6 @@ import org.basex.io.*;
 public final class MemBuilder extends Builder {
   /** Data reference. */
   private MemData data;
-
 
   /**
    * Constructor.
@@ -59,6 +59,13 @@ public final class MemBuilder extends Builder {
 
   @Override
   public MemData build() throws IOException {
+    dataClip();
+    data.meta.assign(parser);
+    return data;
+  }
+
+  @Override
+  public DataClip dataClip() throws IOException {
     init();
     try {
       parse();
@@ -68,7 +75,7 @@ public final class MemBuilder extends Builder {
     }
     close();
     data.finish();
-    return data;
+    return new DataClip(data);
   }
 
   /**
@@ -84,10 +91,6 @@ public final class MemBuilder extends Builder {
     md.createattr = true;
     md.textindex = true;
     md.attrindex = true;
-    final IO file = parser.src;
-    md.original = file != null ? file.path() : "";
-    md.filesize = file != null ? file.length() : 0;
-    md.time = file != null ? file.timeStamp() : System.currentTimeMillis();
     meta = data.meta;
     elemNames = data.elemNames;
     attrNames = data.attrNames;

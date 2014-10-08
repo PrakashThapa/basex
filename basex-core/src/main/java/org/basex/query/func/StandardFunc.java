@@ -18,6 +18,7 @@ import org.basex.query.*;
 import org.basex.query.expr.*;
 import org.basex.query.iter.*;
 import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.map.Map;
@@ -38,7 +39,7 @@ public abstract class StandardFunc extends Arr {
   /** Function signature. */
   public Function func;
   /** Static context. */
-  protected StaticContext sc;
+  public StaticContext sc;
 
   /**
    * Constructor.
@@ -126,7 +127,7 @@ public abstract class StandardFunc extends Arr {
 
   @Override
   public boolean has(final Flag flag) {
-    return func.has(flag) || flag != Flag.X30 && flag != Flag.HOF && super.has(flag);
+    return func.has(flag) || flag != Flag.HOF && super.has(flag);
   }
 
   @Override
@@ -276,7 +277,7 @@ public abstract class StandardFunc extends Arr {
         if(it instanceof Str) {
           key = it.string(null);
         } else {
-          final QNm qnm = toQNm(it, sc, false);
+          final QNm qnm = toQNm(it, false);
           final TokenBuilder tb = new TokenBuilder();
           if(qnm.uri() != null) tb.add('{').add(qnm.uri()).add('}');
           key = tb.add(qnm.local()).finish();
@@ -311,8 +312,7 @@ public abstract class StandardFunc extends Arr {
   }
 
   /**
-   * Checks if the current user has create permissions. If negative, an
-   * exception is thrown.
+   * Checks if the current user has create permissions. If negative, an exception is thrown.
    * @param qc query context
    * @throws QueryException query exception
    */
@@ -361,17 +361,13 @@ public abstract class StandardFunc extends Arr {
   }
 
   /**
-   * Checks if one of the specified arguments point to databases that need to be locked.
+   * Tries to mark the specified argument for locking.
    * @param visitor visitor
-   * @param dbs database arguments
-   * @return result of check
+   * @param i index of argument
+   * @return success flag
    */
-  protected final boolean dataLock(final ASTVisitor visitor, final int dbs) {
-    boolean more = true;
-    for(int db = 0; db < dbs; db++) {
-      more &= visitor.lock(exprs[db] instanceof Str ? string(((Str) exprs[db]).string()) : null);
-    }
-    return more;
+  protected final boolean dataLock(final ASTVisitor visitor, final int i) {
+    return visitor.lock(exprs[i] instanceof Str ? string(((Str) exprs[i]).string()) : null);
   }
 
   /**

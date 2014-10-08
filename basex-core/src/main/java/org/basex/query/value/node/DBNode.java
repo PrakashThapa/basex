@@ -74,7 +74,7 @@ public class DBNode extends ANode {
     super(type);
     this.data = data;
     this.pre = pre;
-    this.parent = par;
+    parent = par;
   }
 
   /**
@@ -193,7 +193,7 @@ public class DBNode extends ANode {
       }
       return new TokenBuilder(data.meta.name).add('/').add(base).finish();
     }
-    final byte[] b = attribute(new QNm(BASE, XMLURI));
+    final byte[] b = attribute(new QNm(BASE, XML_URI));
     return b != null ? b : Token.EMPTY;
   }
 
@@ -465,7 +465,6 @@ public class DBNode extends ANode {
     }
     return t;
   }
-
 
   @Override
   public String toErrorString() {

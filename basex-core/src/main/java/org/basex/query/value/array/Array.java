@@ -5,8 +5,11 @@ import static org.basex.query.util.Err.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
+import org.basex.query.func.fn.*;
 import org.basex.query.iter.*;
 import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.map.*;
@@ -69,21 +72,30 @@ public final class Array extends FItem {
   @Override
   public Value invValue(final QueryContext qc, final InputInfo ii, final Value... args)
       throws QueryException {
-
-    final Item it = args[0].item(qc, ii);
-    if(it == null) throw EMPTYFOUND_X.get(ii, AtomType.ITR);
-    if(!it.type.instanceOf(AtomType.ITR) && !it.type.isUntyped())
-      throw castError(ii, it, AtomType.ITR);
-
-    final long i = it.itr(ii);
-    if(i > 0 && i <= size) return get((int) i - 1);
-    throw ARRAYPOS_X.get(ii, i);
+    return get(args[0].item(qc, ii), ii);
   }
 
   @Override
   public Item invItem(final QueryContext qc, final InputInfo ii, final Value... args)
       throws QueryException {
     return invValue(qc, ii, args).item(qc, ii);
+  }
+
+  /**
+   * Gets the value from this array.
+   * @param key key to look for (must be integer)
+   * @param ii input info
+   * @return bound value if found, the empty sequence {@code ()} otherwise
+   * @throws QueryException query exception
+   */
+  public Value get(final Item key, final InputInfo ii) throws QueryException {
+    if(key == null) throw EMPTYFOUND_X.get(ii, AtomType.ITR);
+    if(!key.type.instanceOf(AtomType.ITR) && !key.type.isUntyped())
+      throw castError(ii, key, AtomType.ITR);
+
+    final long i = key.itr(ii);
+    if(i > 0 && i <= size) return get((int) i - 1);
+    throw ARRAYPOS_X.get(ii, i);
   }
 
   @Override
@@ -113,7 +125,7 @@ public final class Array extends FItem {
 
   @Override
   public Expr inlineExpr(final Expr[] exprs, final QueryContext qc, final VarScope scp,
-      final InputInfo ii) throws QueryException {
+      final InputInfo ii) {
     return null;
   }
 
@@ -187,8 +199,7 @@ public final class Array extends FItem {
     return vb.value();
   }
 
-
-  /**
+ /**
    * Returns a string representation of the array.
    * @param ii input info
    * @return string
@@ -255,7 +266,7 @@ public final class Array extends FItem {
       if(size != o.size) return false;
       for(int a = 0; a < size; a++) {
         final Value v1 = get(a), v2 = o.get(a);
-        if(v1.size() != v2.size() || !new DeepCompare(ii).collation(coll).equal(v1, v2))
+        if(v1.size() != v2.size() || !new Compare(ii).collation(coll).equal(v1, v2))
           return false;
       }
       return true;
@@ -285,7 +296,7 @@ public final class Array extends FItem {
 
   @Override
   public String toString() {
-    final StringBuilder tb = new StringBuilder().append("[");
+    final StringBuilder tb = new StringBuilder().append('[');
     for(int a = 0; a < size; a++) {
       if(a != 0) tb.append(", ");
       final Value value = get(a);
@@ -293,7 +304,7 @@ public final class Array extends FItem {
       if(vs != 1) tb.append('(');
       for(int i = 0; i < vs; i++) {
         if(i != 0) tb.append(", ");
-        tb.append(value.itemAt(i).toString());
+        tb.append(value.itemAt(i));
       }
       if(vs != 1) tb.append(')');
     }

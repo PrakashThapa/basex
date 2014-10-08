@@ -2,7 +2,7 @@ package org.basex.query.func.fn;
 
 import org.basex.query.*;
 import org.basex.query.func.*;
-import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
 
@@ -14,8 +14,8 @@ import org.basex.util.*;
  */
 public final class FnDefaultCollation extends StandardFunc {
   @Override
-  public Item item(final QueryContext qc, final InputInfo ii) throws QueryException {
+  public Item item(final QueryContext qc, final InputInfo ii) {
     final Collation coll = sc.collation;
-    return Uri.uri(coll == null ? QueryText.COLLATIONURI : coll.uri());
+    return Uri.uri(coll == null ? QueryText.COLLATION_URI : coll.uri());
   }
 }

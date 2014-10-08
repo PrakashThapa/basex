@@ -33,7 +33,10 @@ public final class RenameNode extends NodeUpdate {
   }
 
   @Override
-  public void merge(final Update up) throws QueryException {
+  public void prepare(final MemData tmp) { }
+
+  @Override
+  public void merge(final Update update) throws QueryException {
     throw UPMULTREN_X.get(info, node());
   }
 
@@ -55,12 +58,7 @@ public final class RenameNode extends NodeUpdate {
   }
 
   @Override
-  public void addAtomics(final AtomicUpdateCache l) {
-    l.addRename(pre, name.string(), name.uri());
-  }
-
-  @Override
-  public NodeUpdate[] substitute(final MemData tmp) {
-    return new NodeUpdate[] { this };
+  public void addAtomics(final AtomicUpdateCache auc) {
+    auc.addRename(pre, name.string(), name.uri());
   }
 }

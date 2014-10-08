@@ -4,6 +4,7 @@ import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.query.up.*;
 import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
@@ -18,7 +19,7 @@ import org.basex.util.*;
 public abstract class NodeCopy extends NodeUpdate {
   /** Nodes to be inserted. */
   ANodeList nodes;
-  /** Insertion sequence data clip. */
+  /** Insertion sequence data clip (will be populated by {@link #prepare}). */
   DataClip insseq;
 
   /**
@@ -35,11 +36,7 @@ public abstract class NodeCopy extends NodeUpdate {
     this.nodes = nodes;
   }
 
-  /**
-   * Prepares this update primitive before execution. This includes e.g. the
-   * preparation of insertion sequences.
-   * @param tmp temporary database
-   */
+  @Override
   public final void prepare(final MemData tmp) {
     // merge texts. after that, text nodes still need to be merged,
     // as two adjacent iterators may lead to two adjacent text nodes
@@ -106,6 +103,7 @@ public abstract class NodeCopy extends NodeUpdate {
 
   @Override
   public final String toString() {
-    return Util.className(this) + '[' + node() + ", " + size() + " ops]";
+    return new StringBuilder(Util.className(this)).append('[').append(']').
+        append(", ").append(insseq != null ? size() : nodes.size()).append(" ops]").toString();
   }
 }

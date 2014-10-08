@@ -88,7 +88,6 @@ public final class Optimize extends ACreate {
     final MetaData md = data.meta;
     if(!md.uptodate) {
       data.paths.init();
-      data.resources.init();
       data.elemNames.init();
       data.attrNames.init();
       md.dirty = true;
@@ -128,7 +127,7 @@ public final class Optimize extends ACreate {
         }
         if(cmd != null) cmd.pre = pre;
       }
-      md.ndocs = n;
+      md.ndocs.set(n);
       md.uptodate = true;
     }
 

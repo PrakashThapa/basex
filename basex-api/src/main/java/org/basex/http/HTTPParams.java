@@ -10,8 +10,8 @@ import org.basex.core.*;
 import org.basex.io.*;
 import org.basex.io.in.*;
 import org.basex.query.*;
+import org.basex.query.func.http.*;
 import org.basex.query.iter.*;
-import org.basex.query.util.http.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 
@@ -63,7 +63,7 @@ public final class HTTPParams {
    * @throws QueryException query exception
    */
   public Value content() throws QueryException, IOException {
-    return HTTPPayload.value(body(), http.context().options, http.contentType(),
+    return HttpPayload.value(body(), http.context().options, http.contentType(),
         http.contentTypeExt());
   }
 
@@ -120,7 +120,7 @@ public final class HTTPParams {
       throws QueryException, IOException {
 
     final MainOptions opts = http.context().options;
-    final HTTPPayload hp = new HTTPPayload(body().inputStream(), true, null, opts);
+    final HttpPayload hp = new HttpPayload(body().inputStream(), true, null, opts);
     final HashMap<String, Value> mp = hp.multiForm(ext);
     for(final Map.Entry<String, Value> entry : mp.entrySet()) {
       params.put(entry.getKey(), entry.getValue());

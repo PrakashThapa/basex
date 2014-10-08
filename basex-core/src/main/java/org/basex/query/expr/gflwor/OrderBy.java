@@ -10,13 +10,13 @@ import org.basex.query.*;
 import org.basex.query.expr.*;
 import org.basex.query.expr.gflwor.GFLWOR.Eval;
 import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.var.*;
 import org.basex.util.*;
 import org.basex.util.hash.*;
-
 
 /**
  * FLWOR {@code order by}-expression.
@@ -187,7 +187,7 @@ public final class OrderBy extends GFLWOR.Clause {
   }
 
   @Override
-  boolean clean(final QueryContext qc, final IntObjMap<Var> decl, final BitArray used) {
+  boolean clean(final IntObjMap<Var> decl, final BitArray used) {
     // delete unused variables
     final int len = refs.length;
     for(int i = refs.length; --i >= 0;)

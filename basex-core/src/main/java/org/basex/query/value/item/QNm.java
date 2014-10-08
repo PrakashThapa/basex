@@ -7,6 +7,7 @@ import javax.xml.namespace.*;
 
 import org.basex.query.*;
 import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
@@ -299,8 +300,8 @@ public final class QNm extends Item {
    * @param uri namespace uri
    * @return instance
    */
-  public static QNm get(final String prefix, final String local, final byte[] uri) {
-    return CACHE.index(token(prefix), token(local), uri);
+  public static QNm get(final byte[] prefix, final String local, final byte[] uri) {
+    return CACHE.index(prefix, token(local), uri);
   }
 
   /**
