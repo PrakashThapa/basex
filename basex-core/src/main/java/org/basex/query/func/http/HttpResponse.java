@@ -40,8 +40,7 @@ public final class HttpResponse {
    * Constructs http:response element and reads HTTP response content.
    * @param conn HTTP connection
    * @param status indicates if content is required
-   * @param utype content type provided by the user to interpret the
-   *          response content
+   * @param utype content type provided by the user to interpret the response content
    * @return result sequence of <http:response/> and content items
    * @throws IOException I/O Exception
    * @throws QueryException query exception
@@ -80,9 +79,13 @@ public final class HttpResponse {
     // construct <http:body/>
     final boolean body = status == null || !Bln.parse(status, info);
     if(is != null) {
-      final HttpPayload hp = new HttpPayload(is, body, info, options);
-      response.add(hp.parse(error, type, utype));
-      if(body) vb.add(hp.payloads());
+      try {
+        final HttpPayload hp = new HttpPayload(is, body, info, options);
+        response.add(hp.parse(error, type, utype));
+        if(body) vb.add(hp.payloads());
+      } finally {
+        is.close();
+      }
     }
     return vb;
   }

@@ -48,9 +48,9 @@ public abstract class JsonConverter {
   }
 
   /**
-   * Returns a  for the given configuration.
+   * Returns a JSON converter for the given configuration.
    * @param jopts options
-   * @return a JSON converter
+   * @return JSON converter
    */
   public static JsonConverter get(final JsonParserOptions jopts) {
     switch(jopts.get(JsonOptions.FORMAT)) {
@@ -76,9 +76,10 @@ public abstract class JsonConverter {
 
   /**
    * Called when a pair of a JSON object is closed.
+   * @param add add pair
    * @throws QueryIOException query exception
    */
-  abstract void closePair() throws QueryIOException;
+  abstract void closePair(boolean add) throws QueryIOException;
 
   /**
    * Called when a JSON object is closed.

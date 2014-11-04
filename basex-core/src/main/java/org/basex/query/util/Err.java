@@ -139,6 +139,10 @@ public enum Err {
   /** BXJS0001. */
   BXJS_PARSE_X_X_X(BXJS, 1, "JSON parser (%:%): %."),
   /** BXJS0001. */
+  BXJS_DUPLICATE_X(BXJS, 1, "JSON parser: (%:%): %."),
+  /** BXJS0001. */
+  BXJS_INVALID_X(BXJS, 1, "JSON parser: (%:%): %."),
+  /** BXJS0001. */
   BXJS_PARSEML_X(BXJS, 1, "JsonML parser: %."),
   /** BXJS0002. */
   BXJS_SERIAL_X(BXJS, 2, "JSON serializer: %."),
@@ -398,11 +402,11 @@ public enum Err {
   /** FOCH0001. */
   INVCODE_X(FOCH, 1, "Invalid XML character '&#x%;'."),
   /** FOCH0002. */
-  WHICHCOLL_X(FOCH, 2, "Unknown collation '%'."),
+  WHICHCOLL_X(FOCH, 2, "%."),
   /** FOCH0003. */
   NORMUNI_X(FOCH, 3, "Unsupported normalization form ('%')."),
   /** FOCH0004. */
-  CHARCOLL(FOCH, 4, "Collation does not support function."),
+  CHARCOLL(FOCH, 4, "Collation does not operate on character-by-character basis."),
 
   /** FODC0001. */
   IDDOC(FODC, 1, "Specified node has no document node as root."),
@@ -474,6 +478,14 @@ public enum Err {
   CALWHICH_X(FOFD, 1340, "Unknown calendar: '%'."),
   /** FOFD1350. */
   PICINVCOMP_X_X(FOFD, 1350, "Component '[%]' not applicable to % values."),
+
+  /** BXJS0001. */
+  JSON_PARSE_X(BXJS, 1, "%"),
+  /** BXJS0002. */
+  JSON_INVALID_X(BXJS, 2, "%"),
+  /** BXJS0003. */
+  JSON_DUPLICATE_X(BXJS, 3, "%"),
+
 
   /** FONS0004. */
   NSDECL_X(FONS, 4, "No namespace declared for prefix '%'."),
@@ -654,6 +666,10 @@ public enum Err {
   SEROPT_X(SEPM, 17, "%."),
   /** SEPM0017. */
   SEROPTION_X(SEPM, 17, "Serialization parameter '%' is invalid."),
+  /** SERE0020. */
+  SERNUMBER_X(SERE, 20, "Numeric value cannot be represented: '%'"),
+  /** SERE0022. */
+  SERDUPL_X(SERE, 22, "Duplicate name found: '%'"),
 
   /** XPDY0002. */
   NOCTX_X(XPDY, 2, "%: no context value bound."),
@@ -793,7 +809,7 @@ public enum Err {
   /** XPST0003. */
   WHICHTYPE_X(XPST, 3, "Unknown type: %."),
   /** XPST0003. */
-  BINDNAME_X(XPST, 3, "Invalid variable name: '%'."),
+  BINDNAME_X(XPST, 3, "Invalid name: '%'."),
   /** XPST0003. */
   PIXML_X(XPST, 3, "Processing instruction has illegal name: '%'."),
   /** XPST0003. */
@@ -984,7 +1000,7 @@ public enum Err {
   /** XQST0038. */
   DUPLCOLL(XQST, 38, "Duplicate 'collation' declaration."),
   /** XQST0038. */
-  WHICHDEFCOLL_X(XQST, 38, "Unknown collation '%'."),
+  WHICHDEFCOLL_X(XQST, 38, "%."),
   /** XQST0039. */
   FUNCDUPL_X(XQST, 39, "Duplicate function argument %."),
   /** XQST0040. */
@@ -1042,7 +1058,7 @@ public enum Err {
   /** XQST0075. */
   IMPLVAL(XQST, 75, "Validation not supported."),
   /** XQST0076. */
-  FLWORCOLL_X(XQST, 76, "Unknown collation '%'."),
+  FLWORCOLL_X(XQST, 76, "%."),
   /** XQST0079. */
   NOPRAGMA(XQST, 79, "Expecting pragma expression."),
   /** XQST0085. */

@@ -740,7 +740,7 @@ public final class Token {
    * @param token first token
    * @param compare token to be compared
    * @return 0 if tokens are equal, negative if first token is smaller,
-   *   positive if first token is bigger
+   *         positive if first token is bigger
    */
   public static int diff(final byte[] token, final byte[] compare) {
     final int tl = token.length;
@@ -812,7 +812,7 @@ public final class Token {
    */
   public static int indexOf(final byte[] token, final int ch) {
     final int tl = token.length;
-    if(ch < 128) {
+    if(ch < 0x80) {
       for(int t = 0; t < tl; t++) if(token[t] == ch) return t;
     } else {
       for(int t = 0; t < tl; t += cl(token, t)) if(cp(token, t) == ch) return t;

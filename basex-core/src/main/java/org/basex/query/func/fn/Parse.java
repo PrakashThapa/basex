@@ -29,7 +29,7 @@ public abstract class Parse extends StandardFunc {
    * Performs the unparsed-text function.
    * @param qc query context
    * @param check only check if text is available
-   * @return content
+   * @return content string or boolean success flag
    * @throws QueryException query exception
    */
   Item unparsedText(final QueryContext qc, final boolean check) throws QueryException {
@@ -54,14 +54,11 @@ public abstract class Parse extends StandardFunc {
       }
       if(!io.exists()) throw RESNF_X.get(info, p);
 
-      final InputStream is = io.inputStream();
-      try {
+      try(final InputStream is = io.inputStream()) {
         final TextInput ti = new TextInput(io).encoding(enc).validate(true);
         if(!check) return Str.get(ti.content());
         while(ti.read() != -1);
         return Bln.TRUE;
-      } finally {
-        is.close();
       }
     } catch(final QueryException ex) {
       if(check && !ex.err().is(ErrType.XPTY)) return Bln.FALSE;

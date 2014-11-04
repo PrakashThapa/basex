@@ -587,9 +587,7 @@ public abstract class ParseExpr extends Expr {
    * @return QNm item
    * @throws QueryException query exception
    */
-  protected final QNm toQNm(final Item it, final boolean empty)
-      throws QueryException {
-
+  protected final QNm toQNm(final Item it, final boolean empty) throws QueryException {
     if(empty && it == null) return null;
     final Type ip = checkNoEmpty(it, AtomType.QNM).type;
     if(ip == AtomType.QNM) return (QNm) it;
@@ -648,7 +646,7 @@ public abstract class ParseExpr extends Expr {
    * Assures that the specified item item is an array.
    * @param it item to check
    * @return the array
-   * @throws QueryException if the item is not a array
+   * @throws QueryException if the item is not an array
    */
   protected Array toArray(final Item it) throws QueryException {
     if(it instanceof Array) return (Array) it;

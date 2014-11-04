@@ -32,25 +32,25 @@ public final class MapTest extends AdvancedQueryTest {
     error(" map{ xs:time('01:01:01'):1, xs:time('01:01:01'):1 }", MAPDUPLKEY_X_X_X);
 
     query(_MAP_SIZE.args(" map{ xs:time('01:01:01'):1, xs:time('02:02:02'):2 }"), "2");
-    error(" map{ xs:time('01:01:01'):1, xs:time('01:01:01+01:00'):2 }", MAPTZ);
-    error(" map{ xs:time('01:01:01'):1, xs:time('01:01:01+01:00'):2 }", MAPTZ);
+    error(" map{ xs:time('01:01:01'):1, xs:time('01:01:02+01:00'):2 }", MAPTZ);
+    error(" map{ xs:time('01:01:01'):1, xs:time('01:01:02+01:00'):2 }", MAPTZ);
 
     error("let $k1 := xs:time('01:01:01')"
         + "let $k2 := xs:dateTime('2001-01-01T01:01:01+01:00')"
         + "let $m := map { $k1:1 }"
         + "return map:put($m, $k2, 2)($k2)", MAPTZ);
     query("let $k1 := xs:time('01:01:01')"
-        + "let $k2 := xs:time('01:01:01+01:00')"
+        + "let $k2 := xs:time('01:01:02+01:00')"
         + "let $m := map { $k1:1 }"
         + "return map:put(map:remove($m, $k1), $k2, 2)($k2)", "2");
     error("let $k1 := xs:time('01:01:01')"
-        + "let $k2 := xs:time('01:01:01+01:00')"
-        + "let $k3 := xs:time('01:01:01+01:00')"
+        + "let $k2 := xs:time('01:01:02+01:00')"
+        + "let $k3 := xs:time('01:01:03+01:00')"
         + "let $m := map { $k1:1, $k2:2 }"
         + "return map:put(map:remove($m,$k1), $k3, 3)($k3)", MAPTZ);
     error("let $k1 := xs:time('01:01:01')"
-        + "let $k2 := xs:time('01:01:01+01:00')"
-        + "let $k3 := xs:time('01:01:01+01:00')"
+        + "let $k2 := xs:time('01:01:02+01:00')"
+        + "let $k3 := xs:time('01:01:03+01:00')"
         + "let $m := map { $k1:1, $k2:2 }"
         + "return map:merge((map:remove($m, $k1), map { $k3: 3}))($k3)", MAPTZ);
   }
@@ -65,5 +65,10 @@ public final class MapTest extends AdvancedQueryTest {
   @Test public void soType() {
     query("count(( map { }, array { <a/> } ))", 2);
     query("count(( array { <a/> }, map { } ))", 2);
+  }
+
+  /** GitHub bug (#1012). */
+  @Test public void gh1012() {
+    error("map {}(())", EMPTYFOUND);
   }
 }

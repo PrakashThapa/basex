@@ -276,6 +276,8 @@ public final class GUIConstants {
 
   // KEYS =====================================================================
 
+  /** No modifer. */
+  public static final int NO_MOD = 0;
   /** Shift key. */
   public static final int SHIFT = Event.SHIFT_MASK;
   /** Alt key. */

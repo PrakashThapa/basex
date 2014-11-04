@@ -52,7 +52,7 @@ abstract class TrieNode {
     @Override
     boolean deep(final InputInfo ii, final TrieNode o, final Collation coll) { return this == o; }
     @Override
-    public TrieNode insert(final int h, final Item k, final Value v, final int l,
+    public TrieNode put(final int h, final Item k, final Value v, final int l,
         final InputInfo i) { return new Leaf(h, k, v); }
     @Override
     StringBuilder toString(final StringBuilder sb) { return sb; }
@@ -72,7 +72,7 @@ abstract class TrieNode {
   }
 
   /**
-   * Inserts the given value into this map.
+   * Puts the given value into this map and replaces existing keys.
    * @param hash hash code used as key
    * @param key key to insert
    * @param val value to insert
@@ -81,7 +81,7 @@ abstract class TrieNode {
    * @return updated map if changed, {@code this} otherwise
    * @throws QueryException query exception
    */
-  abstract TrieNode insert(final int hash, final Item key, final Value val,
+  abstract TrieNode put(final int hash, final Item key, final Value val,
       final int lvl, final InputInfo ii) throws QueryException;
 
   /**
@@ -90,8 +90,7 @@ abstract class TrieNode {
    * @param key key to delete
    * @param lvl level
    * @param ii input info
-   * @return updated map if changed, {@code null} if deleted,
-   *         {@code this} otherwise
+   * @return updated map if changed, {@code null} if deleted, {@code this} otherwise
    * @throws QueryException query exception
    */
   abstract TrieNode delete(int hash, Item key, int lvl, final InputInfo ii)
@@ -114,7 +113,7 @@ abstract class TrieNode {
    * @param key key to look for
    * @param lvl level
    * @param ii input info
-   * @return {@code true}, if the key exists, {@code false} otherwise
+   * @return {@code true} if the key exists, {@code false} otherwise
    * @throws QueryException query exception
    */
   abstract boolean contains(int hash, Item key, int lvl, final InputInfo ii)
@@ -134,7 +133,7 @@ abstract class TrieNode {
       throws QueryException;
 
   /**
-   * Add a leaf to this node, if the key isn't already used.
+   * Add a leaf to this node if the key isn't already used.
    * @param o leaf to insert
    * @param lvl level
    * @param ii input info
@@ -144,7 +143,7 @@ abstract class TrieNode {
   abstract TrieNode add(final Leaf o, final int lvl, final InputInfo ii) throws QueryException;
 
   /**
-   * Add an overflow list to this node, if the key isn't already used.
+   * Add an overflow list to this node if the key isn't already used.
    * @param o leaf to insert
    * @param lvl level
    * @param ii input info

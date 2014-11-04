@@ -42,7 +42,7 @@ import org.basex.util.list.*;
  * - Byte  8-11:  SIZE: Number of descendants
  * ELEMENT NODES (kind = 1):
  * - Byte     0:  ATTS: Number of attributes (bits: 7-3).
- *                      Calculated in real-time, if bit range is too small
+ *                      Calculated in real-time if bit range is too small
  * - Byte  1- 2:  NAME: Namespace Flag (bit: 15), Name (bits: 14-0)
  * - Byte     3:  NURI: Namespace URI
  * - Byte  4- 7:  DIST: Distance to parent node
@@ -52,7 +52,7 @@ import org.basex.util.list.*;
  * - Byte  8-11:  DIST: Distance to parent node
  * ATTRIBUTE NODES (kind = 3):
  * - Byte     0:  DIST: Distance to parent node (bits: 7-3)
- *                      Calculated in real-time, if bit range is too small
+ *                      Calculated in real-time if bit range is too small
  * - Byte  1- 2:  NAME: Namespace Flag (bit: 15), Name (bits: 14-0)
  * - Byte  3- 7:  TEXT: Attribute value reference
  * - Byte    11:  NURI: Namespace (bits: 7-3)
@@ -68,7 +68,7 @@ import org.basex.util.list.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
-public abstract class Data {
+public abstract class Data implements AutoCloseable {
   /** Node kind: document (code: {@code 0}). */
   public static final byte DOC = 0x00;
   /** Node kind: element (code: {@code 1}). */
@@ -110,9 +110,7 @@ public abstract class Data {
   /** States if distance caching is active. */
   public boolean cache;
 
-  /**
-   * Closes the database.
-   */
+  @Override
   public abstract void close();
 
   /**
@@ -316,7 +314,7 @@ public abstract class Data {
         return table.read4(pre, 8);
       case ATTR:
         int d = table.read1(pre, 0) >> 3 & IO.MAXATTS;
-        // skip additional attributes, if value is larger than maximum range
+        // skip additional attributes if value is larger than maximum range
         if(d >= IO.MAXATTS) while(d < pre && kind(pre - d) == ATTR) d++;
         return d;
       default:
@@ -342,7 +340,7 @@ public abstract class Data {
    */
   public final int attSize(final int pre, final int kind) {
     int s = kind == ELEM ? table.read1(pre, 0) >> 3 & IO.MAXATTS : 1;
-    // skip additional attributes, if value is larger than maximum range
+    // skip additional attributes if value is larger than maximum range
     if(s >= IO.MAXATTS) while(s < meta.size - pre && kind(pre + s) == ATTR) s++;
     return s;
   }

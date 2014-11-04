@@ -1,5 +1,6 @@
 package org.basex.query.ast;
 
+import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
@@ -65,6 +66,14 @@ public final class RewritingsTest extends QueryPlanTest {
    */
   @Test
   public void optimizeEbv() {
+    query("not(<a/>[b])", "true");
+    query("empty(<a/>[b])", "true");
+    query("exists(<a/>[b])", "false");
+
+    query("not(<a/>[b = 'c'])", "true");
+    query("empty(<a/>[b = 'c'])", "true");
+    query("exists(<a/>[b = 'c'])", "false");
+
     check("empty(<a>X</a>[text()])", null, "//@axis = 'child'");
     check("exists(<a>X</a>[text()])", null, "//@axis = 'child'");
     check("boolean(<a>X</a>[text()])", null, "//@axis = 'child'");
@@ -76,5 +85,64 @@ public final class RewritingsTest extends QueryPlanTest {
     check("for $a in <a>X</a> where $a[text()] return $a", null, "//@axis = 'child'");
 
     check("empty(<a>X</a>/.[text()])", null, "//@axis = 'child'");
+  }
+
+  /**
+   * Checks if iterative evaluation of XPaths is used iff no duplicated occur (see GH-1001).
+   * @throws BaseXException if creating or dropping the database fails
+   */
+  @Test
+  public void iterPath() throws BaseXException {
+    new CreateDB(NAME, "<a id='0' x:id='' x='' xmlns:x='x'><b id='1'/><c id='2'/>"
+        + "<d id='3'/><e id='4'/></a>").execute(context);
+    check("(/a/*/../*) ! name()", "b c d e", "empty(//IterPath)");
+    check("(exactly-one(/a/b)/../*) ! name()", "b c d e", "exists(//IterPath)");
+    check("(/a/*/following::*) ! name()", "c d e", "empty(//IterPath)");
+    check("(exactly-one(/a/b)/following::*) ! name()", "c d e", "exists(//IterPath)");
+    check("(/a/*/following-sibling::*) ! name()", "c d e", "empty(//IterPath)");
+    check("(exactly-one(/a/b)/following-sibling::*) ! name()", "c d e", "exists(//IterPath)");
+    check("(/*/@id/../*) ! name()", "b c d e", "empty(//IterPath)");
+    check("(exactly-one(/a)/@id/../*) ! name()", "b c d e", "exists(//IterPath)");
+    new DropDB(NAME).execute(context);
+  };
+
+  /**
+   * Checks OR optimizations.
+   */
+  @Test
+  public void or() {
+    check("('' or '')", "false", "empty(//Or)");
+    check("('x' or 'x' = 'x')", "true", "empty(//Or)");
+    check("(false()   or <x/> = 'x')", "false", "empty(//Or)");
+    check("(true()    or <x/> = 'x')", "true", "empty(//Or)");
+    check("('x' = 'x' or <x/> = 'x')", "true", "empty(//Or)");
+
+    // {@link CmpG} rewritings
+    check("let $x := <x/>     return ($x = 'x' or $x = 'y')", "false", "empty(//Or)");
+    check("let $x := <x>x</x> return ($x = 'x' or $x = 'y')", "true",  "empty(//Or)");
+  }
+
+  /**
+   * Checks AND optimizations.
+   */
+  @Test
+  public void and() {
+    check("('x' and 'y')", "true", "empty(//And)");
+    check("('x' and 'x' = 'x')", "true", "empty(//And)");
+    check("(true()    and <x>x</x> = 'x')", "true", "empty(//And)");
+    check("(false()   and <x>x</x> = 'x')", "false", "empty(//And)");
+    check("('x' = 'x' and <x>x</x> = 'x')", "true", "empty(//And)");
+
+    // {@link Pos} rewritings
+    check("(<a/>,<b/>)[position() > 1 and position() < 3]", "<b/>", "count(//Pos) = 1");
+    check("(<a/>,<b/>)[position() > 1 and position() < 3 and <b/>]", "<b/>", "count(//Pos) = 1");
+    // {@link CmpR} rewritings
+    check("<a>5</a>[text() > 1 and text() < 9]", "<a>5</a>", "count(//CmpR) = 1");
+    check("<a>5</a>[text() > 1 and text() < 9 and <b/>]", "<a>5</a>", "count(//CmpR) = 1");
+    check("<a>5</a>[text() > 1 and . < 9]", "<a>5</a>", "count(//CmpG) = 1 and count(//CmpR) = 1");
+    // {@link CmpSR} rewritings
+    check("<a>5</a>[text() > '1' and text() < '9']", "<a>5</a>", "count(//CmpSR) = 1");
+    check("<a>5</a>[text() > '1' and text() < '9' and <b/>]", "<a>5</a>", "count(//CmpSR) = 1");
+    check("<a>5</a>[text() > '1' and . < '9']", "<a>5</a>", "count(//CmpSR) = 2");
   }
 }

@@ -1,7 +1,5 @@
 package org.basex.io.serial;
 
-import java.util.*;
-
 import org.basex.build.*;
 import org.basex.util.*;
 import org.basex.util.options.*;
@@ -73,6 +71,12 @@ public final class SerializerOptions extends Options {
   /** Parameter document. */
   public static final StringOption PARAMETER_DOCUMENT =
       new StringOption("parameter-document", "");
+  /** Serialization parameter: xml/xhtml/html/text. */
+  public static final EnumOption<YesNo> ALLOW_DUPLICATE_NAMES =
+      new EnumOption<>("allow-duplicate-names", YesNo.NO);
+  /** Serialization parameter: xml/xhtml/html/text. */
+  public static final EnumOption<SerialMethod> JSON_NODE_OUTPUT_METHOD =
+      new EnumOption<>("json-node-output-method", SerialMethod.XML);
 
   /** Specific serialization parameter: newline. */
   public static final EnumOption<Newline> NEWLINE =
@@ -102,29 +106,6 @@ public final class SerializerOptions extends Options {
   /** Specific serialization parameter: limit. */
   public static final NumberOption LIMIT =
       new NumberOption("limit", -1);
-
-  /** Yes/No enumeration. */
-  public enum YesNo {
-    /** Yes. */ YES,
-    /** No.  */ NO;
-
-    @Override
-    public String toString() {
-      return super.toString().toLowerCase(Locale.ENGLISH);
-    }
-  }
-
-  /** Yes/No enumeration. */
-  public enum YesNoOmit {
-    /** Yes.  */ YES,
-    /** No.   */ NO,
-    /** Omit. */ OMIT;
-
-    @Override
-    public String toString() {
-      return super.toString().toLowerCase(Locale.ENGLISH);
-    }
-  }
 
   /** Normalization form. */
   public enum Norm {
