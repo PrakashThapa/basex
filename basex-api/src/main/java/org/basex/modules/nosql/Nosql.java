@@ -1,18 +1,19 @@
 package org.basex.modules.nosql;
 
-import org.basex.build.JsonOptions;
-import org.basex.build.JsonParserOptions;
+import static org.basex.util.Token.*;
+
+import org.basex.build.*;
 import org.basex.io.parse.json.JsonConverter;
 import org.basex.io.serial.SerialMethod;
 import org.basex.io.serial.SerializerOptions;
 import org.basex.modules.nosql.NosqlOptions.NosqlFormat;
 import org.basex.query.QueryException;
 import org.basex.query.QueryModule;
-import org.basex.query.func.FNJson;
-import org.basex.query.func.Function;
-import org.basex.query.value.item.Item;
-import org.basex.query.value.item.Str;
-import org.basex.query.value.map.Map;
+import org.basex.query.expr.*;
+import org.basex.query.func.*;
+import org.basex.query.func.json.*;
+import org.basex.query.value.item.*;
+import org.basex.query.value.type.*;
 
 /**
  * All Nosql database common functionality.
@@ -74,26 +75,78 @@ abstract class Nosql extends QueryModule {
   protected static final String QUERY = "query";
   /** finalalize. */
   protected static final String FINALIZE = "finalalize";
+  /** fields findAndModify. */
+  protected static final String FIELDS = "fields";
+  /** update findAndModify. */
+  protected static final String UPDATE = "update";
+  /** returnnew findAndModify. */
+  protected static final String NEW = "new";
+  /** outputs. */
+  protected static final String OUTPUTS = "outputs";
+  /** outputtype. */
+  protected static final String OUTPUTTYPE = "outputtype";
+  /** upsert. */
+  protected static final String UPSERT = "upsert";
   /** for rethink **/
   /** id. */
   protected static final String ID = "id";
+
+
+  /** NOSQL URI. added later */
+  protected static final byte[] NOSQLURI = token("http://www.basex.org/modules/nosql");
+  /** Type type. */
+  protected static final byte[] TYPE = token("type");
+  /** Type object. */
+  protected static final byte[] OBJECT = token("object");
+  /** Type array. */
+  protected static final byte[] ARRAY = token("array");
+  /** Type int. */
+  protected static final byte[] INT = AtomType.INT.string();
+  /** Type string. */
+  protected static final byte[] STRING = AtomType.STR.string();
+  /** Type boolean. */
+  protected static final byte[] BOOL = AtomType.BLN.string();
+  /** Type date. */
+  protected static final byte[] DATE = AtomType.DAT.string();
+  /** Type double. */
+  protected static final byte[] DOUBLE = AtomType.DBL.string();
+  /** Type float. */
+  protected static final byte[] FLOAT = AtomType.FLT.string();
+  /** Type short. */
+  protected static final byte[] SHORT = AtomType.SHR.string();
+  /** Type time. */
+  protected static final byte[] TIME = AtomType.TIM.string();
+  /** Type timestamp. */
+  protected static final byte[] TIMESTAMP = token("timestamp");
+
+  /** Name. */
+  protected static final String NAME = "name";
   /** qnmOptions. */
     /**
      * convert Str to java string.
      * @param item Str.
      * @return String
+     */
+    protected String itemToString(final Item item) {
+      return ((Str) item).toJava();
+    }
+    /**
+     * check json string and if valid return java string as result.
+     * @param json json string
+     * @return Item
      * @throws QueryException query exception
      */
-    protected String itemToString(final Item item) throws QueryException {
-        if(item instanceof Str) {
+    protected String itemToJsonString(final Item json) throws QueryException {
+        if(json instanceof Str) {
             try {
-                String string = ((Str) item).toJava();
+                checkJson(json);
+                String string = ((Str) json).toJava();
                 return string;
             } catch (Exception e) {
                 throw new QueryException("Item is not in well format");
             }
         }
-        throw new QueryException("Item is not in Str format");
+        throw NosqlErrors.generalExceptionError("Item is not in xs:string format");
     }
     /**
      * string format for json.
@@ -105,31 +158,7 @@ abstract class Nosql extends QueryModule {
             throws QueryException {
         final SerializerOptions sopts = new SerializerOptions();
         sopts.set(SerializerOptions.METHOD, SerialMethod.JSON);
-        Item x = new FNJson(staticContext, null, Function.SERIALIZE,
-                json).item(queryContext, null);
-        return x;
-    }
-    /**
-     * check json string and if valid return java string as result.
-     * @param json json string
-     * @return Item
-     * @throws QueryException query exception
-     */
-    protected String itemToJsonString(final Item json) throws QueryException {
-        if(json instanceof Str) {
-            try {
-                boolean jsoncheck = checkJson(json);
-                if(jsoncheck) {
-                    String string = ((Str) json).toJava();
-                    return string;
-                }
-            } catch (Exception e) {
-                throw new QueryException("Item is not in well format");
-            }
-        } else {
-            throw new QueryException("Item is not in Str format");
-        }
-        return null;
+        return jsonItem(json, true);
     }
     /**
      *check if Item is valid json not.
@@ -139,11 +168,10 @@ abstract class Nosql extends QueryModule {
      */
     protected boolean checkJson(final Item doc) throws QueryException {
         try {
-            new FNJson(staticContext, null, Function._JSON_PARSE,
-                    doc).item(queryContext, null);
+            jsonItem(doc, false);
             return true;
         } catch (Exception e) {
-            throw new QueryException("document is not in json format");
+            throw NosqlErrors.jsonFormatError();
         }
     }
     /**
@@ -156,40 +184,49 @@ abstract class Nosql extends QueryModule {
     protected Item finalResult(final Str json, final NosqlOptions opt)
             throws Exception {
             try {
-                if(opt != null) {
-                    if(opt.get(NosqlOptions.TYPE) == NosqlFormat.XML) {
-                        final JsonParserOptions opts = new JsonParserOptions();
-                        opts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
-                        final JsonConverter conv = JsonConverter.get(opts);
-                        conv.convert(json.string(), null);
-                        return conv.finish();
-                    }
-                    Item xXml = new FNJson(staticContext, null,
-                            Function._JSON_PARSE, json).
-                            item(queryContext, null);
-                    return new FNJson(staticContext, null,
-                            Function._JSON_SERIALIZE, xXml).
-                            item(queryContext, null);
-                }
-                return new FNJson(staticContext, null, Function._JSON_PARSE, json).
-                        item(queryContext, null);
+              if(opt != null) {
+                  if(opt.get(NosqlOptions.TYPE) == NosqlFormat.XML) {
+                    final JsonConverter conv = JsonConverter.get(jsonParseOption(opt));
+                    conv.convert(json.string(), null);
+                    return conv.finish();
+                  }
+                  Item xXml = jsonItem(json, false);
+                  return jsonItem(xXml, true);
+              }
+              return jsonItem(json, false);
             } catch (final Exception ex) {
                 throw new QueryException(ex);
             }
     }
-    /**
-     * insert key/value pair into Basex Map.
-     * @param m Map
-     * @param k key
-     * @param v value
-     * @return Map
-     * @throws QueryException query exception
+    /** json to Item.
+     * @param json item
+     * @param isSerialize boolean
+     * @return item.
+     * @throws QueryException exception
      */
-   protected Map insert(final Map m, final String k, final String v)
-           throws QueryException {
-       m.insert(Str.get(k), Str.get(v), null);
-       return m;
-   }
+    protected Item jsonItem(final Item json, final boolean isSerialize) throws QueryException {
+      Expr[] ex = {json};
+      if(isSerialize)
+        return new JsonSerialize().
+            init(staticContext, null, Function._JSON_SERIALIZE, ex).
+            item(queryContext, null);
+      return new JsonParse().init(staticContext, null, Function._JSON_PARSE, ex).
+      item(queryContext, null);
+
+
+    }
+    /** convert Nosql Options to jsonParseOptions.
+     * @param opt NosqlOptions
+     * @return JsonParserOptions
+     */
+    private JsonParserOptions jsonParseOption(final NosqlOptions opt) {
+      final JsonParserOptions opts = new JsonParserOptions();
+      opts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
+      opts.set(JsonOptions.STRINGS, opt.get(JsonOptions.STRINGS));
+      opts.set(JsonOptions.LAX, opt.get(JsonOptions.LAX));
+      opts.set(JsonOptions.MERGE, opt.get(JsonOptions.MERGE));
+      return opts;
+    }
    /**
     * check all special characters in string for valid json key.
     * @param string String value to be checked

@@ -12,21 +12,28 @@ import org.basex.util.*;
  */
 public final class NosqlErrors {
   /** Error namespace. */
-  private static final byte[] NS = QueryText.EXPERROR;
+  private static final byte[] NS = QueryText.EXPERROR_URI;
   /** Namespace and error code prefix. */
   private static final String PREFIX =
-      new TokenBuilder(QueryText.EXPERR).add(":NOSQL").toString();
+      new TokenBuilder(QueryText.EXPERROR_URI).add("nosql").toString();
 
   /** Private constructor, preventing instantiation. */
   private NosqlErrors() { }
 
   /**
-   * CB0001: General Exceptions.
+   * JSON0001: General Exceptions.
    * @param e error Object
    * @return query exception
    */
   public static QueryException generalExceptionError(final Object e) {
-      return thrw(1, "%s", e);
+      return thrw(1, "%", e);
+  }
+  /**
+   * JSON0002: JSON error.
+   * @return query exception
+   */
+  public static QueryException jsonFormatError() {
+      return thrw(2, "Document is not in JSON format");
   }
   /**
    * Returns a query exception.

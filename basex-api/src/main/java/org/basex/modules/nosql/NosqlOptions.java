@@ -7,9 +7,9 @@ import org.basex.util.options.EnumOption;
 import org.basex.util.options.NumberOption;
 import org.basex.util.options.StringOption;
 /**
- * Options for MongoDB.
+ * Options for all nosql databases.
  *
- * @author BaseX Team 2005-13, BSD License
+ * @author BaseX Team 2005-14, BSD License
  * @author Prakash Thapa
  */
 public class NosqlOptions extends JsonOptions {
@@ -39,5 +39,13 @@ public class NosqlOptions extends JsonOptions {
       public String toString() {
         return super.toString().toLowerCase(Locale.ENGLISH);
       }
+    }
+
+    /** default constructor.
+     * default constructor.
+     */
+     NosqlOptions() {
+      super();
+
     }
 }

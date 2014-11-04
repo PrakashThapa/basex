@@ -36,7 +36,7 @@ public class JsonOptions extends Options {
   /**
    * Default constructor.
    */
-  JsonOptions() {
+  protected JsonOptions() {
   }
 
   /**
