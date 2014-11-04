@@ -12,10 +12,10 @@ import org.basex.util.*;
  */
 public final class CouchbaseErrors {
   /** Error namespace. */
-  private static final byte[] NS = QueryText.EXPERROR;
+  private static final byte[] NS = QueryText.EXPERROR_URI;
   /** Namespace and error code prefix. */
   private static final String PREFIX =
-      new TokenBuilder(QueryText.EXPERR).add("cb").toString();
+      new TokenBuilder(QueryText.EXPERROR_URI).add("cb").toString();
 
   /** Private constructor, preventing instantiation. */
   private CouchbaseErrors() { }

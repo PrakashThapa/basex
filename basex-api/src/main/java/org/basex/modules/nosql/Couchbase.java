@@ -59,7 +59,7 @@ public class Couchbase extends Nosql {
     try {
       String url = opts.get(NosqlOptions.URL);
       String password = (opts.get(NosqlOptions.PASSWORD) != null) ?
-                             opts.get(NosqlOptions.PASSWORD):"";
+                             opts.get(NosqlOptions.PASSWORD) : "";
       String bucket = opts.get(NosqlOptions.BUCKET);
       return connect(Str.get(url), Str.get(bucket), Str.get(password), options);
     } catch(URISyntaxException e) {
@@ -295,7 +295,7 @@ public class Couchbase extends Nosql {
                     final String k = ((Str) key).toJava();
                     final Value v = options.get(key, null);
                     if(k.equals("add")) {
-                        if(v.type().instanceOf(SeqType.STR)) {
+                        if(v.seqType().instanceOf(SeqType.STR)) {
                             Str s = (Str) v.toJava();
                             return s;
                         }
@@ -450,7 +450,7 @@ public class Couchbase extends Nosql {
                 if(k.equals(VIEWMODE)) {
                     System.setProperty(VIEWMODE, v.toJava().toString());
                 } else if(k.equals(LIMIT)) {
-                    if(v.type().instanceOf(SeqType.ITR_OM)) {
+                    if(v.seqType().instanceOf(SeqType.ITR_OM)) {
                         long l = ((Item) v).itr(null);
                         q.setLimit((int) l);
                     } else {
@@ -485,7 +485,7 @@ public class Couchbase extends Nosql {
                     String s = ((Item) v).toString();
                     q.setEndkeyDocID(s);
                 } else if(k.equals(SKIP)) {
-                    if(v.type().instanceOf(SeqType.ITR_OM)) {
+                    if(v.seqType().instanceOf(SeqType.ITR_OM)) {
                         long l = ((Item) v).itr(null);
                         q.setSkip((int) l);
                     } else {
@@ -494,7 +494,7 @@ public class Couchbase extends Nosql {
                                 key.toJava());
                     }
                 } else if(k.equals(GROUP_LEVEL)) {
-                    if(v.type().instanceOf(SeqType.ITR_OM)) {
+                    if(v.seqType().instanceOf(SeqType.ITR_OM)) {
                         long l = ((Item) v).itr(null);
                         q.setGroupLevel((int) l);
                     } else {
@@ -662,7 +662,7 @@ public class Couchbase extends Nosql {
             throws QueryException {
         CouchbaseClient client = getClient(handler);
         if(time != null) {
-            if(!time.type().instanceOf(SeqType.ITR)) {
+            if(!time.seqType().instanceOf(SeqType.ITR)) {
                 throw CouchbaseErrors.timeInvalid();
             }
             long seconds = time.itr(null);
@@ -682,7 +682,7 @@ public class Couchbase extends Nosql {
      */
     public Bln isconnected(final Str handler) throws QueryException {
         CouchbaseClient client = getClient(handler);
-        if(client == null){
+        if(client == null) {
           return Bln.FALSE;
         }
         return Bln.TRUE;

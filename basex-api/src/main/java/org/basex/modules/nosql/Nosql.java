@@ -9,9 +9,10 @@ import org.basex.io.serial.SerializerOptions;
 import org.basex.modules.nosql.NosqlOptions.NosqlFormat;
 import org.basex.query.QueryException;
 import org.basex.query.QueryModule;
+import org.basex.query.expr.*;
 import org.basex.query.func.*;
+import org.basex.query.func.json.*;
 import org.basex.query.value.item.*;
-import org.basex.query.value.map.Map;
 import org.basex.query.value.type.*;
 
 /**
@@ -93,14 +94,6 @@ abstract class Nosql extends QueryModule {
 
   /** NOSQL URI. added later */
   protected static final byte[] NOSQLURI = token("http://www.basex.org/modules/nosql");
-  /** Module prefix. */
-  private static final String PREFIX = "nosql";
-  /** QName. */
-  protected static final QNm Q_JSON = QNm.get(PREFIX, "json", NOSQLURI);
-  /** QName. */
-  protected static final QNm Q_KEY = QNm.get(PREFIX, "key", NOSQLURI);
-  /** QName. */
-  protected static final QNm Q_VALUE = QNm.get(PREFIX, "value", NOSQLURI);
   /** Type type. */
   protected static final byte[] TYPE = token("type");
   /** Type object. */
@@ -134,7 +127,7 @@ abstract class Nosql extends QueryModule {
      * @param item Str.
      * @return String
      */
-    protected String itemToString(final Item item){
+    protected String itemToString(final Item item) {
       return ((Str) item).toJava();
     }
     /**
@@ -165,9 +158,7 @@ abstract class Nosql extends QueryModule {
             throws QueryException {
         final SerializerOptions sopts = new SerializerOptions();
         sopts.set(SerializerOptions.METHOD, SerialMethod.JSON);
-        Item x = new FNJson(staticContext, null, Function.SERIALIZE,
-                json).item(queryContext, null);
-        return x;
+        return jsonItem(json, true);
     }
     /**
      *check if Item is valid json not.
@@ -177,8 +168,7 @@ abstract class Nosql extends QueryModule {
      */
     protected boolean checkJson(final Item doc) throws QueryException {
         try {
-            new FNJson(staticContext, null, Function._JSON_PARSE,
-                    doc).item(queryContext, null);
+            jsonItem(doc, false);
             return true;
         } catch (Exception e) {
             throw NosqlErrors.jsonFormatError();
@@ -194,24 +184,36 @@ abstract class Nosql extends QueryModule {
     protected Item finalResult(final Str json, final NosqlOptions opt)
             throws Exception {
             try {
-                if(opt != null) {
-                    if(opt.get(NosqlOptions.TYPE) == NosqlFormat.XML) {
-                      final JsonConverter conv = JsonConverter.get(jsonParseOption(opt));
-                      conv.convert(json.string(), null);
-                      return conv.finish();
-                    }
-                    Item xXml = new FNJson(staticContext, null,
-                            Function._JSON_PARSE, json).
-                            item(queryContext, null);
-                    return new FNJson(staticContext, null,
-                            Function._JSON_SERIALIZE, xXml).
-                            item(queryContext, null);
-                }
-                return new FNJson(staticContext, null, Function._JSON_PARSE, json).
-                        item(queryContext, null);
+              if(opt != null) {
+                  if(opt.get(NosqlOptions.TYPE) == NosqlFormat.XML) {
+                    final JsonConverter conv = JsonConverter.get(jsonParseOption(opt));
+                    conv.convert(json.string(), null);
+                    return conv.finish();
+                  }
+                  Item xXml = jsonItem(json, false);
+                  return jsonItem(xXml, true);
+              }
+              return jsonItem(json, false);
             } catch (final Exception ex) {
                 throw new QueryException(ex);
             }
+    }
+    /** json to Item.
+     * @param json item
+     * @param isSerialize boolean
+     * @return item.
+     * @throws QueryException exception
+     */
+    protected Item jsonItem(final Item json, final boolean isSerialize) throws QueryException {
+      Expr[] ex = {json};
+      if(isSerialize)
+        return new JsonSerialize().
+            init(staticContext, null, Function._JSON_SERIALIZE, ex).
+            item(queryContext, null);
+      return new JsonParse().init(staticContext, null, Function._JSON_PARSE, ex).
+      item(queryContext, null);
+
+
     }
     /** convert Nosql Options to jsonParseOptions.
      * @param opt NosqlOptions
@@ -222,23 +224,9 @@ abstract class Nosql extends QueryModule {
       opts.set(JsonOptions.FORMAT, opt.get(JsonOptions.FORMAT));
       opts.set(JsonOptions.STRINGS, opt.get(JsonOptions.STRINGS));
       opts.set(JsonOptions.LAX, opt.get(JsonOptions.LAX));
-      opts.set(JsonOptions.SPEC, opt.get(JsonOptions.SPEC));
       opts.set(JsonOptions.MERGE, opt.get(JsonOptions.MERGE));
       return opts;
     }
-    /**
-     * insert key/value pair into Basex Map.
-     * @param m Map
-     * @param k key
-     * @param v value
-     * @return Map
-     * @throws QueryException query exception
-     */
-   protected Map insert(final Map m, final String k, final String v)
-           throws QueryException {
-       m.insert(Str.get(k), Str.get(v), null);
-       return m;
-   }
    /**
     * check all special characters in string for valid json key.
     * @param string String value to be checked

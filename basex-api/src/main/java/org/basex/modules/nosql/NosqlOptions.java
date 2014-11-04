@@ -40,4 +40,12 @@ public class NosqlOptions extends JsonOptions {
         return super.toString().toLowerCase(Locale.ENGLISH);
       }
     }
+
+    /** default constructor.
+     * default constructor.
+     */
+     NosqlOptions() {
+      super();
+
+    }
 }

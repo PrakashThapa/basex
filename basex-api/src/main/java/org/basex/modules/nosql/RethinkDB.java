@@ -147,10 +147,10 @@ public class RethinkDB extends Nosql {
               if (o instanceof java.util.List<?>) {
                    List<Object> list = c.getList();
                    array.add(list);
-               }else if (o instanceof ListIterator<?>) {
+               } else if (o instanceof ListIterator<?>) {
                    List<Object> list = c.getList();
                    array.add(list);
-               }else {
+               } else {
                    java.util.Map<String, Object> map = c.getMap();
                    array.add(map);
                }
@@ -406,7 +406,7 @@ public class RethinkDB extends Nosql {
                 }
                 final Value value = filter.get(key, null);
                 final String k = (String) key.toJava();
-                Object vl = (value.type.isNumber())? (Number) value.toJava() : value.toJava();
+                Object vl = (value.type.isNumber()) ? (Number) value.toJava() : value.toJava();
                 if(value instanceof Str) {
                     if(k.toLowerCase().equals(ID)) {
                      u = db.table(table.toJava()).get(vl).update(json.toJava());
@@ -441,7 +441,8 @@ public class RethinkDB extends Nosql {
         if(id == null) {
             throw new QueryException("id should not be empty");
         }
-        if(id.type().instanceOf(SeqType.ITR_OM) || id.type.isNumber() || id.type().mayBeNumber()) {
+        if(id.seqType().instanceOf(SeqType.ITR_OM) || id.type.isNumber() ||
+            id.seqType().mayBeNumber()) {
             long l = id.itr(null);
             System.out.println((int) l);
             return run(handler, getTable(handler, table).get((int) l));

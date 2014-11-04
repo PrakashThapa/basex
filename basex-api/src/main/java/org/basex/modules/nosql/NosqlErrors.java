@@ -12,10 +12,10 @@ import org.basex.util.*;
  */
 public final class NosqlErrors {
   /** Error namespace. */
-  private static final byte[] NS = QueryText.EXPERROR;
+  private static final byte[] NS = QueryText.EXPERROR_URI;
   /** Namespace and error code prefix. */
   private static final String PREFIX =
-      new TokenBuilder(QueryText.EXPERR).add("nosql").toString();
+      new TokenBuilder(QueryText.EXPERROR_URI).add("nosql").toString();
 
   /** Private constructor, preventing instantiation. */
   private NosqlErrors() { }

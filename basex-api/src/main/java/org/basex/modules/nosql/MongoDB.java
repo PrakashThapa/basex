@@ -176,7 +176,7 @@ public class MongoDB extends Nosql {
     public Bln isconnected(final Str handler) throws QueryException {
       try {
           final MongoClient client = (MongoClient) getDbHandler(handler).getMongo();
-          if(client == null){
+          if(client == null) {
             return Bln.FALSE;
           }
           return Bln.TRUE;
@@ -248,7 +248,7 @@ public class MongoDB extends Nosql {
                         if(value instanceof Map) {
                             singleObject.put(((Str) key).toJava(),
                                     this.mapToDBObject((Map) value));
-                        } else if(value.type().instanceOf(SeqType.ITR_OM)) {
+                        } else if(value.seqType().instanceOf(SeqType.ITR_OM)) {
                                 long l = ((Item) value).itr(null);
                                 singleObject.put(((Str) key).toJava(), l);
                         } else {
@@ -284,7 +284,7 @@ public class MongoDB extends Nosql {
                 final Value value = map.get(key, null);
                 if(value instanceof Map) {
                     dbObject.put(((Str) key).toJava(), this.mapToDBObject((Map) value));
-                } else if(value.type().instanceOf(SeqType.ITR_OM)) {
+                } else if(value.seqType().instanceOf(SeqType.ITR_OM)) {
                         long l = ((Item) value).itr(null);
                         dbObject.put(((Str) key).toJava(), l);
                 } else {
@@ -510,9 +510,9 @@ public class MongoDB extends Nosql {
                            generalExceptionError("String expected " + key.toJava());
                        final String k = ((Str) key).toJava();
                        final Value v = options.get(key, null);
-                      if(v instanceof Str || v.type().instanceOf(SeqType.ITR)) {
+                      if(v instanceof Str || v.seqType().instanceOf(SeqType.ITR)) {
                           if(k.equals(LIMIT)) {
-                              if(v.type().instanceOf(SeqType.ITR_OM)) {
+                              if(v.seqType().instanceOf(SeqType.ITR_OM)) {
                                   long l = ((Item) v).itr(null);
                                   cursor.limit((int) l);
                               } else {
@@ -559,7 +559,7 @@ public class MongoDB extends Nosql {
      * @throws QueryException Query exception.
      */
     public Item findAndModify(final Str handler, final Item col, final Item query,
-        final Item update) throws QueryException{
+        final Item update) throws QueryException {
       final DB db = getDbHandler(handler);
       try {
         final DBObject q = query != null ? getDbObjectFromItem(query) : null;
@@ -582,7 +582,7 @@ public class MongoDB extends Nosql {
      * @throws QueryException Query exception.
      */
     public Item findAndModify(final Str handler, final Item col, final Map options)
-        throws QueryException{
+        throws QueryException {
       final DB db = getDbHandler(handler);
       DBObject query = null;
       DBObject fields = null;
@@ -776,7 +776,7 @@ public class MongoDB extends Nosql {
         final DB db = getDbHandler(handler);
         db.requestStart();
         try {
-          if(options == null){
+          if(options == null) {
             WriteResult wr = db.getCollection(col.toJava()).
                 save(getDbObjectFromItem(saveStr));
             return returnResult(handler, Str.get(wr.toString()));
@@ -1224,7 +1224,7 @@ public class MongoDB extends Nosql {
             } else if(key.toLowerCase().equals(OUTPUTTYPE)) {
                 outType = value;
             } else if(key.toLowerCase().equals(LIMIT)) {
-                if(val.type().instanceOf(SeqType.ITR_OM)) {
+                if(val.seqType().instanceOf(SeqType.ITR_OM)) {
                     long l = ((Item) val).itr(null);
                     limit = (int) l;
                 } else {
