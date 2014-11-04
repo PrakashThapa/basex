@@ -1,6 +1,6 @@
 package org.basex.qt3ts.fn;
 
-import org.basex.tests.bxapi.XQuery;
+import org.basex.tests.bxapi.*;
 import org.basex.tests.qt3ts.*;
 
 /**
@@ -17,7 +17,6 @@ public class FnNilled extends QT3TestSet {
    */
   @org.junit.Test
   public void kNilledFunc1() {
-    xquery10();
     final XQuery query = new XQuery(
       "nilled()",
       ctx);

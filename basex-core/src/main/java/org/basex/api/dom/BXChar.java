@@ -3,6 +3,7 @@ package org.basex.api.dom;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
 import org.w3c.dom.*;
+import org.w3c.dom.CharacterData;
 
 /**
  * DOM - Character data implementation.
@@ -13,10 +14,10 @@ import org.w3c.dom.*;
 abstract class BXChar extends BXNode implements CharacterData {
   /**
    * Constructor.
-   * @param n node reference
+   * @param node node reference
    */
-  BXChar(final ANode n) {
-    super(n);
+  BXChar(final ANode node) {
+    super(node);
   }
 
   @Override
@@ -26,12 +27,12 @@ abstract class BXChar extends BXNode implements CharacterData {
 
   @Override
   public final String getNodeValue() {
-    return Token.string(node.string());
+    return Token.string(nd.string());
   }
 
   @Override
   public final int getLength() {
-    return node.string().length;
+    return nd.string().length;
   }
 
   @Override
@@ -44,26 +45,26 @@ abstract class BXChar extends BXNode implements CharacterData {
 
   @Override
   public final void appendData(final String value) {
-    throw Util.notImplemented();
+    throw notImplemented();
   }
 
   @Override
   public final void deleteData(final int off, final int count) {
-    throw Util.notImplemented();
+    throw notImplemented();
   }
 
   @Override
   public final void insertData(final int off, final String value) {
-    throw Util.notImplemented();
+    throw notImplemented();
   }
 
   @Override
   public final void replaceData(final int off, final int count, final String value) {
-    throw Util.notImplemented();
+    throw notImplemented();
   }
 
   @Override
-  public final void setData(final String dat) {
-    throw Util.notImplemented();
+  public final void setData(final String value) {
+    throw notImplemented();
   }
 }

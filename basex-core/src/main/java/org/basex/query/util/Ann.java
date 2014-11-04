@@ -6,6 +6,7 @@ import static org.basex.util.Token.*;
 
 import org.basex.io.serial.*;
 import org.basex.query.*;
+import org.basex.query.func.fn.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
@@ -19,15 +20,15 @@ import org.basex.util.list.*;
  */
 public final class Ann extends ElementList {
   /** Annotation "private". */
-  public static final QNm Q_PRIVATE = new QNm(PRIVATE, XQURI);
+  public static final QNm Q_PRIVATE = new QNm(PRIVATE, XQ_URI);
   /** Annotation "public". */
-  public static final QNm Q_PUBLIC = new QNm(PUBLIC, XQURI);
+  public static final QNm Q_PUBLIC = new QNm(PUBLIC, XQ_URI);
   /** Annotation "updating". */
-  public static final QNm Q_UPDATING = new QNm(UPDATING, XQURI);
+  public static final QNm Q_UPDATING = new QNm(UPDATING, XQ_URI);
 
   /** Supported REST annotations. */
   private static final byte[][] ANN_REST = tokens("error", "path", "produces", "consumes",
-      "query-param", "form-param", "header-param", "cookie-param", "error-param",
+      "query-param", "form-param", "header-param", "cookie-param", "error-param", "method",
       "GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS");
   /** Supported UNIT annotations. */
   private static final byte[][] ANN_UNIT = tokens("test", "ignore", "before", "after",
@@ -79,7 +80,7 @@ public final class Ann extends ElementList {
   public boolean contains(final QNm k, final Value v) {
     try {
       for(int i = 0; i < size; ++i) {
-        if(names[i].eq(k) && Compare.deep(v, values[i], null)) return true;
+        if(names[i].eq(k) && new Compare().equal(v, values[i])) return true;
       }
       return false;
     } catch(final QueryException e) {
@@ -131,7 +132,7 @@ public final class Ann extends ElementList {
       final Value val = values[i];
       try {
         for(int j = 0; j < ann.size; j++) {
-          if(name.eq(ann.names[j]) && Compare.deep(val, ann.values[j], null))
+          if(name.eq(ann.names[j]) && new Compare().equal(val, ann.values[j]))
             o.add(name, val, infos[i]);
         }
       } catch(final QueryException ex) {
@@ -162,17 +163,17 @@ public final class Ann extends ElementList {
         vis = true;
       } else if(NSGlobal.reserved(name.uri())) {
         // no global namespaces allowed
-        throw ANNRES.get(infos[a], '%', name.string());
-      } else if(eq(uri, OUTPUTURI)) {
-        if(Serializer.OPTIONS.option(string(local)) == null)
-          throw BASX_ANNOT.get(infos[a], '%', name.string());
+        throw ANNRES_X_X.get(infos[a], '%', name.string());
+      } else if(eq(uri, OUTPUT_URI)) {
+        if(SerializerOptions.get(true).option(string(local)) == null)
+          throw BASX_ANNOT_X_X.get(infos[a], '%', name.string());
         if(values[a].size() != 1 || !values[a].itemAt(0).type.isStringOrUntyped()) {
-          throw BASX_ANNOTARGS.get(infos[a], '%', name.string());
+          throw BASX_ANNOTARGS_X_X.get(infos[a], '%', name.string());
         }
-      } else if(eq(uri, RESTURI)) {
-        if(!eq(local, ANN_REST)) throw BASX_ANNOT.get(infos[a], '%', name.string());
-      } else if(eq(uri, UNITURI)) {
-        if(!eq(local, ANN_UNIT)) throw BASX_ANNOT.get(infos[a], '%', name.string());
+      } else if(eq(uri, REST_URI)) {
+        if(!eq(local, ANN_REST)) throw BASX_ANNOT_X_X.get(infos[a], '%', name.string());
+      } else if(eq(uri, UNIT_URI)) {
+        if(!eq(local, ANN_UNIT)) throw BASX_ANNOT_X_X.get(infos[a], '%', name.string());
       }
     }
   }

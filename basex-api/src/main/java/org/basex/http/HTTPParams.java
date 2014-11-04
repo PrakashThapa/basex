@@ -10,8 +10,8 @@ import org.basex.core.*;
 import org.basex.io.*;
 import org.basex.io.in.*;
 import org.basex.query.*;
+import org.basex.query.func.http.*;
 import org.basex.query.iter.*;
-import org.basex.query.util.http.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 
@@ -63,7 +63,7 @@ public final class HTTPParams {
    * @throws QueryException query exception
    */
   public Value content() throws QueryException, IOException {
-    return HTTPPayload.value(body(), http.context().options, http.contentType(),
+    return HttpPayload.value(body(), http.context().options, http.contentType(),
         http.contentTypeExt());
   }
 
@@ -120,10 +120,12 @@ public final class HTTPParams {
       throws QueryException, IOException {
 
     final MainOptions opts = http.context().options;
-    final HTTPPayload hp = new HTTPPayload(body().inputStream(), true, null, opts);
-    final HashMap<String, Value> mp = hp.multiForm(ext);
-    for(final Map.Entry<String, Value> entry : mp.entrySet()) {
-      params.put(entry.getKey(), entry.getValue());
+    try(final InputStream is = body().inputStream()) {
+      final HttpPayload hp = new HttpPayload(is, true, null, opts);
+      final HashMap<String, Value> mp = hp.multiForm(ext);
+      for(final Map.Entry<String, Value> entry : mp.entrySet()) {
+        params.put(entry.getKey(), entry.getValue());
+      }
     }
   }
 
@@ -135,7 +137,11 @@ public final class HTTPParams {
   private void addURLEncoded(final Map<String, Value> params) throws IOException {
     for(final String nv : body().toString().split("&")) {
       final String[] parts = nv.split("=", 2);
-      if(parts.length == 2) params.put(parts[0], Str.get(URLDecoder.decode(parts[1], UTF8)));
+      if(parts.length == 2) {
+        final Atm i = new Atm(URLDecoder.decode(parts[1], UTF8));
+        final Value v = params.get(parts[0]);
+        params.put(parts[0], v == null ? i : new ValueBuilder().add(v).add(i).value());
+      }
     }
   }
 

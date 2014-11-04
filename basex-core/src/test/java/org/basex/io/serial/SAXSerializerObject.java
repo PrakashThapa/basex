@@ -1,9 +1,6 @@
 package org.basex.io.serial;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 
 /**
  * Class for testing the (un)marshalling and serialization of objects.
@@ -16,8 +13,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 class SAXSerializerObject {
   /** Name of the object. */
   @XmlAttribute
-  private
-  String name;
+  private String name;
   /** Value. */
   private long value;
 

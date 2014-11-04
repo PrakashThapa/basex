@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 import java.security.*;
+import java.util.*;
 
 import org.basex.core.*;
 import org.basex.io.*;
@@ -50,8 +51,26 @@ public final class Prop {
   public static final String TEAM2 = "Lukas Kircher, Leo W\u00F6rteler";
   /** Entity. */
   public static final String ENTITY = NAME + " Team";
+  /** Project namespace. */
+  public static final String PROJECT_NAME = NAME.toLowerCase(Locale.ENGLISH);
+  /** URL. */
+  public static final String URL = "http://" + PROJECT_NAME + ".org";
+  /** URL of the community page. */
+  public static final String COMMUNITY_URL = URL + "/community";
+  /** URL of the documentation. */
+  public static final String DOC_URL = "http://docs." + PROJECT_NAME + ".org";
+  /** URL of the update page. */
+  public static final String UPDATE_URL = URL + "/products/download/all-downloads/";
+  /** Version URL. */
+  public static final String VERSION_URL = "http://files." + PROJECT_NAME + ".org/version.txt";
+  /** Repository URL. */
+  public static final String REPO_URL = "http://files." + PROJECT_NAME + ".org/modules";
+  /** Mail. */
+  public static final String MAILING_LIST = PROJECT_NAME + "-talk@mailman.uni-konstanz.de";
+  /** Title and version. */
+  public static final String TITLE = NAME + ' ' + VERSION;
 
-  /** New line string. */
+  /** System-specific newline string. */
   public static final String NL = System.getProperty("line.separator");
   /** Returns the system's default encoding. */
   public static final String ENCODING = System.getProperty("file.encoding");
@@ -93,15 +112,15 @@ public final class Prop {
    * <p>Determines the project's home directory for storing property files
    * and directories. The directory is chosen as follows:</p>
    * <ol>
-   * <li>First, the <b>system property</b> {@code "org.basex.path"} is checked.
-   *   If it contains a value, it is adopted as home directory.</li>
-   * <li>If not, the <b>current working directory</b> (defined by the system
-   *   property {@code "user.dir"}) is chosen if the file {@code .basex} or
-   *   {@code .basexhome} is found in this directory.</li>
-   * <li>Otherwise, the files are searched in the <b>application directory</b>
-   *   (the folder in which the application code is located).</li>
-   * <li>Otherwise, the <b>user's home directory</b> (defined in
-   *   {@code "user.home"}) is chosen.</li>
+   *   <li> First, the <b>system property</b> {@code "org.basex.path"} is checked.
+   *        If it contains a value, it is adopted as home directory.</li>
+   *   <li> If not, the <b>current working directory</b> (defined by the system
+   *        property {@code "user.dir"}) is chosen if the file {@code .basex} or
+   *        {@code .basexhome} is found in this directory.</li>
+   *   <li> Otherwise, the files are searched in the <b>application directory</b>
+   *        (the folder in which the application code is located).</li>
+   *   <li> Otherwise, the <b>user's home directory</b> (defined in
+   *        {@code "user.home"}) is chosen.</li>
    * </ol>
    * @return home directory
    */
@@ -120,13 +139,10 @@ public final class Prop {
     // not found; check application directory
     if(LOCATION != null) {
       try {
-        dir = Paths.get(LOCATION.toURI()).toString();
-        if(dir != null) {
-          dir = new IOFile(dir).dir();
-          file = new IOFile(dir, home);
-          if(!file.exists()) file = new IOFile(dir, IO.BASEXSUFFIX);
-          if(file.exists()) return file.dir();
-        }
+        dir = new IOFile(Paths.get(LOCATION.toURI()).toString()).dir();
+        file = new IOFile(dir, home);
+        if(!file.exists()) file = new IOFile(dir, IO.BASEXSUFFIX);
+        if(file.exists()) return file.dir();
       } catch(final Exception ex) {
         Util.stack(ex);
       }

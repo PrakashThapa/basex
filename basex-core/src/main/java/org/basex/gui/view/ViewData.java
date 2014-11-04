@@ -22,8 +22,7 @@ public final class ViewData {
   private ViewData() { }
 
   /**
-   * Checks if the specified node is a leaf node
-   * (text node or file element or file tag).
+   * Checks if the specified node is a text node.
    * @param opts gui options
    * @param d data reference
    * @param pre pre value
@@ -97,7 +96,7 @@ public final class ViewData {
   }
 
   /**
-   * Returns the tag name of the specified node.
+   * Returns the name of the specified element.
    * Note that the pre value must reference an element node.
    * @param opts gui options
    * @param data data reference
@@ -121,7 +120,7 @@ public final class ViewData {
    * @return name id
    */
   public static int nameID(final Data data) {
-    return data.atnindex.id(T_NAME);
+    return data.attrNames.id(T_NAME);
   }
 
   /**
@@ -130,7 +129,7 @@ public final class ViewData {
    * @return name id
    */
   public static int sizeID(final Data data) {
-    return data.atnindex.id(T_SIZE);
+    return data.attrNames.id(T_SIZE);
   }
 
   /**

@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.regex.*;
 
 import javax.swing.*;
-import javax.swing.border.*;
 import javax.swing.event.*;
 
 import org.basex.build.*;
@@ -57,6 +56,8 @@ public final class EditorView extends View {
   private final AbstractButton stop;
   /** Go button. */
   private final AbstractButton go;
+  /** Test button. */
+  private final AbstractButton test;
   /** Search bar. */
   private final SearchBar search;
   /** Info label. */
@@ -66,7 +67,7 @@ public final class EditorView extends View {
   /** Splitter. */
   private final BaseXSplit split;
   /** Header string. */
-  private final BaseXLabel label;
+  private final BaseXHeader header;
   /** Query area. */
   private final BaseXTabs tabs;
   /** Query file that has last been evaluated. */
@@ -87,8 +88,7 @@ public final class EditorView extends View {
     super(EDITORVIEW, man);
     layout(new BorderLayout());
 
-    label = new BaseXLabel(EDITOR, true, false);
-    label.setForeground(GRAY);
+    header = new BaseXHeader(EDITOR);
 
     tabs = new BaseXTabs(gui);
     tabs.setFocusable(Prop.MAC);
@@ -107,12 +107,15 @@ public final class EditorView extends View {
     stop.addKeyListener(this);
     stop.setEnabled(false);
 
-    go = BaseXButton.get("c_go", BaseXLayout.addShortcut(EXECUTE_QUERY, BaseXKeys.EXEC1.toString()),
-        false, gui);
+    go = BaseXButton.get("c_go", BaseXLayout.addShortcut(RUN_QUERY,
+        BaseXKeys.EXEC1.toString()), false, gui);
     go.addKeyListener(this);
+    test = BaseXButton.get("c_test", BaseXLayout.addShortcut(RUN_TESTS,
+        BaseXKeys.UNIT.toString()), false, gui);
+    test.addKeyListener(this);
 
     final BaseXBack buttons = new BaseXBack(Fill.NONE);
-    buttons.layout(new TableLayout(1, 7, 1, 0)).border(0, 0, 8, 0);
+    buttons.layout(new TableLayout(1, 8, 1, 0)).border(0, 0, 8, 0);
     buttons.add(openB);
     buttons.add(saveB);
     buttons.add(hist);
@@ -120,10 +123,11 @@ public final class EditorView extends View {
     buttons.add(Box.createHorizontalStrut(6));
     buttons.add(stop);
     buttons.add(go);
+    buttons.add(test);
 
     final BaseXBack north = new BaseXBack(Fill.NONE).layout(new BorderLayout());
     north.add(buttons, BorderLayout.WEST);
-    north.add(label, BorderLayout.EAST);
+    north.add(header, BorderLayout.EAST);
 
     // status and query pane
     search.editor(addTab(), false);
@@ -132,7 +136,7 @@ public final class EditorView extends View {
     pos = new BaseXLabel(" ");
     posCode.invokeLater();
 
-    final BaseXBack south = new BaseXBack(Fill.NONE).border(10, 0, 2, 0);
+    final BaseXBack south = new BaseXBack(Fill.NONE).border(4, 0, 0, 0);
     south.layout(new BorderLayout(4, 0));
     south.add(info, BorderLayout.CENTER);
     south.add(pos, BorderLayout.EAST);
@@ -226,6 +230,7 @@ public final class EditorView extends View {
       public void actionPerformed(final ActionEvent e) {
         stop.setEnabled(false);
         go.setEnabled(false);
+        test.setEnabled(false);
         gui.stop();
       }
     });
@@ -233,6 +238,12 @@ public final class EditorView extends View {
       @Override
       public void actionPerformed(final ActionEvent e) {
         run(getEditor(), Action.EXECUTE);
+      }
+    });
+    test.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(final ActionEvent e) {
+        run(getEditor(), Action.TEST);
       }
     });
     tabs.addChangeListener(new ChangeListener() {
@@ -243,6 +254,7 @@ public final class EditorView extends View {
         search.editor(ea, true);
         gui.refreshControls();
         posCode.invokeLater();
+        refreshMark();
         run(ea, Action.PARSE);
       }
     });
@@ -273,7 +285,9 @@ public final class EditorView extends View {
 
   @Override
   public void refreshMark() {
-    go.setEnabled(getEditor().script || !gui.gopts.get(GUIOptions.EXECRT));
+    final boolean script = getEditor().script;
+    go.setEnabled(script || !gui.gopts.get(GUIOptions.EXECRT));
+    test.setEnabled(!script);
   }
 
   @Override
@@ -281,12 +295,13 @@ public final class EditorView extends View {
 
   @Override
   public void refreshLayout() {
-    label.border(-6, 0, 0, 2).setFont(lfont);
+    header.refreshLayout();
     for(final EditorArea edit : editors()) edit.setFont(mfont);
     search.refreshLayout();
-    final Font ef = GUIConstants.font.deriveFont(7f + (fontSize >> 1));
-    info.setFont(ef);
-    pos.setFont(ef);
+    final Font f = GUIConstants.font.deriveFont((float) ((FONTSIZE * SCALE + fontSize) / 2));
+    info.setFont(f);
+    pos.setFont(f);
+    project.refreshLayout();
   }
 
   @Override
@@ -347,7 +362,7 @@ public final class EditorView extends View {
 
   /**
    * Switches the current editor tab.
-   * @param next next next/previous tag
+   * @param next next next/previous tab
    */
   public void tab(final boolean next) {
     final int s = tabs.getTabCount() - 1;
@@ -365,13 +380,6 @@ public final class EditorView extends View {
     fc.filter(BXS_FILES, IO.BXSSUFFIX);
     fc.textFilters();
     for(final IOFile f : fc.multi().selectAll(Mode.FOPEN)) open(f);
-  }
-
-  /**
-   * Reverts the contents of the currently opened editor.
-   */
-  public void reopen() {
-    getEditor().reopen(true);
   }
 
   /**
@@ -402,8 +410,7 @@ public final class EditorView extends View {
     if(file == null) return false;
 
     // success: display new file in project view
-    edit.save(file);
-    return true;
+    return edit.save(file);
   }
 
   /**
@@ -428,7 +435,7 @@ public final class EditorView extends View {
   /**
    * Opens and parses the specified query file.
    * @param file query file
-   * @return opened editor, or {@code null} if file could not be opened
+   * @return opened editor or {@code null} if file could not be opened
    */
   public EditorArea open(final IOFile file) {
     return open(file, true, true);
@@ -439,7 +446,7 @@ public final class EditorView extends View {
    * @param file query file
    * @param parse parse contents
    * @param error display error if file does not exist
-   * @return opened editor, or {@code null} if file could not be opened
+   * @return opened editor or {@code null} if file could not be opened
    */
   private EditorArea open(final IOFile file, final boolean parse, final boolean error) {
     if(!visible()) GUIMenuCmd.C_SHOWEDITOR.execute(gui);
@@ -448,7 +455,6 @@ public final class EditorView extends View {
     if(edit != null) {
       // display open file
       tabs.setSelectedComponent(edit);
-      edit.reopen(true);
     } else {
       try {
         // check and retrieve content
@@ -484,7 +490,8 @@ public final class EditorView extends View {
     final boolean eq = eq(in, editor.last);
     if(eq && action == Action.CHECK) return;
 
-    if(action == Action.EXECUTE && gui.gopts.get(GUIOptions.SAVERUN)) {
+    final boolean run = action == Action.EXECUTE || action == Action.TEST;
+    if(run && gui.gopts.get(GUIOptions.SAVERUN)) {
       for(final EditorArea edit : editors()) {
         if(edit.opened()) edit.save();
       }
@@ -494,11 +501,10 @@ public final class EditorView extends View {
     editor.last = in;
 
     final boolean xquery = file.hasSuffix(IO.XQSUFFIXES) || !file.path().contains(".");
-    editor.script = !xquery && file.hasSuffix(IO.BXSSUFFIX);
-    if(action == Action.EXECUTE && editor.script) {
-      // execute query if forced, or if realtime execution is activated
+    if(editor.script && run) {
+      // run query if forced, or if realtime execution is activated
       gui.execute(true, new Execute(string(in)));
-    } else if(xquery || action == Action.EXECUTE) {
+    } else if(xquery || run) {
       // check if input is/might be an xquery main module
       String input = in.length == 0 ? "()" : string(in);
       boolean lib = QueryProcessor.isLibrary(input);
@@ -514,19 +520,20 @@ public final class EditorView extends View {
 
       gui.context.options.set(MainOptions.QUERYPATH, file.path());
       if(!lib && exec) {
-        // execute query if forced, or if realtime execution is activated
+        // run query if forced, or if realtime execution is activated
         gui.execute(true, new XQuery(input));
+        execFile = file;
+      } else if(action == Action.TEST) {
+        // run query if forced, or if realtime execution is activated
+        gui.execute(true, new Test(file.path()));
         execFile = file;
       } else {
         // parse query
-        final QueryContext qc = new QueryContext(gui.context);
-        try {
+        try(final QueryContext qc = new QueryContext(gui.context)) {
           qc.parse(input, lib, null, null);
           info(null);
         } catch(final QueryException ex) {
           info(ex);
-        } finally {
-          qc.close();
         }
       }
     } else if(file.hasSuffix(IO.JSONSUFFIX)) {
@@ -556,7 +563,7 @@ public final class EditorView extends View {
 
   /**
    * Evaluates the info message resulting from command or query parsing.
-   * @param ex exception, or {@code null}
+   * @param ex exception or {@code null}
    */
   private void info(final Exception ex) {
     info(ex, false, false);
@@ -579,7 +586,7 @@ public final class EditorView extends View {
   /**
    * Retrieves the contents of the specified file, or opens it externally.
    * @param file query file
-   * @return contents, or {@code null} reference
+   * @return contents or {@code null} reference
    * @throws IOException I/O exception
    */
   private byte[] read(final IOFile file) throws IOException {
@@ -590,7 +597,7 @@ public final class EditorView extends View {
       while(true) {
         try {
           final int cp = ti.read();
-          if(cp == -1) return text.array();
+          if(cp == -1) return text.finish();
           text.add(cp);
         } catch(final InputException ex) {
           if(valid) {
@@ -629,7 +636,7 @@ public final class EditorView extends View {
       if(fl.exists() && !fl.eq(file)) paths.add(fl.path());
     }
     // store sorted history
-    gui.gopts.set(GUIOptions.EDITOR, paths.toArray());
+    gui.gopts.set(GUIOptions.EDITOR, paths.finish());
     hist.setEnabled(!paths.isEmpty());
   }
 
@@ -686,7 +693,7 @@ public final class EditorView extends View {
 
   /**
    * Processes the result from a command or query execution.
-   * @param th exception, or {@code null}
+   * @param th exception or {@code null}
    * @param stopped {@code true} if evaluation was interrupted
    * @param refresh refresh buttons
    */
@@ -816,7 +823,7 @@ public final class EditorView extends View {
     for(final EditorArea edit : editors()) {
       if(edit.opened()) files.add(edit.file.path());
     }
-    gui.gopts.set(GUIOptions.OPEN, files.toArray());
+    gui.gopts.set(GUIOptions.OPEN, files.finish());
     return true;
   }
 
@@ -888,10 +895,12 @@ public final class EditorView extends View {
     String title = edit.file.name();
     if(edit.modified) title += '*';
     edit.label.setText(title);
+    edit.script = edit.file.hasSuffix(IO.BXSSUFFIX);
 
     // update components
     gui.refreshControls();
     posCode.invokeLater();
+    refreshMark();
   }
 
   /** Code for setting cursor position. */
@@ -982,7 +991,7 @@ public final class EditorView extends View {
    */
   private AbstractButton tabButton(final String icon, final String rollover) {
     final AbstractButton b = BaseXButton.get(icon, null, false, gui);
-    b.setBorder(new EmptyBorder(2, 0, 2, 0));
+    b.setBorder(BaseXLayout.border(2, 0, 2, 0));
     b.setContentAreaFilled(false);
     b.setFocusable(false);
     b.setRolloverIcon(BaseXImages.icon(rollover));

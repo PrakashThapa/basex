@@ -2,6 +2,7 @@ package org.basex.query.value.map;
 
 import org.basex.query.*;
 import org.basex.query.iter.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
@@ -21,14 +22,14 @@ final class Branch extends TrieNode {
 
   /**
    * Constructor taking children array and the size of this map.
-   * @param ch children
-   * @param u bit array
-   * @param s size of this node
+   * @param kids children
+   * @param used bit array
+   * @param size size of this node
    */
-  Branch(final TrieNode[] ch, final int u, final int s) {
-    super(s);
-    kids = ch;
-    used = u;
+  Branch(final TrieNode[] kids, final int used, final int size) {
+    super(size);
+    this.kids = kids;
+    this.used = used;
     assert verify();
   }
 
@@ -45,13 +46,13 @@ final class Branch extends TrieNode {
   }
 
   @Override
-  TrieNode insert(final int h, final Item k, final Value v, final int l,
-      final InputInfo ii) throws QueryException {
+  TrieNode put(final int h, final Item k, final Value v, final int l, final InputInfo ii)
+      throws QueryException {
     final int key = key(h, l);
     final TrieNode sub = kids[key], nsub;
     final int bs, rem;
     if(sub != null) {
-      nsub = sub.insert(h, k, v, l + 1, ii);
+      nsub = sub.put(h, k, v, l + 1, ii);
       if(nsub == sub) return this;
       bs = used;
       rem = sub.size;
@@ -197,6 +198,17 @@ final class Branch extends TrieNode {
   }
 
   @Override
+  void values(final ValueBuilder vs) {
+    for(final TrieNode nd : kids) if(nd != null) nd.values(vs);
+  }
+
+  @Override
+  void apply(final ValueBuilder vb, final FItem func, final QueryContext qc, final InputInfo ii)
+      throws QueryException {
+    for(final TrieNode nd : kids) if(nd != null) nd.apply(vb, func, qc, ii);
+  }
+
+  @Override
   boolean hasType(final AtomType kt, final SeqType vt) {
     for(final TrieNode k : kids)
       if(!(k == null || k.hasType(kt, vt))) return false;
@@ -211,7 +223,7 @@ final class Branch extends TrieNode {
   }
 
   @Override
-  boolean deep(final InputInfo ii, final TrieNode o) throws QueryException {
+  boolean deep(final InputInfo ii, final TrieNode o, final Collation coll) throws QueryException {
     if(!(o instanceof Branch)) return false;
     final Branch ob = (Branch) o;
 
@@ -220,7 +232,7 @@ final class Branch extends TrieNode {
 
     // recursively compare children
     for(int i = 0; i < KIDS; i++)
-      if(kids[i] != null && !kids[i].deep(ii, ob.kids[i])) return false;
+      if(kids[i] != null && !kids[i].deep(ii, ob.kids[i], coll)) return false;
 
     // everything OK
     return true;

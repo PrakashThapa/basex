@@ -1,6 +1,6 @@
 package org.basex.qt3ts.fn;
 
-import org.basex.tests.bxapi.XQuery;
+import org.basex.tests.bxapi.*;
 import org.basex.tests.qt3ts.*;
 
 /**
@@ -177,7 +177,6 @@ public class FnLocalNameFromQName extends QT3TestSet {
    */
   @org.junit.Test
   public void localNameFromQNameFunc015() {
-    xquery10();
     final XQuery query = new XQuery(
       "fn:local-name-from-QName((//Folder)[1])",
       ctx);

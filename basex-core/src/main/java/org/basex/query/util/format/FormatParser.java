@@ -14,7 +14,7 @@ import org.basex.util.*;
  */
 public abstract class FormatParser extends FormatUtil {
   /** Input information. */
-  final InputInfo info;
+  private final InputInfo info;
 
   /** Case. */
   Case cs;
@@ -33,10 +33,10 @@ public abstract class FormatParser extends FormatUtil {
 
   /**
    * Constructor for formatting integers.
-   * @param ii input info
+   * @param info input info
    */
-  FormatParser(final InputInfo ii) {
-    info = ii;
+  FormatParser(final InputInfo info) {
+    this.info = info;
   }
 
   /**
@@ -89,23 +89,23 @@ public abstract class FormatParser extends FormatUtil {
       final int d = zeroes(ch);
       if(d != -1) {
         // mandatory-digit-sign
-        if(first != d) throw DIFFMAND.get(info, pic);
+        if(first != d) throw DIFFMAND_X.get(info, pic);
         mds = true;
         gss = false;
       } else if(ch == '#') {
         // optional-digit-sign
-        if(mds) throw OPTAFTER.get(info, pic);
+        if(mds) throw OPTAFTER_X.get(info, pic);
         gss = false;
       } else if(!Character.isLetter(ch)) {
         // grouping-separator-sign
-        if(gss) throw INVGROUP.get(info, pic);
+        if(gss) throw INVGROUP_X.get(info, pic);
         gss = true;
       } else {
         // any other letter: return default primary token
-        throw INVDDPATTERN.get(info, pic);
+        throw INVDDPATTERN_X.get(info, pic);
       }
     }
-    if(gss) throw INVGROUP.get(info, pic);
+    if(gss) throw INVGROUP_X.get(info, pic);
     return pic;
   }
 

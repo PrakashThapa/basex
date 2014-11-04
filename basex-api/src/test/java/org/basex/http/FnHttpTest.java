@@ -16,16 +16,17 @@ import org.basex.core.cmd.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.query.*;
+import org.basex.query.func.fn.*;
+import org.basex.query.func.http.*;
+import org.basex.query.func.http.HttpRequest.*;
 import org.basex.query.iter.*;
-import org.basex.query.util.*;
 import org.basex.query.util.Err.ErrType;
-import org.basex.query.util.http.*;
-import org.basex.query.util.http.HTTPRequest.Part;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class tests the server-based HTTP Client.
@@ -71,12 +72,12 @@ public class FnHttpTest extends HTTPTest {
    */
   @Test
   public void put() throws Exception {
-    final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
         "<http:request method='put' status-only='true'>"
         + "<http:body media-type='text/xml'>" + BOOKS + "</http:body>"
-        + "</http:request>", RESTURL), ctx);
-    checkResponse(qp.execute(), HttpURLConnection.HTTP_CREATED, 1);
-    qp.close();
+        + "</http:request>", RESTURL), ctx)) {
+      checkResponse(qp.execute(), HttpURLConnection.HTTP_CREATED, 1);
+    }
   }
 
   /**
@@ -86,36 +87,36 @@ public class FnHttpTest extends HTTPTest {
   @Test
   public void putPost() throws Exception {
     // PUT - query
-    QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
         "<http:request method='put' status-only='true'>"
         + "<http:body media-type='text/xml'>" + BOOKS + "</http:body>"
-        + "</http:request>", RESTURL), ctx);
-    checkResponse(qp.execute(), HttpURLConnection.HTTP_CREATED, 1);
-    qp.close();
+        + "</http:request>", RESTURL), ctx)) {
+      checkResponse(qp.execute(), HttpURLConnection.HTTP_CREATED, 1);
+    }
 
     // POST - query
-    qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
         "<http:request method='post'>"
         + "<http:body media-type='application/xml'>"
-        + "<query xmlns='" + URL + "/rest'>"
+        + "<query xmlns='" + Prop.URL + "/rest'>"
         + "<text>1</text>"
         + "<parameter name='wrap' value='yes'/>"
         + "</query>" + "</http:body>"
-        + "</http:request>", RESTURL), ctx);
-    checkResponse(qp.execute(), HttpURLConnection.HTTP_OK, 2);
-    qp.close();
+        + "</http:request>", RESTURL), ctx)) {
+        checkResponse(qp.execute(), HttpURLConnection.HTTP_OK, 2);
+    }
 
     // Execute the same query but with content set from $bodies
-    qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
        "<http:request method='post'>"
         + "<http:body media-type='application/xml'/></http:request>",
         RESTURL,
-        "<query xmlns='" + URL + "/rest'>"
+        "<query xmlns='" + Prop.URL + "/rest'>"
         + "<text>1</text>"
         + "<parameter name='wrap' value='yes'/>"
-        + "</query>"), ctx);
-    checkResponse(qp.execute(), HttpURLConnection.HTTP_OK, 2);
-    qp.close();
+        + "</query>"), ctx)) {
+      checkResponse(qp.execute(), HttpURLConnection.HTTP_OK, 2);
+    }
   }
 
   /**
@@ -125,28 +126,28 @@ public class FnHttpTest extends HTTPTest {
   @Test
   public void postGet() throws Exception {
     // GET1 - just send a GET request
-    QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
-        "<http:request method='get' href='" + ROOT + "'/>"), ctx);
-    Result r = qp.execute();
-    checkResponse(r, HttpURLConnection.HTTP_OK, 2);
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+        "<http:request method='get' href='" + ROOT + "'/>"), ctx)) {
+      final Result r = qp.execute();
+      checkResponse(r, HttpURLConnection.HTTP_OK, 2);
 
-    assertEquals(NodeType.DOC, ((Iter) r).get(1).type);
-    qp.close();
+      assertEquals(NodeType.DOC, ((Iter) r).get(1).type);
+    }
 
     // GET2 - with override-media-type='text/plain'
-    qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
-        "<http:request method='get' override-media-type='text/plain'/>", ROOT), ctx);
-    r = qp.execute();
-    checkResponse(r, HttpURLConnection.HTTP_OK, 2);
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+        "<http:request method='get' override-media-type='text/plain'/>", ROOT), ctx)) {
+      final Result r = qp.execute();
+      checkResponse(r, HttpURLConnection.HTTP_OK, 2);
 
-    assertEquals(AtomType.STR, ((Iter) r).get(1).type);
-    qp.close();
+      assertEquals(AtomType.STR, ((Iter) r).get(1).type);
+    }
 
     // Get3 - with status-only='true'
-    qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
-        "<http:request method='get' status-only='true'/>", ROOT), ctx);
-    checkResponse(qp.execute(), HttpURLConnection.HTTP_OK, 1);
-    qp.close();
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+        "<http:request method='get' status-only='true'/>", ROOT), ctx)) {
+      checkResponse(qp.execute(), HttpURLConnection.HTTP_OK, 1);
+    }
   }
 
   /**
@@ -156,18 +157,18 @@ public class FnHttpTest extends HTTPTest {
   @Test
   public void postDelete() throws Exception {
     // add document to be deleted
-    QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
         "<http:request method='put'>"
         + "<http:body media-type='text/xml'><ToBeDeleted/></http:body>"
-        + "</http:request>", RESTURL), ctx);
-    qp.execute();
-    qp.close();
+        + "</http:request>", RESTURL), ctx)) {
+      qp.execute();
+    }
 
     // DELETE
-    qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
-        "<http:request method='delete' status-only='true'/>", RESTURL), ctx);
-    checkResponse(qp.execute(), HttpURLConnection.HTTP_OK, 1);
-    qp.close();
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+        "<http:request method='delete' status-only='true'/>", RESTURL), ctx)) {
+      checkResponse(qp.execute(), HttpURLConnection.HTTP_OK, 1);
+    }
   }
 
   /**
@@ -202,10 +203,10 @@ public class FnHttpTest extends HTTPTest {
    */
   @Test
   public void error() throws QueryException {
-    final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
-        "<http:request method='get'/>", RESTURL + "unknown") + "[1]/@status/data()", ctx);
-    assertEquals("404", qp.execute().toString());
-    qp.close();
+    try(final QueryProcessor qp = new QueryProcessor(_HTTP_SEND_REQUEST.args(
+        "<http:request method='get'/>", RESTURL + "unknown") + "[1]/@status/data()", ctx)) {
+      assertEquals("404", qp.execute().toString());
+    }
   }
 
   /**
@@ -223,9 +224,9 @@ public class FnHttpTest extends HTTPTest {
         + "<http:header name='hdr2' value='hdr2val'/>"
         + "<http:body media-type='text/xml'>" + "Test body content"
         + "</http:body>" + "</http:request>";
-    final DBNode dbNode = new DBNode(new IOContent(req), ctx.options);
-    final HTTPRequestParser rp = new HTTPRequestParser(null);
-    final HTTPRequest r = rp.parse(dbNode.children().next(), null);
+    final DBNode dbNode = new DBNode(new IOContent(req));
+    final HttpRequestParser rp = new HttpRequestParser(null);
+    final HttpRequest r = rp.parse(dbNode.children().next(), null);
 
     assertEquals(2, r.attrs.size());
     assertEquals(2, r.headers.size());
@@ -255,9 +256,9 @@ public class FnHttpTest extends HTTPTest {
         + "Part3" + "</http:body>" + "</http:multipart>"
         + "</http:request>";
 
-    final DBNode dbNode1 = new DBNode(new IOContent(multiReq), ctx.options);
-    final HTTPRequestParser rp = new HTTPRequestParser(null);
-    final HTTPRequest r = rp.parse(dbNode1.children().next(), null);
+    final DBNode dbNode1 = new DBNode(new IOContent(multiReq));
+    final HttpRequestParser rp = new HttpRequestParser(null);
+    final HttpRequest r = rp.parse(dbNode1.children().next(), null);
 
     assertEquals(2, r.attrs.size());
     assertEquals(2, r.headers.size());
@@ -304,14 +305,14 @@ public class FnHttpTest extends HTTPTest {
         + "<http:body media-type='text/plain'/>"
         + "</http:multipart>" + "</http:request>";
 
-    final DBNode dbNode1 = new DBNode(new IOContent(multiReq), ctx.options);
+    final DBNode dbNode1 = new DBNode(new IOContent(multiReq));
     final ValueBuilder bodies = new ValueBuilder();
     bodies.add(Str.get("Part1"));
     bodies.add(Str.get("Part2"));
     bodies.add(Str.get("Part3"));
 
-    final HTTPRequestParser rp = new HTTPRequestParser(null);
-    final HTTPRequest r = rp.parse(dbNode1.children().next(), bodies);
+    final HttpRequestParser rp = new HttpRequestParser(null);
+    final HttpRequest r = rp.parse(dbNode1.children().next(), bodies);
 
     assertEquals(2, r.attrs.size());
     assertEquals(2, r.headers.size());
@@ -407,9 +408,9 @@ public class FnHttpTest extends HTTPTest {
     falseReqs.add(falseReq8);
 
     for(final byte[] falseReq : falseReqs) {
-      final DBNode dbNode = new DBNode(new IOContent(falseReq), ctx.options);
+      final DBNode dbNode = new DBNode(new IOContent(falseReq));
       try {
-        final HTTPRequestParser rp = new HTTPRequestParser(null);
+        final HttpRequestParser rp = new HttpRequestParser(null);
         rp.parse(dbNode.children().next(), null);
         fail("Exception not thrown");
       } catch (final QueryException ex) {
@@ -426,7 +427,7 @@ public class FnHttpTest extends HTTPTest {
   @Test
   public void writeMultipartMessage() throws IOException {
 
-    final HTTPRequest req = new HTTPRequest();
+    final HttpRequest req = new HttpRequest();
     req.isMultipart = true;
     req.payloadAttrs.put(token("media-type"), token("multipart/alternative"));
     req.payloadAttrs.put(token("boundary"), token("boundary42"));
@@ -454,7 +455,7 @@ public class FnHttpTest extends HTTPTest {
 
     final FakeHttpConnection fakeConn = new FakeHttpConnection(new URL(
         "http://www.test.com"));
-    final HTTPClient hc = new HTTPClient(null, ctx.options);
+    final HttpClient hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn.getOutputStream(), req);
     final String expResult = "--boundary42" + CRLF
         + "Content-Type: text/plain; charset=us-ascii" + CRLF + CRLF
@@ -478,7 +479,7 @@ public class FnHttpTest extends HTTPTest {
   @Test
   public void writeMessage() throws IOException {
     // Case 1: No method, media-type='text/xml'
-    final HTTPRequest req1 = new HTTPRequest();
+    final HttpRequest req1 = new HttpRequest();
     final FakeHttpConnection fakeConn1 = new FakeHttpConnection(new URL(
         "http://www.test.com"));
     req1.payloadAttrs.put(MEDIATYPE, token("text/xml"));
@@ -487,12 +488,12 @@ public class FnHttpTest extends HTTPTest {
     req1.bodyContent.add(e1);
     // String item child
     req1.bodyContent.add(Str.get("<b>b</b>"));
-    HTTPClient hc = new HTTPClient(null, ctx.options);
+    HttpClient hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn1.getOutputStream(), req1);
     assertEquals("<a>a</a>&lt;b&gt;b&lt;/b&gt;", fakeConn1.out.toString());
 
     // Case 2: No method, media-type='text/plain'
-    final HTTPRequest req2 = new HTTPRequest();
+    final HttpRequest req2 = new HttpRequest();
     final FakeHttpConnection fakeConn2 = new FakeHttpConnection(new URL(
         "http://www.test.com"));
     req2.payloadAttrs.put(MEDIATYPE, token("text/plain"));
@@ -501,12 +502,12 @@ public class FnHttpTest extends HTTPTest {
     req2.bodyContent.add(e2);
     // String item child
     req2.bodyContent.add(Str.get("<b>b</b>"));
-    hc = new HTTPClient(null, ctx.options);
+    hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn2.getOutputStream(), req2);
     assertEquals("a<b>b</b>", fakeConn2.out.toString());
 
     // Case 3: method='text', media-type='text/xml'
-    final HTTPRequest req3 = new HTTPRequest();
+    final HttpRequest req3 = new HttpRequest();
     final FakeHttpConnection fakeConn3 = new FakeHttpConnection(new URL(
         "http://www.test.com"));
     req3.payloadAttrs.put(MEDIATYPE, token("text/xml"));
@@ -516,66 +517,63 @@ public class FnHttpTest extends HTTPTest {
     req3.bodyContent.add(e3);
     // String item child
     req3.bodyContent.add(Str.get("<b>b</b>"));
-    hc = new HTTPClient(null, ctx.options);
+    hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn3.getOutputStream(), req3);
     assertEquals("a<b>b</b>", fakeConn3.out.toString());
   }
 
-  /*
-   * Tests writing of body content when @method is http:base64Binary.
+  /**
+   * Tests writing of body content when @method is raw and output is xs:base64Binary.
    * @throws IOException I/O Exception
+   */
   @Test
   public void writeBase64() throws IOException {
     // Case 1: content is xs:base64Binary
-    final HTTPRequest req1 = new HTTPRequest();
-    req1.payloadAttrs.put(METHOD, token("http:base64Binary"));
+    final HttpRequest req1 = new HttpRequest();
+    req1.payloadAttrs.put("method", "raw");
+
     req1.bodyContent.add(new B64(token("dGVzdA==")));
-    final FakeHttpConnection fakeConn1 = new FakeHttpConnection(new URL(
-        "http://www.test.com"));
-    HTTPClient hc = new HTTPClient(null, ctx.options);
+    final FakeHttpConnection fakeConn1 = new FakeHttpConnection(new URL("http://www.test.com"));
+    HttpClient hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn1.getOutputStream(), req1);
     assertEquals(fakeConn1.out.toString(), "dGVzdA==");
 
     // Case 2: content is a node
-    final HTTPRequest req2 = new HTTPRequest();
-    req2.payloadAttrs.put(METHOD, token("http:base64Binary"));
+    final HttpRequest req2 = new HttpRequest();
+    req2.payloadAttrs.put("method", "raw");
     final FElem e3 = new FElem("a").add("dGVzdA==");
     req2.bodyContent.add(e3);
-    final FakeHttpConnection fakeConn2 = new FakeHttpConnection(new URL(
-        "http://www.test.com"));
-    hc = new HTTPClient(null, ctx.options);
+    final FakeHttpConnection fakeConn2 = new FakeHttpConnection(new URL("http://www.test.com"));
+    hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn2.getOutputStream(), req2);
     assertEquals(fakeConn2.out.toString(), "dGVzdA==");
   }
-   */
 
-  /*
-   * Tests writing of body content when @method is http:hexBinary.
+  /**
+   * Tests writing of body content when @method is raw and output is xs:hexBinary.
    * @throws IOException I/O Exception
+   */
   @Test
   public void writeHex() throws IOException {
     // Case 1: content is xs:hexBinary
-    final HTTPRequest req1 = new HTTPRequest();
-    req1.payloadAttrs.put(METHOD, token("http:hexBinary"));
+    final HttpRequest req1 = new HttpRequest();
+    req1.payloadAttrs.put("method", "raw");
     req1.bodyContent.add(new Hex(token("74657374")));
-    final FakeHttpConnection fakeConn1 = new FakeHttpConnection(new URL(
-        "http://www.test.com"));
-    HTTPClient hc = new HTTPClient(null, ctx.options);
+    final FakeHttpConnection fakeConn1 = new FakeHttpConnection(new URL("http://www.test.com"));
+    HttpClient hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn1.getOutputStream(), req1);
     assertEquals(fakeConn1.out.toString(), "74657374");
 
     // Case 2: content is a node
-    final HTTPRequest req2 = new HTTPRequest();
-    req2.payloadAttrs.put(METHOD, token("http:base64Binary"));
+    final HttpRequest req2 = new HttpRequest();
+    req2.payloadAttrs.put("method", "raw");
     final FElem e3 = new FElem("a").add("74657374");
     req2.bodyContent.add(e3);
-    final FakeHttpConnection fakeConn2 = new FakeHttpConnection(new URL(
-        "http://www.test.com"));
-    hc = new HTTPClient(null, ctx.options);
+    final FakeHttpConnection fakeConn2 = new FakeHttpConnection(new URL("http://www.test.com"));
+    hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn2.getOutputStream(), req2);
     assertEquals(fakeConn2.out.toString(), "74657374");
   }
-   */
 
   /**
    * Tests writing of request content when @src is set.
@@ -588,12 +586,12 @@ public class FnHttpTest extends HTTPTest {
     file.write(token("test"));
 
     // Request
-    final HTTPRequest req = new HTTPRequest();
+    final HttpRequest req = new HttpRequest();
     req.payloadAttrs.put("src", file.url());
     req.payloadAttrs.put("method", "binary");
     // HTTP connection
     final FakeHttpConnection fakeConn = new FakeHttpConnection(new URL("http://www.test.com"));
-    final HTTPClient hc = new HTTPClient(null, ctx.options);
+    final HttpClient hc = new HttpClient(null, ctx.options);
     hc.setRequestContent(fakeConn.getOutputStream(), req);
 
     // Delete file
@@ -619,7 +617,7 @@ public class FnHttpTest extends HTTPTest {
     // set content encoded in CP1251
     final String test = "\u0442\u0435\u0441\u0442";
     conn.content = Charset.forName("CP1251").encode(test).array();
-    final Iter i = new HTTPResponse(null, ctx.options).getResponse(
+    final Iter i = new HttpResponse(null, ctx.options).getResponse(
         conn, Bln.FALSE.string(), null);
     // compare results
     assertEquals(test, string(i.get(1).string(null)));
@@ -663,7 +661,7 @@ public class FnHttpTest extends HTTPTest {
         + "--boundary42" + CRLF + "Content-Type: text/x-whatever" + CRLF + CRLF
         + ".... fanciest formatted version of same  "
         + "message  goes  here" + CRLF + "..."  + CRLF + "--boundary42--");
-    final ValueIter expIter = new HTTPResponse(null, ctx.options).
+    final ValueIter expIter = new HttpResponse(null, ctx.options).
         getResponse(conn, Bln.FALSE.string(), null);
 
     // Construct expected result
@@ -688,14 +686,14 @@ public class FnHttpTest extends HTTPTest {
         + "<http:body media-type='text/x-whatever'/>"
         + "</http:multipart>" + "</http:response> ";
 
-    final DBNode dbNode = new DBNode(new IOContent(reqItem), ctx.options);
+    final DBNode dbNode = new DBNode(new IOContent(reqItem));
     resultIter.add(dbNode.children().next());
     resultIter.add(Str.get("...plain text version of message goes here....\n\n"));
     resultIter.add(Str.get(".... richtext version of same message goes here ...\n"));
     resultIter.add(Str.get(".... fanciest formatted version of same  message  goes  here\n...\n"));
 
     // Compare response with expected result
-    if(!Compare.deep(resultIter, expIter, null)) {
+    if(!new Compare().equal(resultIter, expIter)) {
       final TokenBuilder exp = new TokenBuilder();
       for(final Item it : expIter) exp.add("- ").add(it.toString()).add('\n');
       final TokenBuilder res = new TokenBuilder();
@@ -755,7 +753,7 @@ public class FnHttpTest extends HTTPTest {
         +  CRLF + "--simple boundary--" + CRLF
         + "This is the epilogue.  It is also to be ignored.");
     // Get response as sequence of XQuery items
-    final ValueIter expIter = new HTTPResponse(null, ctx.options).
+    final ValueIter expIter = new HttpResponse(null, ctx.options).
         getResponse(conn, Bln.FALSE.string(), null);
 
     // Construct expected result
@@ -779,7 +777,7 @@ public class FnHttpTest extends HTTPTest {
         + "<http:body media-type='text/plain; charset=us-ascii'/>"
         + "</http:multipart>" + "</http:response>";
 
-    final DBNode dbNode = new DBNode(new IOContent(reqItem), ctx.options);
+    final DBNode dbNode = new DBNode(new IOContent(reqItem));
     resultIter.add(dbNode.children().next());
     resultIter.add(Str.get("This is implicitly typed plain ASCII text.\n"
         + "It does NOT end with a linebreak.\n"));
@@ -787,8 +785,7 @@ public class FnHttpTest extends HTTPTest {
         + "It DOES end with a linebreak.\n\n"));
 
     // Compare response with expected result
-    // Compare response with expected result
-    if(!Compare.deep(resultIter, expIter, null)) {
+    if(!new Compare().equal(resultIter, expIter)) {
       final TokenBuilder exp = new TokenBuilder();
       for(final Item it : expIter) exp.add(it.toString()).add('\n');
       final TokenBuilder res = new TokenBuilder();

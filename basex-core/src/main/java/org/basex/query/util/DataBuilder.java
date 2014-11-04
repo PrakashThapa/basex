@@ -5,6 +5,7 @@ import static org.basex.util.Token.*;
 import org.basex.core.*;
 import org.basex.data.*;
 import org.basex.query.iter.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
@@ -22,7 +23,7 @@ public final class DataBuilder {
   private final MemData data;
   /** Full-text position data. */
   private DataFTBuilder ftbuilder;
-  /** Index reference of marker tag. */
+  /** Index reference of marker element. */
   private int marker;
 
   /**
@@ -35,14 +36,14 @@ public final class DataBuilder {
 
   /**
    * Attaches full-text position data.
-   * @param tag name of marker tag
+   * @param name name of marker element
    * @param pos full-text position data
    * @param len length of extract
    * @return self reference
    */
-  public DataBuilder ftpos(final byte[] tag, final FTPosData pos, final int len) {
+  public DataBuilder ftpos(final byte[] name, final FTPosData pos, final int len) {
     ftbuilder = new DataFTBuilder(pos, len);
-    marker = data.tagindex.index(tag, null, false);
+    marker = data.elemNames.index(name, null, false);
     return this;
   }
 
@@ -119,10 +120,10 @@ public final class DataBuilder {
       if(par == -1) data.nspaces.add(ds, pre + 1, q.prefix(), uri, data);
       u = data.nspaces.uri(uri);
     }
-    final int n = data.atnindex.index(q.string(), null, false);
+    final int n = data.attrNames.index(q.string(), null, false);
     // usually, attributes don't have a namespace flag.
     // this is different here, because a stand-alone attribute has no parent element.
-    data.attr(ds, pre - par, n, node.string(), u, u != 0);
+    data.attr(ds, pre - par, n, node.string(), u, par == -1 && u != 0);
     data.insert(ds);
     return pre + 1;
   }
@@ -226,7 +227,7 @@ public final class DataBuilder {
 
     // analyze node name
     final QNm name = node.qname();
-    final int tn = data.tagindex.index(name.string(), null, false);
+    final int tn = data.elemNames.index(name.string(), null, false);
     final int s = size(node, false);
     final int u = data.nspaces.uri(name.uri());
 

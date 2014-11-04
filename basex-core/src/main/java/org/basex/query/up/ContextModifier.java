@@ -2,6 +2,7 @@ package org.basex.query.up;
 
 import static org.basex.query.util.Err.*;
 
+import java.io.*;
 import java.util.*;
 
 import org.basex.data.*;
@@ -27,20 +28,20 @@ public abstract class ContextModifier {
   /**
    * Adds an update primitive to this context modifier.
    * @param up update primitive
-   * @param ctx query context
+   * @param qc query context
    * @throws QueryException query exception
    */
-  abstract void add(final Update up, final QueryContext ctx) throws QueryException;
+  abstract void add(final Update up, final QueryContext qc) throws QueryException;
 
   /**
    * Adds an update primitive to this context modifier.
    * Will be called by {@link #add(Update, QueryContext)}.
-   * @param up update primitive
+   * @param update update primitive
    * @throws QueryException query exception
    */
-  final void add(final Update up) throws QueryException {
-    if(up instanceof DataUpdate) {
-      final DataUpdate dataUp = (DataUpdate) up;
+  final void add(final Update update) throws QueryException {
+    if(update instanceof DataUpdate) {
+      final DataUpdate dataUp = (DataUpdate) update;
       final Data data = dataUp.data();
       DataUpdates ups = dbUpdates.get(data);
       if(ups == null) {
@@ -51,7 +52,7 @@ public abstract class ContextModifier {
       if(tmp == null) tmp = new MemData(data.meta.options);
       ups.add(dataUp, tmp);
     } else {
-      final NameUpdate nameUp = (NameUpdate) up;
+      final NameUpdate nameUp = (NameUpdate) update;
       final String name = nameUp.name();
       NameUpdates ups = nameUpdates.get(name);
       if(ups == null) {
@@ -110,11 +111,13 @@ public abstract class ContextModifier {
     int i = 0;
     try {
       for(final Data data : datas) {
-        if(!data.startUpdate()) throw BXDB_OPENED.get(null, data.meta.name);
+        data.startUpdate();
         i++;
       }
       // apply node and database update
       for(final DataUpdates up : dbUpdates.values()) up.apply();
+    } catch(final IOException ex) {
+      throw BXDB_LOCK_X.get(null, ex);
     } finally {
       // remove locks: in case of a crash, remove only already acquired write locks
       for(final Data data : datas) {

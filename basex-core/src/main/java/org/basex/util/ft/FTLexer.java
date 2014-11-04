@@ -6,7 +6,7 @@ import java.util.*;
 import org.basex.index.*;
 import org.basex.index.query.*;
 import org.basex.io.serial.*;
-import org.basex.query.ft.*;
+import org.basex.query.expr.ft.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
 
@@ -151,8 +151,8 @@ public final class FTLexer extends FTIterator implements IndexToken {
   }
 
   /**
-   * Returns the full-text options. Can be {@code null}.
-   * @return full-text options
+   * Returns the full-text options.
+   * @return full-text options (may be {@code null})
    */
   public FTOpt ftOpt() {
     return ftopt;
@@ -178,12 +178,12 @@ public final class FTLexer extends FTIterator implements IndexToken {
   /**
    * Calculates a position value, dependent on the specified unit. Does not have
    * to be implemented by all tokenizers. Returns 0 if not implemented.
-   * @param w word position
-   * @param u unit
+   * @param word word position
+   * @param unit unit
    * @return new position
    */
-  public int pos(final int w, final FTUnit u) {
-    return tok.pos(w, u);
+  public int pos(final int word, final FTUnit unit) {
+    return tok.pos(word, unit);
   }
 
   /**

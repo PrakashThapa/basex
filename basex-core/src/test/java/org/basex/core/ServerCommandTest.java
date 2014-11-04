@@ -6,14 +6,14 @@ import static org.junit.Assert.*;
 import java.io.*;
 
 import org.basex.*;
+import org.basex.api.client.*;
 import org.basex.core.cmd.*;
-import org.basex.server.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
- * This class tests the database commands with the client/server
- * architecture.
+ * This class tests the database commands with the client/server architecture.
  *
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
@@ -57,9 +57,9 @@ public final class ServerCommandTest extends CommandTest {
     ok(new Kill(S_ADMIN + '2'));
     ok(new Kill(Prop.NAME + '*'));
     ok(new CreateUser(NAME2, Token.md5(NAME2)));
-    final ClientSession cs = createClient(NAME2, NAME2);
-    ok(new Kill(NAME2));
-    ok(new Kill(NAME2 + '?'));
-    cs.close();
+    try(final ClientSession cs = createClient(NAME2, NAME2)) {
+      ok(new Kill(NAME2));
+      ok(new Kill(NAME2 + '?'));
+    }
   }
 }

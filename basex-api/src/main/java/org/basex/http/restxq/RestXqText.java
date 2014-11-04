@@ -3,8 +3,8 @@ package org.basex.http.restxq;
 import static org.basex.query.QueryText.*;
 import static org.basex.util.Token.*;
 
+import org.basex.query.expr.path.*;
 import org.basex.query.func.*;
-import org.basex.query.path.*;
 import org.basex.query.value.item.*;
 
 /**
@@ -32,6 +32,8 @@ public interface RestXqText {
   byte[] COOKIE_PARAM = token("cookie-param");
   /** Token "query-param". */
   byte[] ERROR_PARAM = token("error-param");
+  /** Token "method". */
+  byte[] METHOD = token("method");
 
   /** Token "header". */
   byte[] HEADER = token("header");
@@ -70,8 +72,6 @@ public interface RestXqText {
   /** Error message. */
   String ANN_ATLEAST = "Annotation %% requires at least % parameter(s).";
   /** Error message. */
-  String ANN_EXACTLY = "Annotation %% requires exactly % parameter(s).";
-  /** Error message. */
   String ANN_STRING = "Single string expected for %%, found: %.";
   /** Error message. */
   String INV_TEMPLATE = "Invalid path template: \"%\".";
@@ -79,6 +79,10 @@ public interface RestXqText {
   String INV_VARNAME = "Invalid variable name: $%.";
   /** Error message. */
   String INV_CODE = "Invalid error code: '%'.";
+  /** Error message. */
+  String INV_PRIORITY = "Errors must be of the same priority (\"%\" vs \"%\").";
+  /** Error message. */
+  String INV_ERR_SAME = "The same error has been specified twice: \"%\".";
   /** Error message. */
   String INV_NONS = "No namespace declared for '%'.";
   /** Error message. */
@@ -100,9 +104,9 @@ public interface RestXqText {
   /** Error message. */
   String INPUT_CONV = "Input could not be converted: %";
   /** Error message. */
-  String PATH_CONFLICT = "Several functions assigned to path \"%\":%";
+  String PATH_CONFLICT = "Path \"%\" assigned to several functions:%";
   /** Error message. */
-  String ERROR_CONFLICT = "Several functions assigned to error \"%\":%";
+  String ERROR_CONFLICT = "Error \"%\" matched by several functions:%";
   /** Error message. */
   String NO_VALUE = "'%' element has no string value.";
 
@@ -120,13 +124,13 @@ public interface RestXqText {
   /** Serializer node test. */
   NodeTest OUTPUT_SERIAL = new NodeTest(FuncOptions.Q_SPARAM);
   /** HTTP Response test. */
-  NodeTest HTTP_RESPONSE = new NodeTest(QNm.get(RESPONSE, HTTPURI));
+  NodeTest HTTP_RESPONSE = new NodeTest(QNm.get(RESPONSE, HTTP_URI));
   /** RESTXQ Response test. */
-  NodeTest REST_RESPONSE = new NodeTest(QNm.get(RESPONSE, RESTURI));
+  NodeTest REST_RESPONSE = new NodeTest(QNm.get(RESPONSE, REST_URI));
   /** RESTXQ Redirect test. */
-  NodeTest REST_REDIRECT = new NodeTest(QNm.get(REDIRECT, RESTURI));
+  NodeTest REST_REDIRECT = new NodeTest(QNm.get(REDIRECT, REST_URI));
   /** RESTXQ Forward test. */
-  NodeTest REST_FORWARD = new NodeTest(QNm.get(FORWARD, RESTURI));
+  NodeTest REST_FORWARD = new NodeTest(QNm.get(FORWARD, REST_URI));
   /** HTTP Header test. */
-  NodeTest HTTP_HEADER = new NodeTest(QNm.get(HEADER, HTTPURI));
+  NodeTest HTTP_HEADER = new NodeTest(QNm.get(HEADER, HTTP_URI));
 }

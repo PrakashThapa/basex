@@ -9,7 +9,7 @@ import java.util.regex.*;
 import javax.xml.datatype.*;
 
 import org.basex.query.*;
-import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
 
@@ -32,56 +32,55 @@ public class Dur extends ADateDur {
 
   /**
    * Constructor.
-   * @param v value
+   * @param value value
    * @param ii input info
    * @throws QueryException query exception
    */
-  public Dur(final byte[] v, final InputInfo ii) throws QueryException {
-    this(v, AtomType.DUR, ii);
+  public Dur(final byte[] value, final InputInfo ii) throws QueryException {
+    this(value, AtomType.DUR, ii);
   }
 
   /**
    * Constructor.
-   * @param t data type
+   * @param type item type
    */
-  Dur(final Type t) {
-    super(t);
+  Dur(final Type type) {
+    super(type);
   }
 
   /**
    * Constructor.
-   * @param d duration
+   * @param dur duration
    */
-  public Dur(final Dur d) {
-    this(d, AtomType.DUR);
+  public Dur(final Dur dur) {
+    this(dur, AtomType.DUR);
   }
 
   /**
    * Constructor.
-   * @param d duration
-   * @param t data type
+   * @param dur duration
+   * @param type item type
    */
-  private Dur(final Dur d, final Type t) {
-    this(t);
-    mon = d.mon;
-    sec = d.sec == null ? BigDecimal.ZERO : d.sec;
+  private Dur(final Dur dur, final Type type) {
+    this(type);
+    mon = dur.mon;
+    sec = dur.sec == null ? BigDecimal.ZERO : dur.sec;
   }
 
   /**
    * Constructor.
-   * @param vl value
-   * @param t data type
+   * @param value value
+   * @param type item type
    * @param ii input info
    * @throws QueryException query exception
    */
-  private Dur(final byte[] vl, final Type t, final InputInfo ii) throws QueryException {
-    this(t);
-
-    final String val = Token.string(vl).trim();
+  private Dur(final byte[] value, final Type type, final InputInfo ii) throws QueryException {
+    this(type);
+    final String val = Token.string(value).trim();
     final Matcher mt = DUR.matcher(val);
-    if(!mt.matches() || val.endsWith("P") || val.endsWith("T")) throw dateError(vl, XDURR, ii);
-    yearMonth(vl, mt, ii);
-    dayTime(vl, mt, 6, ii);
+    if(!mt.matches() || val.endsWith("P") || val.endsWith("T")) throw dateError(value, XDURR, ii);
+    yearMonth(value, mt, ii);
+    dayTime(value, mt, 6, ii);
   }
 
   /**
@@ -100,7 +99,7 @@ public class Dur extends ADateDur {
       mon = -mon;
       v = -v;
     }
-    if(v <= Long.MIN_VALUE || v >= Long.MAX_VALUE) throw DURRANGE.get(ii, type, vl);
+    if(v <= Long.MIN_VALUE || v >= Long.MAX_VALUE) throw DURRANGE_X_X.get(ii, type, vl);
   }
 
   /**
@@ -124,7 +123,7 @@ public class Dur extends ADateDur {
         add(BigDecimal.valueOf(m).multiply(BD60));
     if(!mt.group(1).isEmpty()) sec = sec.negate();
     final double v = sec.doubleValue();
-    if(v <= Long.MIN_VALUE || v >= Long.MAX_VALUE) throw DURRANGE.get(ii, type, vl);
+    if(v <= Long.MIN_VALUE || v >= Long.MAX_VALUE) throw DURRANGE_X_X.get(ii, type, vl);
   }
 
   @Override

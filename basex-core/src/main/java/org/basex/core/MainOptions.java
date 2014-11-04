@@ -56,8 +56,10 @@ public final class MainOptions extends Options {
   public static final BooleanOption INTPARSE = new BooleanOption("INTPARSE", false);
   /** Strips namespaces. */
   public static final BooleanOption STRIPNS = new BooleanOption("STRIPNS", false);
-  /** Flag for parsing DTDs in internal parser. */
+  /** Flag for parsing DTDs. */
   public static final BooleanOption DTD = new BooleanOption("DTD", false);
+  /** Flag for using XInclude. */
+  public static final BooleanOption XINCLUDE = new BooleanOption("XINCLUDE", true);
   /** Path to XML Catalog file. */
   public static final StringOption CATFILE = new StringOption("CATFILE", "");
 
@@ -70,8 +72,7 @@ public final class MainOptions extends Options {
   /** Flag for creating a full-text index. */
   public static final BooleanOption FTINDEX = new BooleanOption("FTINDEX", false);
 
-  /** Maximum number of text/attribute index entries
-   *  to keep in memory during index creation. */
+  /** Maximum number of text/attribute index entries to keep in memory during index creation. */
   public static final NumberOption INDEXSPLITSIZE = new NumberOption("INDEXSPLITSIZE", 0);
   /** Maximum number of fulltext index entries to keep in memory during index creation. */
   public static final NumberOption FTINDEXSPLITSIZE = new NumberOption("FTINDEXSPLITSIZE", 0);
@@ -100,8 +101,6 @@ public final class MainOptions extends Options {
 
   /** Detailed query information. */
   public static final BooleanOption QUERYINFO = new BooleanOption("QUERYINFO", false);
-  /** Default XQuery version. */
-  public static final BooleanOption XQUERY3 = new BooleanOption("XQUERY3", true);
   /** Flag for mixing updates and items. */
   public static final BooleanOption MIXUPDATES = new BooleanOption("MIXUPDATES", false);
   /** External variables, separated by commas. */

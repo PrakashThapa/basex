@@ -1,9 +1,10 @@
 package org.basex.performance;
 
+import org.basex.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
-import org.basex.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class adds and retrieves documents in a collection.

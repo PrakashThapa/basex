@@ -72,7 +72,7 @@ public class BufferInput extends InputStream {
   }
 
   /**
-   * Returns the IO reference, or {@code null}.
+   * Returns the IO reference or {@code null}.
    * @return file reference
    */
   public IO io() {
@@ -135,7 +135,7 @@ public class BufferInput extends InputStream {
   public final byte[] readBytes() throws IOException {
     final ByteList bl = new ByteList();
     for(int l; (l = readByte()) > 0;) bl.add(l);
-    return bl.toArray();
+    return bl.finish();
   }
 
   @Override
@@ -152,7 +152,7 @@ public class BufferInput extends InputStream {
   }
 
   /**
-   * Returns the input length (may be {@code -1}).
+   * Returns the input length (can be {@code -1}).
    * @return input length
    */
   public final long length() {
@@ -192,7 +192,7 @@ public class BufferInput extends InputStream {
       // parse until end of stream
       final ByteList bl = new ByteList();
       for(int ch; (ch = readByte()) != -1;) bl.add(ch);
-      return bl.toArray();
+      return bl.finish();
     } finally {
       close();
     }

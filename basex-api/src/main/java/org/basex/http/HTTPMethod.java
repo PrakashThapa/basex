@@ -20,11 +20,11 @@ public enum HTTPMethod {
   /** OPTIONS method. */
   OPTIONS;
 
-  /** Flag showing, if body can be present in the HTTP request with the current method. */
+  /** Flag showing if body can be present in the HTTP request with the current method. */
   public final boolean body;
 
   /** Default constructor. */
-  private HTTPMethod() {
+  HTTPMethod() {
     this(false);
   }
 
@@ -32,7 +32,7 @@ public enum HTTPMethod {
    * Constructor, specifying a body flag.
    * @param body body flag
    */
-  private HTTPMethod(final boolean body) {
+  HTTPMethod(final boolean body) {
     this.body = body;
   }
 

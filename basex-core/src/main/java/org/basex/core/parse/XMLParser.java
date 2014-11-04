@@ -35,7 +35,7 @@ final class XMLParser extends CmdParser {
   @Override
   protected void parse(final ArrayList<Command> cmds) throws QueryException {
     try {
-      final DBNode node = new DBNode(IO.get(input), ctx.options);
+      final DBNode node = new DBNode(IO.get(string));
       String query = "/*";
       if(!execute(COMMANDS, node).isEmpty()) {
         query = COMMANDS + query;
@@ -43,8 +43,9 @@ final class XMLParser extends CmdParser {
         if(!execute(COMMANDS + "/text()/string()", node).trim().isEmpty())
           throw error(Text.SYNTAX_X, '<' + COMMANDS + "><...></" + COMMANDS + '>');
       }
-      final QueryProcessor qa = new QueryProcessor(query, ctx).context(node);
-      for(final Item ia : qa.value()) cmds.add(command(ia));
+      try(final QueryProcessor qp = new QueryProcessor(query, ctx).context(node)) {
+        for(final Item ia : qp.value()) cmds.add(command(ia));
+      }
     } catch(final IOException ex) {
       throw error(Text.STOPPED_AT + '%', ex);
     }
@@ -128,6 +129,8 @@ final class XMLParser extends CmdParser {
       return new OptimizeAll();
     if(e.equals(PASSWORD) && check(root, '#' + PASSWORD + '?'))
       return new Password(password(root));
+    if(e.equals(QUIT) && check(root))
+      return new Exit();
     if(e.equals(RENAME) && check(root, PATH, NEWPATH))
       return new Rename(value(root, PATH), value(root, NEWPATH));
     if(e.equals(REPLACE) && check(root, PATH, '<' + INPUT))
@@ -160,6 +163,8 @@ final class XMLParser extends CmdParser {
       return new ShowUsers(value(root, DATABASE));
     if(e.equals(STORE) && check(root, PATH + '?', '<' + INPUT))
       return new Store(value(root, PATH), xml(root));
+    if(e.equals(TEST) && check(root, PATH))
+      return new Test(value(root, PATH));
     if(e.equals(XQUERY) && check(root, '#' + QUERY))
       return new XQuery(value(root));
     throw error(Text.UNKNOWN_CMD_X, '<' + e + "/>");
@@ -204,7 +209,9 @@ final class XMLParser extends CmdParser {
    * @throws QueryException query exception
    */
   private String xml(final Item root) throws QueryException {
-    return new QueryProcessor("node()", ctx).context(root).execute().toString().trim();
+    try(final QueryProcessor qp = new QueryProcessor("node()", ctx)) {
+      return qp.context(root).execute().toString().trim();
+    }
   }
 
   /**
@@ -215,26 +222,26 @@ final class XMLParser extends CmdParser {
    * @throws QueryException query exception
    */
   private String execute(final String query, final Item context) throws QueryException {
-    final QueryProcessor qp = new QueryProcessor(query, ctx).context(context);
-    final Iter ir = qp.iter();
-    final Item it = ir.next();
-    return it == null ? "" : it.toJava().toString().trim();
+    try(final QueryProcessor qp = new QueryProcessor(query, ctx).context(context)) {
+      final Iter ir = qp.iter();
+      final Item it = ir.next();
+      return it == null ? "" : it.toJava().toString().trim();
+    }
   }
 
   /**
-   * Checks the syntax of the specified command. Returns an error with the expected
-   * syntax if the check fails. The passed on strings describe the arguments of a
-   * command. They may be:
+   * Checks the syntax of the specified command. Returns an error with the expected syntax if the
+   * check fails. The passed on strings describe the arguments of a command. They may be:
    * <ul>
-   * <li> attribute names</li>
-   * <li> labels for text nodes, if prefixed with "#"</li>
-   * <li> labels for text or descendant nodes, if prefixed with "<"</li>
+   *   <li> attribute names</li>
+   *   <li> labels for text nodes if prefixed with "#"</li>
+   *   <li> labels for text or descendant nodes if prefixed with "<"</li>
    * </ul>
-   * Arguments are optional, if they suffixed with "?". Examples:
+   * Arguments are optional if they suffixed with "?". Examples:
    * <ul>
-   * <li> <code>{"name","#input?"}</code> indicates that the command must have one "name"
-   *   attribute and may have one text node, but nothing else</li>
-   * <li> <code>{}</code> means that the command must not have any arguments }</li>
+   *   <li> <code>{"name","#input?"}</code> indicates that the command must have one "name"
+   *     attribute and may have one text node, but nothing else</li>
+   *   <li> <code>{}</code> means that the command must not have any arguments }</li>
    * </ul>
    * @param root root node
    * @param checks checks to be performed.
@@ -282,10 +289,10 @@ final class XMLParser extends CmdParser {
     }
 
     // run query
-    final QueryProcessor qp = new QueryProcessor(tb.toString(), ctx).context(root);
-    qp.bind("A", ma).bind("O", oa);
-    if(!qp.execute().toString().isEmpty()) return true;
-
+    try(final QueryProcessor qp = new QueryProcessor(tb.toString(), ctx).context(root)) {
+      qp.bind("A", ma.value()).bind("O", oa.value());
+      if(!qp.execute().toString().isEmpty()) return true;
+    }
     // build error string
     final TokenBuilder syntax = new TokenBuilder();
     final byte[] nm = ((ANode) root).qname().string();

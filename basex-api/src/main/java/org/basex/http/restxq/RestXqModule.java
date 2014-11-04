@@ -22,20 +22,16 @@ final class RestXqModule {
   private final ArrayList<RestXqFunction> functions = new ArrayList<>();
   /** File reference. */
   private final IOFile file;
-  /** Library module flag. */
-  private final boolean lib;
   /** Parsing timestamp. */
   private long time;
 
   /**
    * Constructor.
    * @param in xquery module
-   * @param l library module flag
    */
-  RestXqModule(final IOFile in, final boolean l) {
+  RestXqModule(final IOFile in) {
     file = in;
     time = in.timeStamp();
-    lib = l;
   }
 
   /**
@@ -48,17 +44,16 @@ final class RestXqModule {
     functions.clear();
 
     // loop through all functions
-    final QueryContext qc = parseModule(http);
-    try {
+    try(final QueryContext qc = qc(http)) {
       // loop through all functions
+      final String name = file.name();
       for(final StaticFunc uf : qc.funcs.funcs()) {
-        // consider only functions that are defined in this module
-        if(!file.name().equals(new IOFile(uf.info.path()).name())) continue;
-        final RestXqFunction rxf = new RestXqFunction(uf, qc, this);
-        if(rxf.parse()) functions.add(rxf);
+        // only add functions that are defined in the same module (file)
+        if(name.equals(new IOFile(uf.info.path()).name())) {
+          final RestXqFunction rxf = new RestXqFunction(uf, qc, this);
+          if(rxf.parse()) functions.add(rxf);
+        }
       }
-    } finally {
-      qc.close();
     }
     return !functions.isEmpty();
   }
@@ -97,38 +92,42 @@ final class RestXqModule {
       throws Exception {
 
     // create new XQuery instance
-    final QueryContext qc = parseModule(http);
-    try {
-      // loop through all functions
-      for(final StaticFunc uf : qc.funcs.funcs()) {
-        // compare input info
-        if(func.function.info.equals(uf.info)) {
-          final RestXqFunction rxf = new RestXqFunction(uf, qc, this);
-          rxf.parse();
-          new RestXqResponse(rxf, qc, http, error).create();
-          break;
-        }
-      }
-    } finally {
-      qc.close();
+    try(final QueryContext qc = qc(http)) {
+      final RestXqFunction rxf = new RestXqFunction(find(qc, func.function), qc, this);
+      rxf.parse();
+      new RestXqResponse().create(rxf, qc, http, error);
     }
   }
 
   // PRIVATE METHODS ====================================================================
 
   /**
-   * Parses the module and returns the query context.
+   * Retrieves a query context for the given module.
    * @param http http context
    * @return query context
    * @throws QueryException query exception
    */
-  private QueryContext parseModule(final HTTPContext http) throws QueryException {
+  private QueryContext qc(final HTTPContext http) throws QueryException {
     final QueryContext qc = new QueryContext(http.context());
     try {
-      qc.parse(string(file.read()), lib, file.path(), null);
+      qc.parse(string(file.read()), file.path(), null);
       return qc;
     } catch(final IOException ex) {
-      throw IOERR.get(null, ex);
+      // may be triggered when reading the file
+      throw IOERR_X.get(null, ex);
     }
+  }
+
+  /**
+   * Returns the specified function from the given query context.
+   * @param qctx query context.
+   * @param func function to be found
+   * @return function
+   */
+  private static StaticFunc find(final QueryContext qctx, final StaticFunc func) {
+    for(final StaticFunc sf : qctx.funcs.funcs()) {
+      if(func.info.equals(sf.info)) return sf;
+    }
+    return null;
   }
 }

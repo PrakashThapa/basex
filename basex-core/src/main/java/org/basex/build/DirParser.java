@@ -43,7 +43,7 @@ public final class DirParser extends Parser {
   /** Raw parsing. */
   private final boolean rawParser;
   /** Database path for storing binary files. */
-  private final IOFile rawPath;
+  private IOFile rawPath;
 
   /** Last source. */
   private IO lastSrc;
@@ -55,11 +55,11 @@ public final class DirParser extends Parser {
   /**
    * Constructor.
    * @param source source path
-   * @param opts database options
-   * @param path future database path
+   * @param options main options
    */
-  public DirParser(final IO source, final MainOptions opts, final IOFile path) {
-    super(source, opts);
+  public DirParser(final IO source, final MainOptions options) {
+    super(source, options);
+
     final String dir = source.dir();
     root = dir.endsWith("/") ? dir : dir + '/';
     skipCorrupt = options.get(MainOptions.SKIPCORRUPT);
@@ -67,12 +67,19 @@ public final class DirParser extends Parser {
     addRaw = options.get(MainOptions.ADDRAW);
     dtd = options.get(MainOptions.DTD);
     rawParser = options.get(MainOptions.PARSER) == MainParser.RAW;
-
     filter = !source.isDir() && !source.isArchive() ? null :
-      Pattern.compile(IOFile.regex(opts.get(MainOptions.CREATEFILTER)));
-    // choose binary storage if disk-based database path is known and
-    // if raw parser or "add raw" option were chosen
-    rawPath = path != null && (addRaw || rawParser) ? new IOFile(path, IO.RAW) : null;
+      Pattern.compile(IOFile.regex(options.get(MainOptions.CREATEFILTER)));
+  }
+
+  /**
+   * Constructor.
+   * @param source source path
+   * @param context database context
+   * @param path future database path
+   */
+  public DirParser(final IO source, final Context context, final IOFile path) {
+    this(source, context.options);
+    if(path != null && (addRaw || rawParser)) rawPath = new IOFile(path, IO.RAW);
   }
 
   @Override
@@ -84,16 +91,16 @@ public final class DirParser extends Parser {
 
   /**
    * Parses the specified file or its children.
-   * @param b builder
-   * @param io current input
+   * @param builder builder
+   * @param input current input
    * @throws IOException I/O exception
    */
-  private void parse(final Builder b, final IO io) throws IOException {
-    if(io instanceof IOFile && io.isDir()) {
-      for(final IO f : ((IOFile) io).children()) parse(b, f);
-    } else if(archives && io.isArchive()) {
-      final String name = io.name().toLowerCase(Locale.ENGLISH);
-      InputStream in = io.inputStream();
+  private void parse(final Builder builder, final IO input) throws IOException {
+    if(input instanceof IOFile && input.isDir()) {
+      for(final IO f : ((IOFile) input).children()) parse(builder, f);
+    } else if(archives && input.isArchive()) {
+      final String name = input.name().toLowerCase(Locale.ENGLISH);
+      InputStream in = input.inputStream();
       if(name.endsWith(IO.TARSUFFIX) || name.endsWith(IO.TGZSUFFIX) ||
           name.endsWith(IO.TARGZSUFFIX)) {
         // process TAR files
@@ -103,14 +110,14 @@ public final class DirParser extends Parser {
             if(ze.isDirectory()) continue;
             src = new IOStream(is, ze.getName());
             src.length(ze.getSize());
-            parseResource(b);
+            parseResource(builder);
           }
         }
       } else if(name.endsWith(IO.GZSUFFIX)) {
         // process GZIP archive
         try(final GZIPInputStream is = new GZIPInputStream(in)) {
-          src = new IOStream(is, io.name().replaceAll("\\..*", IO.XMLSUFFIX));
-          parseResource(b);
+          src = new IOStream(is, input.name().replaceAll("\\..*", IO.XMLSUFFIX));
+          parseResource(builder);
         }
       } else {
         // process ZIP archive
@@ -119,14 +126,14 @@ public final class DirParser extends Parser {
             if(ze.isDirectory()) continue;
             src = new IOStream(is, ze.getName());
             src.length(ze.getSize());
-            parseResource(b);
+            parseResource(builder);
           }
         }
       }
     } else {
       // process regular file
-      src = io;
-      parseResource(b);
+      src = input;
+      parseResource(builder);
     }
   }
 

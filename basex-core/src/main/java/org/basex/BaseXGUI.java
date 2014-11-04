@@ -3,6 +3,7 @@ package org.basex;
 import static org.basex.core.Text.*;
 
 import java.awt.*;
+import java.util.*;
 
 import javax.swing.*;
 import javax.swing.UIManager.LookAndFeelInfo;
@@ -22,11 +23,11 @@ import org.basex.util.list.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
-public final class BaseXGUI {
+public final class BaseXGUI extends Main {
   /** Database context. */
   private final Context context = new Context();
   /** Files, specified as arguments. */
-  private final StringList files = new StringList();
+  private final StringList files = new StringList(0);
   /** Mac OS X GUI optimizations. */
   GUIMacOSX osxGUI;
 
@@ -49,7 +50,8 @@ public final class BaseXGUI {
    * @throws BaseXException database exception
    */
   public BaseXGUI(final String... args) throws BaseXException {
-    parseArguments(args);
+    super(args);
+    parseArgs();
 
     // set Mac-specific properties
     if(Prop.MAC) {
@@ -67,25 +69,25 @@ public final class BaseXGUI {
     // reduce number of results to save memory
     context.options.set(MainOptions.MAXHITS, gopts.get(GUIOptions.MAXHITS));
 
+    // initialize look and feel
+    init(gopts);
     // initialize fonts and colors
     GUIConstants.init(gopts);
 
     SwingUtilities.invokeLater(new Runnable() {
       @Override
       public void run() {
-        // initialize look and feel
-        init(gopts);
         // open main window
         final GUI gui = new GUI(context, gopts);
         if(osxGUI != null) osxGUI.init(gui);
 
         // open specified document or database
-        for(final String file : files) {
+        for(final String file : files.finish()) {
           if(file.matches("^.*\\" + IO.BASEXSUFFIX + "[^.]*$")) continue;
 
           final IOFile io = new IOFile(file);
           final boolean xml = file.endsWith(IO.XMLSUFFIX);
-          if(xml && BaseXDialog.confirm(gui, Util.info(Text.CREATE_DB_FILE, io))) {
+          if(xml && BaseXDialog.confirm(gui, Util.info(CREATE_DB_FILE, io))) {
             gopts.set(GUIOptions.INPUTPATH, io.path());
             gopts.set(GUIOptions.DBNAME, io.dbname());
             DialogProgress.execute(gui, new Check(file));
@@ -121,9 +123,9 @@ public final class BaseXGUI {
       if(laf.equals("Metal")) {
         // use non-bold fonts in Java's look & feel
         final UIDefaults def = UIManager.getDefaults();
-        for(final Object k : def.keySet()) {
-          final Object v = def.get(k);
-          if(v instanceof Font) def.put(k, ((Font) v).deriveFont(Font.PLAIN));
+        for(final Map.Entry<Object, Object> entry : def.entrySet()) {
+          final Object value = entry.getValue();
+          if(value instanceof Font) def.put(entry.getKey(), ((Font) value).deriveFont(Font.PLAIN));
         }
       } else if(laf.isEmpty()) {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -140,16 +142,22 @@ public final class BaseXGUI {
     }
   }
 
-  /**
-   * Parses the command-line arguments, specified by the user.
-   * @param args command-line arguments
-   * @throws BaseXException database exception
-   */
-  private void parseArguments(final String[] args) throws BaseXException {
-    final Args arg = new Args(args, this, S_GUIINFO, Util.info(S_CONSOLE, S_GUI));
+  @Override
+  protected void parseArgs() throws BaseXException {
+    final MainParser arg = new MainParser(this);
     while(arg.more()) {
       if(arg.dash()) throw arg.usage();
       files.add(arg.string());
     }
+  }
+
+  @Override
+  public String header() {
+    return Util.info(S_CONSOLE, S_GUI);
+  }
+
+  @Override
+  public String usage() {
+    return S_GUIINFO;
   }
 }

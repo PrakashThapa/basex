@@ -8,6 +8,8 @@ import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.iter.*;
 import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
@@ -31,16 +33,16 @@ public abstract class ANode extends Item {
   public final int id = ID.incrementAndGet();
 
   /** Cached string value. */
-  byte[] val;
+  byte[] value;
   /** Parent node. */
-  ANode par;
+  ANode parent;
 
   /**
    * Constructor.
-   * @param t data type
+   * @param type item type
    */
-  ANode(final NodeType t) {
-    super(t);
+  ANode(final NodeType type) {
+    super(type);
   }
 
   @Override
@@ -73,6 +75,11 @@ public abstract class ANode extends Item {
       coll.compare(string(), it.string(ii)) : -it.diff(this, coll, ii);
   }
 
+  @Override
+  public final Item atomItem(final InputInfo ii) {
+    return type == NodeType.PI || type == NodeType.COM ? Str.get(string()) : new Atm(string());
+  }
+
   /**
    * Creates a copy of this node.
    * @return copy
@@ -97,8 +104,7 @@ public abstract class ANode extends Item {
   }
 
   /**
-   * Returns the name of the node, composed of an optional prefix
-   * and the local name.
+   * Returns the name of the node, composed of an optional prefix and the local name.
    * This function must only be called for element and attribute nodes.
    * It is more efficient than calling {@link #qname}, as no {@link QNm}
    * instance is created.
@@ -269,7 +275,7 @@ public abstract class ANode extends Item {
   public abstract boolean hasChildren();
 
   /**
-   * Returns the value of the specified attribute, or {@code null}.
+   * Returns the value of the specified attribute or {@code null}.
    * @param name attribute to be found
    * @return attribute value
    */
@@ -278,7 +284,7 @@ public abstract class ANode extends Item {
   }
 
   /**
-   * Returns the value of the specified attribute, or {@code null}.
+   * Returns the value of the specified attribute or {@code null}.
    * @param name attribute to be found
    * @return attribute value
    */
@@ -287,7 +293,7 @@ public abstract class ANode extends Item {
   }
 
   /**
-   * Returns the value of the specified attribute, or {@code null}.
+   * Returns the value of the specified attribute or {@code null}.
    * @param name attribute to be found
    * @return attribute value
    */

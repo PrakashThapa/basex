@@ -1,6 +1,6 @@
 package org.basex.api.dom;
 
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.util.*;
 import org.w3c.dom.*;
 
@@ -13,10 +13,10 @@ import org.w3c.dom.*;
 public final class BXNNode extends BXNList implements NamedNodeMap {
   /**
    * Constructor.
-   * @param nb nodes
+   * @param nodes nodes
    */
-  public BXNNode(final ANodeList nb) {
-    super(nb);
+  public BXNNode(final ANodeList nodes) {
+    super(nodes);
   }
 
   @Override
@@ -30,27 +30,27 @@ public final class BXNNode extends BXNList implements NamedNodeMap {
   }
 
   @Override
-  public BXNode getNamedItemNS(final String uri, final String ln) {
-    throw Util.notImplemented();
+  public BXNode getNamedItemNS(final String uri, final String name) {
+    throw BXNode.notImplemented();
   }
 
   @Override
   public BXNode setNamedItem(final Node node) {
-    throw Util.notImplemented();
+    throw BXNode.notImplemented();
   }
 
   @Override
   public BXNode removeNamedItem(final String name) {
-    throw Util.notImplemented();
+    throw BXNode.notImplemented();
   }
 
   @Override
   public BXNode setNamedItemNS(final Node node) {
-    throw Util.notImplemented();
+    throw BXNode.notImplemented();
   }
 
   @Override
-  public BXNode removeNamedItemNS(final String uri, final String ln) {
-    throw Util.notImplemented();
+  public BXNode removeNamedItemNS(final String uri, final String name) {
+    throw BXNode.notImplemented();
   }
 }

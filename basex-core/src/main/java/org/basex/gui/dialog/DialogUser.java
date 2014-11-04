@@ -7,12 +7,12 @@ import java.io.*;
 
 import javax.swing.*;
 
+import org.basex.api.client.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.core.cmd.List;
 import org.basex.gui.GUIConstants.Msg;
 import org.basex.gui.layout.*;
-import org.basex.server.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
 
@@ -67,11 +67,11 @@ final class DialogUser extends BaseXBack {
     layout(new TableLayout(7, 1, 0, 4)).border(8);
 
     user = new BaseXTextField("", dia);
-    BaseXLayout.setWidth(user, 100);
+    user.setColumns(13);
     create = new BaseXButton(CREATE, dia);
     pass = new BaseXPassword(dia);
+    pass.setColumns(13);
 
-    BaseXLayout.setWidth(pass, 100);
     alter = new BaseXButton(S_ALTER, dia);
     drop = new BaseXButton(DROP + DOTS, dia);
     info = new BaseXLabel(" ");

@@ -48,10 +48,10 @@ final class DataUpdates {
 
   /**
    * Constructor.
-   * @param d data reference
+   * @param data data reference
    */
-  DataUpdates(final Data d) {
-    data = d;
+  DataUpdates(final Data data) {
+    this.data = data;
   }
 
   /**
@@ -74,7 +74,7 @@ final class DataUpdates {
 
     } else if(up instanceof Put) {
       final Put p = (Put) up;
-      final int id = p.nodeid;
+      final int id = p.id;
       final Put old = puts.get(id);
       if(old == null) puts.put(id, p);
       else old.merge(p);
@@ -108,9 +108,7 @@ final class DataUpdates {
 
     for(int i = 0; i < s; ++i) {
       final NodeUpdates ups = nodeUpdates.get(nodes.get(i));
-      for(final NodeUpdate p : ups.updates) {
-        if(p instanceof NodeCopy) ((NodeCopy) p).prepare(tmp);
-      }
+      for(final NodeUpdate p : ups.updates) p.prepare(tmp);
     }
 
     // check attribute duplicates
@@ -133,7 +131,7 @@ final class DataUpdates {
           --p;
         }
         if(par != -1) il.add(par);
-        checkNames(il.toArray());
+        checkNames(il.finish());
       } else {
         if(k == Data.ELEM) checkNames(pre);
         --p;
@@ -142,13 +140,6 @@ final class DataUpdates {
 
     // build atomic update cache
     auc = createAtomicUpdates(preparePrimitives());
-  }
-
-  /**
-   * Locks the database for write operations.
-   */
-  void finishUpdate() {
-    data.finishUpdate();
   }
 
   /**
@@ -186,7 +177,7 @@ final class DataUpdates {
         Export.export(data, data.meta.original, null);
       } catch(final IOException ex) {
         Util.debug(ex);
-        throw UPPUTERR.get(null, data.meta.original);
+        throw UPPUTERR_X.get(null, data.meta.original);
       }
     }
   }
@@ -221,15 +212,15 @@ final class DataUpdates {
    * @return list of atomic updates ready for execution
    */
   private AtomicUpdateCache createAtomicUpdates(final List<NodeUpdate> l) {
-    final AtomicUpdateCache atomics = new AtomicUpdateCache(data);
+    final AtomicUpdateCache ac = new AtomicUpdateCache(data);
     //  from the lowest to the highest score, corresponds w/ from lowest to highest PRE
     final int s = l.size();
     for(int i = 0; i < s; i++) {
       final NodeUpdate u = l.get(i);
-      u.addAtomics(atomics);
+      u.addAtomics(ac);
       l.set(i, null);
     }
-    return atomics;
+    return ac;
   }
 
   /**
@@ -281,6 +272,6 @@ final class DataUpdates {
       }
     }
     final QNm dup = pool.duplicate();
-    if(dup != null) throw UPATTDUPL.get(null, dup);
+    if(dup != null) throw UPATTDUPL_X.get(null, dup);
   }
 }

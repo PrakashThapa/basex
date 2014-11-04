@@ -1,7 +1,7 @@
 package org.basex.query.up.primitives;
 
 import org.basex.data.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.util.*;
 
 /**
@@ -13,12 +13,16 @@ import org.basex.util.*;
 public final class ReplaceContent extends InsertInto {
   /**
    * Constructor.
-   * @param p target pre value
-   * @param d target data instance
-   * @param i input info
-   * @param n node copy insertion sequence
+   * @param pre target pre value
+   * @param data target data instance
+   * @param ii input info
+   * @param nodes node copy insertion sequence
    */
-  public ReplaceContent(final int p, final Data d, final InputInfo i, final ANodeList n) {
-    super(p, d, i, n);
+  public ReplaceContent(final int pre, final Data data, final InputInfo ii, final ANodeList nodes) {
+    super(pre, data, ii, nodes);
+  }
+
+  @Override
+  public void merge(final Update update) {
   }
 }

@@ -1,15 +1,17 @@
 package org.basex.query.up;
 
+import static org.basex.query.func.Function.*;
+import static org.basex.query.util.Err.*;
 import static org.junit.Assert.*;
 
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.data.atomic.*;
 import org.basex.io.*;
-import org.basex.query.up.primitives.*;
-import org.basex.query.util.*;
 import org.basex.query.*;
+import org.basex.query.up.primitives.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * General test of the XQuery Update Facility implementation.
@@ -23,11 +25,20 @@ public final class UpdateTest extends AdvancedQueryTest {
 
   /**
    * Creates a database.
-   * @param input input database string, if null, then use default.
+   * @param input input database string; use default if {@code null}
    * @throws BaseXException database exception
    */
   private static void createDB(final String input) throws BaseXException {
     new CreateDB(NAME, input == null ? DOC : input).execute(context);
+  }
+
+  /**
+   * Closes the currently opened database.
+   * @throws BaseXException database exception
+   */
+  @After
+  public void finish() throws BaseXException {
+    new Close().execute(context);
   }
 
   // BASIC XQUF TESTS *********************************************
@@ -73,8 +84,8 @@ public final class UpdateTest extends AdvancedQueryTest {
   /** Transform expression containing a simple expression. */
   @Test
   public void transSimple() {
-    error("<a/> update ('')", Err.UPMODIFY);
-    error("copy $a := <a/> modify ('') return $a", Err.UPMODIFY);
+    error("<a/> update ('')", UPMODIFY);
+    error("copy $a := <a/> modify ('') return $a", UPMODIFY);
   }
 
   /**
@@ -182,6 +193,7 @@ public final class UpdateTest extends AdvancedQueryTest {
     query(transform("<n><r>a</r></n>", "replace node $input/r with <r>b</r>"),
         "<n><r>b</r></n>");
   }
+
   /**
    * ReplaceValue on attribute.
    */
@@ -230,19 +242,19 @@ public final class UpdateTest extends AdvancedQueryTest {
     // check 'global' duplicate detection
     String q = transform("<x/>",
         "for $i in 1 to 2 return insert node attribute a { 'b' } into $input");
-    error(q, Err.UPATTDUPL);
+    error(q, UPATTDUPL_X);
 
     // check if insertion sequence itself is duplicate free (which it is not)
     q = transform("<x a='a'/>",
         "delete node $input/@a," +
         "for $i in 1 to 2 return insert node attribute a { 'b' } into $input");
-    error(q, Err.UPATTDUPL);
+    error(q, UPATTDUPL_X);
 
     // replace with a + delete a + insert a
     q = transform("<x a='a'/>",
         "delete node $input/@a, replace node $input/@a with attribute a {'b'}," +
         "insert node attribute a { 'b' } into $input");
-    error(q, Err.UPATTDUPL);
+    error(q, UPATTDUPL_X);
   }
 
   /**
@@ -287,8 +299,7 @@ public final class UpdateTest extends AdvancedQueryTest {
   }
 
   /**
-   *  **** TC tries to provoke multiple delete atomics on the same PRE within the same
-   * snapshot. *****
+   * TC tries to provoke multiple delete atomics on the same PRE within the same snapshot.
    *
    * Only delete primitives {@link DeleteNode} are allowed to create atomic delete
    * updates {@link AtomicUpdateCache}. This ensures that
@@ -374,7 +385,8 @@ public final class UpdateTest extends AdvancedQueryTest {
   @Test
   public void replaceelementcontent5() {
     testBothSequences("<n><A/></n>", "<n>newText</n>",
-        "replace value of node $input with 'newText'", "insert node <newA/> into $input");
+        "replace value of node $input with 'newText'",
+        "insert node <newA/> into $input");
   }
 
   /**
@@ -505,7 +517,7 @@ public final class UpdateTest extends AdvancedQueryTest {
   @Test
   public void outOfScope() {
     error("let $d := copy $e := <a/> modify () return $e return $e",
-        Err.VARUNDEF);
+        VARUNDEF_X);
   }
 
   /**
@@ -602,10 +614,8 @@ public final class UpdateTest extends AdvancedQueryTest {
   @Test
   public void textMerging04() throws Exception {
     createDB(null);
-    query("let $i := //item[@id='item0'] return insert node 'foo' " +
-      "before $i/location/text()");
-    query("let $i := //item[@id='item0'] return " +
-      "($i/location/text())[1]", "fooUnited States");
+    query("let $i := //item[@id='item0'] return insert node 'foo' before $i/location/text()");
+    query("let $i := //item[@id='item0'] return ($i/location/text())[1]", "fooUnited States");
   }
 
   /**
@@ -630,8 +640,7 @@ public final class UpdateTest extends AdvancedQueryTest {
     createDB(null);
     query("let $i := //item[@id='item0']/location return " +
       "(insert node <n/> into $i, insert node 'foo' as last into $i)");
-    query("let $i := //item[@id='item0']/location return " +
-      "delete node $i/n");
+    query("let $i := //item[@id='item0']/location return delete node $i/n");
     query("(//item[@id='item0']/location/text())[1]", "United Statesfoo");
   }
 
@@ -642,8 +651,7 @@ public final class UpdateTest extends AdvancedQueryTest {
   @Test
   public void textMerging07() throws Exception {
     createDB(null);
-    query("let $i := //item[@id='item0']/location return " +
-      "insert node 'foo' after $i/text()");
+    query("let $i := //item[@id='item0']/location return insert node 'foo' after $i/text()");
     query("(//item[@id='item0']/location/text())[1]", "United Statesfoo");
   }
 
@@ -654,13 +662,12 @@ public final class UpdateTest extends AdvancedQueryTest {
   @Test
   public void textMerging08() throws Exception {
     createDB(null);
-    query("let $i := //item[@id='item0'] return " +
-      "(insert node 'foo' after $i/location)");
+    query("let $i := //item[@id='item0'] return (insert node 'foo' after $i/location)");
     query("let $i := //item[@id='item0']/location return " +
       "(insert node 'foo' after $i, insert node 'faa' before $i, insert " +
       "node 'faa' into $i, delete node $i/text())");
-    query("let $i := //item[@id='item0']/location " +
-      "return ($i/text(), ($i/../text())[2])", "faafoofoo");
+    query("let $i := //item[@id='item0']/location return ($i/text(), ($i/../text())[2])",
+        "faafoofoo");
   }
 
   /**
@@ -1089,10 +1096,10 @@ public final class UpdateTest extends AdvancedQueryTest {
    */
   @Test
   public void dbUpdateTransform() {
-    error("copy $c := <a/> modify db:output('x') return $c", Err.BASX_DBTRANSFORM);
+    error("copy $c := <a/> modify db:output('x') return $c", BASX_DBTRANSFORM);
     error("copy $c := <a/> modify db:add('" + NAME + "','<x/>','x.xml') return $c",
-        Err.BASX_DBTRANSFORM);
-    error("copy $c := <a/> modify put(<a/>, 'x.txt') return $c", Err.BASX_DBTRANSFORM);
+        BASX_DBTRANSFORM);
+    error("copy $c := <a/> modify put(<a/>, 'x.txt') return $c", BASX_DBTRANSFORM);
   }
 
   /**
@@ -1162,12 +1169,12 @@ public final class UpdateTest extends AdvancedQueryTest {
    */
   @Test
   public void modifyCheck() {
-    error("copy $c:= <a>X</a> modify 'a' return $c", Err.UPMODIFY);
-    error("copy $c:= <a>X</a> modify(delete node $c/text(),'a') return $c", Err.UPALL);
+    error("copy $c:= <a>X</a> modify 'a' return $c", UPMODIFY);
+    error("copy $c:= <a>X</a> modify(delete node $c/text(),'a') return $c", UPALL_X);
 
-    error("text { <a/> update (delete node <a/>,<b/>) }", Err.UPALL);
-    error("1[<a/> update (delete node <a/>,<b/>)]", Err.UPALL);
-    error("for $i in 1 order by (<a/> update (delete node <a/>,<b/>)) return $i", Err.UPALL);
+    error("text { <a/> update (delete node <a/>,<b/>) }", UPALL_X);
+    error("1[<a/> update (delete node <a/>,<b/>)]", UPALL_X);
+    error("for $i in 1 order by (<a/> update (delete node <a/>,<b/>)) return $i", UPALL_X);
   }
 
   /**
@@ -1175,13 +1182,40 @@ public final class UpdateTest extends AdvancedQueryTest {
    */
   @Test
   public void updatingFuncItems() {
-    error("db:output(?)", Err.UPFUNCITEM);
-    error("db:output#1", Err.UPFUNCITEM);
-    error("declare %updating function local:a() { () }; local:a#0()", Err.UPFUNCITEM);
+    error("db:output(?)", SERFUNC_X);
+    error("db:output#1", SERFUNC_X);
+    error("declare updating function local:a() { () }; local:a#0", SERFUNC_X);
     error("declare function local:a() { local:b#0 };"
-        + "declare %updating function local:b() { db:output('1') }; local:a()", Err.UPFUNCITEM);
-    // is still accepted (should also be rejected in future):
-    //error("declare function local:not-used() { local:b#0 };"
-    //    + "declare %updating function local:b() { db:output('1') }; local:b()", Err.UPFUNCITEM);
+        + "declare updating function local:b() { db:output('1') }; local:a()", SERFUNC_X);
+    query("declare function local:not-used() { local:b#0 };"
+        + "declare updating function local:b() { db:output('1') }; local:b()", "1");
+
+    error("db:output(?)(<a/>)", UPFUNCUP);
+    error("db:output#1(<a/>)", UPFUNCUP);
+    error("%updating function($a) { db:output($a) }(1)", UPFUNCUP);
+    error("declare updating function local:a() { () }; local:a#0()", UPFUNCUP);
+    error("declare function local:a() { local:b#0 };"
+        + "declare updating function local:b() { db:output('1') }; local:a()()", UPFUNCUP);
+
+    error("updating count(?)(1)", UPFUNCNOTUP);
+    error("updating count#1(1)", UPFUNCNOTUP);
+    error("updating function($a) { count($a) }(1)", UPFUNCNOTUP);
+    error("declare function local:a() { () }; updating local:a#0()", UPFUNCNOTUP);
+    error("declare function local:a() { local:b#0 };"
+        + "declare function local:b() { count('1') }; updating local:a()()", UPFUNCNOTUP);
+  }
+
+  /** Test method. */
+  @Test
+  public void updateCheck() {
+    query("declare function local:a() { fold-left((), (), function($a, $b) { local:a() }) };"
+        + "declare function local:b() { () }; ()", "");
+  }
+
+  /** Test output URI is correctly resolved. */
+  @Test
+  public void resolveUri() {
+    final String output = sandbox().merge("test.xml").url();
+    query(PUT.args("<a/>", output));
   }
 }

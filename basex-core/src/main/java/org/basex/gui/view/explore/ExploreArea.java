@@ -5,6 +5,8 @@ import static org.basex.core.Text.*;
 import java.awt.*;
 import java.awt.event.*;
 
+import javax.swing.text.*;
+
 import org.basex.core.cmd.*;
 import org.basex.data.*;
 import org.basex.gui.GUIConstants.Fill;
@@ -14,8 +16,6 @@ import org.basex.index.name.*;
 import org.basex.index.stats.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
-
-import javax.swing.text.JTextComponent;
 
 /**
  * This view provides standard GUI components to browse the currently opened database.
@@ -95,7 +95,7 @@ final class ExploreArea extends BaseXPanel implements ActionListener {
   private void addInput(final int pos) {
     final BaseXTextField txt = new BaseXTextField(gui);
     BaseXLayout.setWidth(txt, COMPW);
-    BaseXLayout.setHeight(txt, txt.getFont().getSize() + 11);
+    txt.setPreferredSize(new Dimension(getPreferredSize().width, txt.getFont().getSize() + 11));
     txt.setMargin(new Insets(0, 0, 0, 10));
     txt.addKeyListener(new KeyAdapter() {
       @Override
@@ -122,11 +122,11 @@ final class ExploreArea extends BaseXPanel implements ActionListener {
       if(!elem.startsWith("@")) tl.add(Token.token(elem));
     }
 
-    final String[] keys = entries(data.paths.desc(tl, true, false));
-    final BaseXCombo cm = new BaseXCombo(gui, keys);
+    final String[] entries = entries(data.paths.desc(tl, true, false));
+    final BaseXCombo cm = new BaseXCombo(gui, entries);
     cm.addActionListener(this);
     cm.addKeyListener(main);
-    if(keys.length == 1) cm.setEnabled(false);
+    if(entries.length == 1) cm.setEnabled(false);
     panel.add(cm);
     panel.add(new BaseXLabel(""));
   }
@@ -170,7 +170,7 @@ final class ExploreArea extends BaseXPanel implements ActionListener {
       for(int c = 0; c < cs; ++c) if(panel.getComponent(c) == source) cp = c;
 
       if((cp & 1) == 0) {
-        // combo box with tags/attributes
+        // combo box with element/attribute names
         final BaseXCombo combo = (BaseXCombo) source;
         panel.remove(cp + 1);
 
@@ -179,7 +179,7 @@ final class ExploreArea extends BaseXPanel implements ActionListener {
         if(selected) {
           final String item = combo.getSelectedItem();
           final boolean att = item.startsWith("@");
-          final Names names = att ? data.atnindex : data.tagindex;
+          final Names names = att ? data.attrNames : data.elemNames;
           final byte[] key = Token.token(att ? item.substring(1) : item);
           final Stats stat = names.stat(names.id(key));
           switch(stat.type) {
@@ -292,15 +292,14 @@ final class ExploreArea extends BaseXPanel implements ActionListener {
   }
 
   /**
-   * Returns the combo box selections
-   * and the keys of the specified set.
-   * @param keys keys
+   * Returns the combo box selections and the keys of the specified set.
+   * @param names keys
    * @return key array
    */
-  private static String[] entries(final TokenList keys) {
-    final StringList sl = new StringList();
-    sl.add(Util.info(ENTRIES, keys.size()));
-    for(final byte[] k : keys) sl.add(Token.string(k));
-    return sl.sort(true, true, 1).toArray();
+  private static String[] entries(final TokenList names) {
+    final StringList entries = new StringList();
+    entries.add(Util.info(ENTRIES, names.size()));
+    for(final byte[] k : names) entries.add(Token.string(k));
+    return entries.sort(true, true, 1).finish();
   }
 }

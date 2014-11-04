@@ -1,7 +1,5 @@
 package org.basex.io.serial;
 
-import java.util.*;
-
 import org.basex.build.*;
 import org.basex.util.*;
 import org.basex.util.options.*;
@@ -73,6 +71,12 @@ public final class SerializerOptions extends Options {
   /** Parameter document. */
   public static final StringOption PARAMETER_DOCUMENT =
       new StringOption("parameter-document", "");
+  /** Serialization parameter: xml/xhtml/html/text. */
+  public static final EnumOption<YesNo> ALLOW_DUPLICATE_NAMES =
+      new EnumOption<>("allow-duplicate-names", YesNo.NO);
+  /** Serialization parameter: xml/xhtml/html/text. */
+  public static final EnumOption<SerialMethod> JSON_NODE_OUTPUT_METHOD =
+      new EnumOption<>("json-node-output-method", SerialMethod.XML);
 
   /** Specific serialization parameter: newline. */
   public static final EnumOption<Newline> NEWLINE =
@@ -103,29 +107,6 @@ public final class SerializerOptions extends Options {
   public static final NumberOption LIMIT =
       new NumberOption("limit", -1);
 
-  /** Yes/No enumeration. */
-  public enum YesNo {
-    /** Yes. */ YES,
-    /** No.  */ NO;
-
-    @Override
-    public String toString() {
-      return super.toString().toLowerCase(Locale.ENGLISH);
-    }
-  }
-
-  /** Yes/No enumeration. */
-  public enum YesNoOmit {
-    /** Yes.  */ YES,
-    /** No.   */ NO,
-    /** Omit. */ OMIT;
-
-    @Override
-    public String toString() {
-      return super.toString().toLowerCase(Locale.ENGLISH);
-    }
-  }
-
   /** Normalization form. */
   public enum Norm {
     /** NFC.   */ NFC("NFC"),
@@ -136,10 +117,10 @@ public final class SerializerOptions extends Options {
 
     /**
      * Constructor.
-     * @param s string
+     * @param string string
      */
-    Norm(final String s) {
-      string = s;
+    Norm(final String string) {
+      this.string = string;
     }
 
     @Override
@@ -161,12 +142,12 @@ public final class SerializerOptions extends Options {
 
     /**
      * Constructor.
-     * @param n name
-     * @param nl newline string
+     * @param name name
+     * @param newline newline string
      */
-    Newline(final String n, final String nl) {
-      name = n;
-      newline = nl;
+    Newline(final String name, final String newline) {
+      this.name = name;
+      this.newline = newline;
     }
 
     /**
@@ -183,6 +164,9 @@ public final class SerializerOptions extends Options {
     }
   }
 
+  /** Serialization parameters (with and without indentation). */
+  private static final SerializerOptions[] OPTIONS = new SerializerOptions[2];
+
   /**
    * Checks if the specified option is true.
    * @param option option
@@ -190,5 +174,34 @@ public final class SerializerOptions extends Options {
    */
   public boolean yes(final EnumOption<YesNo> option) {
     return get(option) == YesNo.YES;
+  }
+
+  /**
+   * Returns serialization parameters.
+   * @param indent indent XML
+   * @return parameters
+   */
+  public static SerializerOptions get(final boolean indent) {
+    SerializerOptions o = OPTIONS[indent ? 1 : 0];
+    if(o == null) {
+      o = new SerializerOptions();
+      if(!indent) o.set(INDENT, YesNo.NO);
+      OPTIONS[indent ? 1 : 0] = o;
+    }
+    return o;
+  }
+
+  /**
+   * Default constructor.
+   */
+  public SerializerOptions() {
+  }
+
+  /**
+   * Constructor with options to be copied.
+   * @param opts options
+   */
+  public SerializerOptions(final SerializerOptions opts) {
+    super(opts);
   }
 }

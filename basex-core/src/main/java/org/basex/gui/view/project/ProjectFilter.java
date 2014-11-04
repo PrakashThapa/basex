@@ -55,11 +55,10 @@ final class ProjectFilter extends BaseXBack {
 
     layout(new BorderLayout(0, 2));
     files = new BaseXTextField(view.gui);
-    files.hint(Text.FIND_FILES);
     files.addFocusListener(project.lastfocus);
 
     contents = new BaseXTextField(view.gui);
-    contents.hint(Text.FIND_CONTENTS);
+    contents.hint(Text.FIND_CONTENTS + Text.DOTS);
     contents.addFocusListener(project.lastfocus);
 
     add(files, BorderLayout.NORTH);
@@ -91,6 +90,7 @@ final class ProjectFilter extends BaseXBack {
     };
     files.addKeyListener(refreshKeys);
     contents.addKeyListener(refreshKeys);
+    refreshLayout();
   }
 
   /**
@@ -159,7 +159,7 @@ final class ProjectFilter extends BaseXBack {
     final IntList il = new IntList();
     final TokenParser tp = new TokenParser(Token.token(content));
     while(tp.more()) il.add(Token.lc(tp.next()));
-    if(filter(file, il.toArray(), thread, results)) {
+    if(filter(file, il.finish(), thread, results)) {
       project.list.setElements(results, content.isEmpty() ? null : content);
     }
 
@@ -206,7 +206,8 @@ final class ProjectFilter extends BaseXBack {
       if(ea.opened()) {
         final String name = ea.file().name();
         final int i = name.lastIndexOf('.');
-        final String pattern = files.getText();
+        final String file = files.getText();
+        final String pattern = file.isEmpty() ? project.gui.gopts.get(GUIOptions.FILES) : file;
         if(i != -1 && !pattern.contains("*") && !pattern.contains("?") ||
             !Pattern.compile(IOFile.regex(pattern)).matcher(name).matches()) {
           files.setText('*' + name.substring(i));
@@ -228,22 +229,32 @@ final class ProjectFilter extends BaseXBack {
     files.requestFocusInWindow();
   }
 
+  /**
+   * Called when GUI design has changed.
+   */
+  public void refreshLayout() {
+    final String filter = project.gui.gopts.get(GUIOptions.FILES).trim();
+    files.hint(filter.isEmpty() ? Text.FIND_FILES + Text.DOTS : filter);
+  }
+
   // PRIVATE METHODS ==============================================================================
 
   /**
    * Chooses tokens from the file cache that match the specified pattern.
-   * @param pattern file pattern
+   * @param file file pattern
    * @param search search string
    * @param thread current thread id
    * @param results search result
    * @return success flag
    */
-  private boolean filter(final String pattern, final int[] search, final int thread,
+  private boolean filter(final String file, final int[] search, final int thread,
       final TokenSet results) {
 
     // glob pattern
+    final String pattern = file.isEmpty() ? project.gui.gopts.get(GUIOptions.FILES) : file;
     if(pattern.contains("*") || pattern.contains("?")) {
       final Pattern pt = Pattern.compile(IOFile.regex(pattern));
+
       for(final byte[] input : cache) {
         final int offset = offset(input, true);
         if(pt.matcher(Token.string(Token.substring(input, offset))).matches() &&
@@ -253,11 +264,11 @@ final class ProjectFilter extends BaseXBack {
     }
 
     // starts-with, contains, camel case
-    final byte[] patt = Token.token(pattern);
+    final byte[] pttrn = Token.replace(Token.lc(Token.token(pattern)), '\\', '/');
     final TokenSet exclude = new TokenSet();
-    final boolean path = Token.indexOf(patt, '\\') != -1 || Token.indexOf(patt, '/') != -1;
+    final boolean path = Token.indexOf(pttrn, '/') != -1;
     for(int i = 0; i < (path ? 2 : 3); i++) {
-      if(!filter(patt, search, thread, i, results, exclude, path)) return false;
+      if(!filter(pttrn, search, thread, i, results, exclude, path)) return false;
     }
     return true;
   }
@@ -279,10 +290,11 @@ final class ProjectFilter extends BaseXBack {
     if(results.size() < MAXHITS) {
       for(final byte[] input : cache) {
         // check if current file matches the pattern
-        final int offset = offset(input, path);
-        if(mode == 0 ? Token.startsWith(input, pattern, offset) :
-           mode == 1 ? Token.contains(input, pattern, offset) :
-           matches(input, pattern, offset)) {
+        final byte[] lc = Token.replace(Token.lc(input), '\\', '/');
+        final int offset = offset(lc, path);
+        if(mode == 0 ? Token.startsWith(lc, pattern, offset) :
+           mode == 1 ? Token.contains(lc, pattern, offset) :
+           matches(lc, pattern, offset)) {
           if(!exclude.contains(input)) {
             exclude.add(input);
             if(filterContent(input, search, results)) return true;
@@ -375,10 +387,7 @@ final class ProjectFilter extends BaseXBack {
     final int il = input.length, pl = pattern.length;
     int p = 0;
     for(int i = off; i < il && p < pl; i++) {
-      final byte ic = input[i];
-      final byte pc = pattern[p];
-      if(pc == ic || pc > 0x61 && pc < 0x7a && pc == (ic | 0x20) ||
-        (pc == '/' || pc == '\\') && (ic == '/' || ic == '\\')) p++;
+      if(pattern[p] == input[i]) p++;
     }
     return p == pl;
   }

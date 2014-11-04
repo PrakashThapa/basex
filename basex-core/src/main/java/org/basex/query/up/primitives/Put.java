@@ -7,11 +7,11 @@ import java.io.*;
 import org.basex.data.*;
 import org.basex.io.out.*;
 import org.basex.io.serial.*;
-import org.basex.io.serial.SerializerOptions.YesNo;
 import org.basex.query.*;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
+import org.basex.util.options.Options.YesNo;
 
 /**
  * Fn:put operation primitive.
@@ -26,7 +26,7 @@ public final class Put extends DBUpdate {
    *  changes (delete/insert) during the snapshot lead to PRE value shifts on disk.
    *  In addition, deleted/replaced nodes will not be serialized by fn:put as the
    *  identity of these nodes is gone - which is easier to track operating on IDs. */
-  public final int nodeid;
+  public final int id;
 
   /**
    * Constructor.
@@ -37,14 +37,14 @@ public final class Put extends DBUpdate {
    */
   public Put(final int id, final Data data, final String path, final InputInfo info) {
     super(UpdateType.FNPUT, data, info);
-    nodeid = id;
+    this.id = id;
     paths.add(path);
   }
 
   @Override
   public void apply() throws QueryException {
     for(final String u : paths) {
-      final int pre = data.pre(nodeid);
+      final int pre = data.pre(id);
       if(pre == -1) return;
       final DBNode node = new DBNode(data, pre);
       try(final PrintOutput po = new PrintOutput(u)) {
@@ -55,14 +55,14 @@ public final class Put extends DBUpdate {
         ser.serialize(node);
         ser.close();
       } catch(final IOException ex) {
-        throw UPPUTERR.get(info, u);
+        throw UPPUTERR_X.get(info, u);
       }
     }
   }
 
   @Override
-  public void merge(final Update up) {
-    for(final String path : ((Put) up).paths) paths.add(path);
+  public void merge(final Update update) {
+    for(final String path : ((Put) update).paths) paths.add(path);
   }
 
   @Override
@@ -72,7 +72,7 @@ public final class Put extends DBUpdate {
 
   @Override
   public String toString() {
-    return Util.className(this) + '[' + nodeid + ", " + paths.get(0) + ']';
+    return Util.className(this) + '[' + id + ", " + paths.get(0) + ']';
   }
 
   @Override

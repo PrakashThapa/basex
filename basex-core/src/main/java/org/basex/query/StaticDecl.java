@@ -25,21 +25,21 @@ public abstract class StaticDecl extends StaticScope {
 
   /**
    * Constructor.
-   * @param sctx static context
-   * @param a annotations
-   * @param nm name
-   * @param t declared return type
-   * @param scp variable scope
-   * @param xqdoc documentation
-   * @param ii input info
+   * @param sc static context
+   * @param ann annotations
+   * @param name name
+   * @param type declared return type
+   * @param scope variable scope
+   * @param doc xqdoc documentation
+   * @param info input info
    */
-  protected StaticDecl(final StaticContext sctx, final Ann a, final QNm nm, final SeqType t,
-      final VarScope scp, final String xqdoc, final InputInfo ii) {
+  protected StaticDecl(final StaticContext sc, final Ann ann, final QNm name,
+      final SeqType type, final VarScope scope, final String doc, final InputInfo info) {
 
-    super(scp, xqdoc, sctx, ii);
-    ann = a == null ? new Ann() : a;
-    name = nm;
-    declType = t;
+    super(scope, doc, sc, info);
+    this.ann = ann == null ? new Ann() : ann;
+    this.name = name;
+    declType = type;
   }
 
   /**
@@ -49,11 +49,11 @@ public abstract class StaticDecl extends StaticScope {
   public abstract byte[] id();
 
   /**
-   * Returns the type of this expression. If no type has been declare in the expression,
+   * Returns the type of this expression. If no type has been declared in the expression,
    * it is derived from the expression type.
    * @return return type
    */
-  public SeqType type() {
-    return declType != null ? declType : expr.type();
+  public SeqType seqType() {
+    return declType != null ? declType : expr.seqType();
   }
 }

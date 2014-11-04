@@ -28,15 +28,14 @@ public final class Delete extends ACreate {
     final Data data = context.data();
     final String target = args[0];
 
-    // start update
-    if(!data.startUpdate()) return error(DB_PINNED_X, data.meta.name);
+    if(!startUpdate()) return false;
 
     // delete all documents
     final IntList docs = data.resources.docs(target);
-    final AtomicUpdateCache atomics = new AtomicUpdateCache(data);
+    final AtomicUpdateCache auc = new AtomicUpdateCache(data);
     final int ds = docs.size();
-    for(int d = 0; d < ds; d++) atomics.addDelete(docs.get(d));
-    atomics.execute(false);
+    for(int d = 0; d < ds; d++) auc.addDelete(docs.get(d));
+    auc.execute(false);
     context.invalidate();
 
     // delete binaries
@@ -44,7 +43,7 @@ public final class Delete extends ACreate {
     delete(data, target);
 
     // finish update
-    data.finishUpdate();
+    finishUpdate();
 
     // return info message
     return info(RES_DELETED_X_X, docs.size() + bins.size(), perf);

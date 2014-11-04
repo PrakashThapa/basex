@@ -25,9 +25,6 @@ import org.basex.util.*;
  * @author Christian Gruen
  */
 public abstract class AQuery extends Command {
-  /** Query result. */
-  Result result;
-
   /** Variables. */
   private final HashMap<String, String[]> vars = new HashMap<>();
   /** HTTP context. */
@@ -37,14 +34,17 @@ public abstract class AQuery extends Command {
   /** Query info. */
   private QueryInfo info;
 
+  /** Query result. */
+  Result result;
+
   /**
    * Protected constructor.
-   * @param p required permission
-   * @param d requires opened database
-   * @param arg arguments
+   * @param perm required permission
+   * @param openDB requires opened database
+   * @param args arguments
    */
-  AQuery(final Perm p, final boolean d, final String... arg) {
-    super(p, d, arg);
+  AQuery(final Perm perm, final boolean openDB, final String... args) {
+    super(perm, openDB, args);
   }
 
   /**
@@ -147,15 +147,15 @@ public abstract class AQuery extends Command {
   }
 
   /**
-   * Checks if the query might perform updates.
+   * Checks if the query possibly performs updates.
    * @param ctx database context
-   * @param qu query
+   * @param query query string
    * @return result of check
    */
-  final boolean updating(final Context ctx, final String qu) {
+  final boolean updating(final Context ctx, final String query) {
     try {
       final Performance p = new Performance();
-      qp(qu, ctx);
+      qp(query, ctx);
       parse(p);
       return qp.updating;
     } catch(final QueryException ex) {
@@ -167,17 +167,22 @@ public abstract class AQuery extends Command {
   }
 
   /**
-   * Parses the XQuery and returns a node set.
+   * Evaluates the query and returns the result as {@link DBNodes} instance.
+   * @return result or {@code null} if result cannot be represented as {@link DBNodes} instance.
    */
-  final void queryNodes() {
+  final DBNodes dbNodes() {
     try {
-      result = qp(args[0], context).queryNodes();
-      qp.close();
+      final Result res = qp(args[0], context).execute();
+      if(res instanceof DBNodes) return (DBNodes) res;
+      // return empty result set
+      if(res.size() == 0) return new DBNodes(context.data());
     } catch(final QueryException ex) {
+      error(Util.message(ex));
+    } finally {
       qp.close();
       qp = null;
-      error(Util.message(ex));
     }
+    return null;
   }
 
   /**
@@ -189,7 +194,7 @@ public abstract class AQuery extends Command {
   private QueryProcessor qp(final String query, final Context ctx) {
     if(qp == null) {
       qp = proc(new QueryProcessor(query, ctx));
-      if(info == null) info = qp.ctx.info;
+      if(info == null) info = qp.qc.info;
     }
     return qp;
   }
@@ -199,17 +204,17 @@ public abstract class AQuery extends Command {
    * @param ctx context
    * @return serialization parameters
    */
-  public SerializerOptions parameters(final Context ctx) {
-    SerializerOptions params = Serializer.OPTIONS;
+  public String parameters(final Context ctx) {
     try {
       qp(args[0], ctx);
       parse(null);
-      params = qp.ctx.serParams();
+      return qp.qc.serParams().toString();
     } catch(final QueryException ex) {
       error(Util.message(ex));
+    } finally {
+      qp = null;
     }
-    qp = null;
-    return params;
+    return SerializerOptions.get(true).toString();
   }
 
   /**
@@ -320,7 +325,7 @@ public abstract class AQuery extends Command {
   }
 
   @Override
-  public final Result result() {
+  public final Result finish() {
     final Result r = result;
     result = null;
     return r;

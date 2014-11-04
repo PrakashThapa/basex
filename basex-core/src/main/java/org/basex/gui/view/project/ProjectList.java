@@ -9,8 +9,8 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
-import javax.swing.border.*;
 
+import org.basex.core.cmd.*;
 import org.basex.gui.*;
 import org.basex.gui.layout.*;
 import org.basex.io.*;
@@ -33,11 +33,15 @@ final class ProjectList extends JList<String> {
     new GUIPopupCmd(OPEN, BaseXKeys.ENTER) {
       @Override public void execute() { open(); }
     },
-    new GUIPopupCmd(OPEN_EXTERNALLY, BaseXKeys.OPEN) {
+    new GUIPopupCmd(OPEN_EXTERNALLY, BaseXKeys.SHIFT_ENTER) {
       @Override public void execute() { openExternal(); }
     }, null,
+    new GUIPopupCmd(RUN_TESTS, BaseXKeys.UNIT) {
+      @Override public void execute() { test(); }
+      @Override public boolean enabled(final GUI main) { return selectedValue() != null; }
+    }, null,
     new GUIPopupCmd(REFRESH, BaseXKeys.REFRESH) {
-      @Override public void execute() { project.filter.refresh(true); }
+      @Override public void execute() { project.refresh(); }
     },
     new GUIPopupCmd(COPY_PATH, BaseXKeys.COPYPATH) {
       @Override public void execute() {
@@ -58,7 +62,7 @@ final class ProjectList extends JList<String> {
    */
   ProjectList(final ProjectView view) {
     project = view;
-    setBorder(new EmptyBorder(4, 4, 4, 4));
+    setBorder(BaseXLayout.border(4, 4, 4, 4));
     setCellRenderer(new CellRenderer());
     addMouseListener(new MouseAdapter() {
       @Override
@@ -84,18 +88,19 @@ final class ProjectList extends JList<String> {
         for(int i = 0; i < is; i++) list[i] = Token.string(elements.key(i + 1));
         if(changed(list)) {
           // check which old values had been selected
-          final List<String> vals = getSelectedValuesList();
+          final List<String> values = getSelectedValuesList();
           final IntList il = new IntList();
-          for(final String val : vals) {
+          for(final String value : values) {
+            final byte[] val = Token.token(value);
             for(int i = 0; i < is; i++) {
-              if(val.equals(elements.key(i + 1))) {
+              if(Token.eq(val, elements.key(i + 1))) {
                 il.add(i);
                 break;
               }
             }
           }
           setListData(list);
-          setSelectedIndices(il.toArray());
+          setSelectedIndices(il.finish());
         }
         search = srch;
       }
@@ -133,6 +138,15 @@ final class ProjectList extends JList<String> {
       } catch(final IOException ex) {
         BaseXDialog.error(project.gui, Util.info(FILE_NOT_OPENED_X, file));
       }
+    }
+  }
+
+  /**
+   * Tests all files.
+   */
+  private void test() {
+    for(final IOFile file : selectedValues())  {
+      project.gui.execute(new Test(file.path()));
     }
   }
 
@@ -193,7 +207,7 @@ final class ProjectList extends JList<String> {
   }
 
   /**
-   * Returns a single selected node, or {@code null} if zero or more than node is selected.
+   * Returns a single selected node or {@code null} if zero or more than node is selected.
    * @return selected node
    */
   private String selectedValue() {
@@ -202,7 +216,7 @@ final class ProjectList extends JList<String> {
   }
 
   /**
-   * Returns a single selected node, or {@code null} if zero or more than node is selected.
+   * Returns a single selected node or {@code null} if zero or more than node is selected.
    * @return selected node
    */
   private IOFile[] selectedValues() {

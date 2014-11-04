@@ -5,14 +5,15 @@ import static org.junit.Assert.*;
 import java.io.*;
 import java.lang.reflect.*;
 
+import org.basex.*;
 import org.basex.build.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.io.*;
 import org.basex.io.random.*;
-import org.basex.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class tests the update functionality of the block storage.
@@ -52,7 +53,7 @@ public final class DiskTableTest extends SandboxTest {
    */
   @Before
   public void setUp() throws Exception {
-    final Parser parser = Parser.xmlParser(IO.get(TESTFILE), context.options);
+    final Parser parser = Parser.xmlParser(IO.get(TESTFILE));
     data = new DiskBuilder(NAME, parser, context).build();
     size = data.meta.size;
     data.close();

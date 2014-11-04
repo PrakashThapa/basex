@@ -12,7 +12,6 @@ import org.basex.query.iter.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
-import org.basex.query.var.*;
 
 /**
  * This class creates a new HTTP response.
@@ -21,43 +20,24 @@ import org.basex.query.var.*;
  * @author Christian Gruen
  */
 final class RestXqResponse {
-  /** Function to be evaluated. */
-  private final RestXqFunction function;
-  /** Query context. */
-  private final QueryContext query;
-  /** HTTP context. */
-  private final HTTPContext http;
-  /** Optional query error. */
-  private final QueryException error;
-
-  /**
-   * Constructor.
-   * @param rxf function to be evaluated
-   * @param ctx query context
-   * @param hc HTTP context
-   * @param err optional query error
-   */
-  RestXqResponse(final RestXqFunction rxf, final QueryContext ctx, final HTTPContext hc,
-      final QueryException err) {
-    function = rxf;
-    query = ctx;
-    http = hc;
-    error = err;
-  }
-
   /**
    * Evaluates the specified function and creates a response.
+   * @param function function to be evaluated
+   * @param query query context
+   * @param http HTTP context
+   * @param error optional query error
    * @throws Exception exception (including unexpected ones)
    */
-  void create() throws Exception {
+  void create(final RestXqFunction function, final QueryContext query, final HTTPContext http,
+      final QueryException error) throws Exception {
+
     // bind variables
-    final StaticFunc uf = function.function;
-    final Expr[] args = new Expr[uf.args.length];
+    final StaticFunc sf = function.function;
+    final Expr[] args = new Expr[sf.args.length];
     function.bind(http, args, error);
 
     // wrap function with a function call
-    final StaticFuncCall sfc = new StaticFuncCall(uf.name, args, uf.sc, uf.info).init(uf);
-    final MainModule mm = new MainModule(sfc, new VarScope(uf.sc), null, uf.sc);
+    final MainModule mm = new MainModule(sf, args);
 
     // assign main module and http context and register process
     query.mainModule(mm);
@@ -73,7 +53,7 @@ final class RestXqResponse {
       Item item = iter.next();
 
       // handle response element
-      if(item != null && item.type.isNode()) {
+      if(item instanceof ANode) {
         final ANode node = (ANode) item;
         // send redirect to browser
         if(REST_REDIRECT.eq(node)) {
@@ -97,7 +77,7 @@ final class RestXqResponse {
       }
 
       // HEAD method must return a single response element
-      if(function.methods.size() == 1 && function.methods.contains(HTTPMethod.HEAD))
+      if(function.methods.size() == 1 && function.methods.contains(HTTPMethod.HEAD.name()))
         throw function.error(HEAD_METHOD);
 
       // serialize result

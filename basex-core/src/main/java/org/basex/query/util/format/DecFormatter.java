@@ -6,7 +6,6 @@ import static org.basex.util.Token.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
-import org.basex.query.func.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
 import org.basex.util.hash.*;
@@ -22,7 +21,7 @@ public final class DecFormatter extends FormatUtil {
   /** Decimal-digit-family (mandatory-digit-sign). */
   private final byte[] digits;
   /** Active characters. */
-  private final byte[] active;
+  private final byte[] actives;
   /** Zero digit sign. */
   private final int zero;
 
@@ -37,6 +36,8 @@ public final class DecFormatter extends FormatUtil {
   private int decimal = '.';
   /** Grouping-separator sign. */
   private int grouping = ',';
+  /** Exponent-separator sign. */
+  private int exponent = 'e';
   /** Optional-digit sign. */
   private int optional = '#';
 
@@ -57,11 +58,11 @@ public final class DecFormatter extends FormatUtil {
 
   /**
    * Constructor.
-   * @param ii input info
+   * @param info input info
    * @param map decimal format
    * @throws QueryException query exception
    */
-  public DecFormatter(final InputInfo ii, final TokenMap map) throws QueryException {
+  public DecFormatter(final InputInfo info, final TokenMap map) throws QueryException {
     // assign map values
     int z = '0';
     if(map != null) {
@@ -76,6 +77,7 @@ public final class DecFormatter extends FormatUtil {
           final int cp = cp(v, 0);
           if(k.equals(DF_DEC)) decimal = cp;
           else if(k.equals(DF_GRP)) grouping = cp;
+          else if(k.equals(DF_EXP)) exponent = cp;
           else if(k.equals(DF_PAT)) pattern = cp;
           else if(k.equals(DF_MIN)) minus = cp;
           else if(k.equals(DF_DIG)) optional = cp;
@@ -83,12 +85,12 @@ public final class DecFormatter extends FormatUtil {
           else if(k.equals(DF_PM)) permille = cp;
           else if(k.equals(DF_ZG)) {
             z = zeroes(cp);
-            if(z == -1) throw INVDECFORM.get(ii, k, v);
-            if(z != cp) throw INVDECZERO.get(ii, (char)  cp);
+            if(z == -1) throw INVDECFORM_X_X.get(info, k, v);
+            if(z != cp) throw INVDECZERO_X.get(info, (char)  cp);
           }
         } else {
           // signs must have single character
-          throw INVDECSINGLE.get(ii, k, v);
+          throw INVDECSINGLE_X_X.get(info, k, v);
         }
       }
     }
@@ -96,47 +98,47 @@ public final class DecFormatter extends FormatUtil {
     // check for duplicate characters
     zero = z;
     final IntSet is = new IntSet();
-    final int[] ss = { decimal, grouping, percent, permille, zero, optional, pattern };
-    for(final int s : ss) if(!is.add(s)) throw DUPLDECFORM.get(ii, (char) s);
+    final int[] ss = { decimal, grouping, exponent, percent, permille, zero, optional, pattern };
+    for(final int s : ss) if(!is.add(s)) throw DUPLDECFORM_X.get(info, (char) s);
 
     // create auxiliary strings
     final TokenBuilder tb = new TokenBuilder();
     for(int i = 0; i < 10; i++) tb.add(zero + i);
-    digits = tb.finish();
-    active = tb.add(decimal).add(grouping).add(optional).finish();
+    digits = tb.toArray();
+    actives = tb.add(decimal).add(grouping).add(optional).add(exponent).finish();
   }
 
   /**
    * Returns a formatted number.
-   * @param ii input info
+   * @param info input info
    * @param number number to be formatted
-   * @param pict picture
+   * @param picture picture
    * @return string representation
    * @throws QueryException query exception
    */
-  public byte[] format(final InputInfo ii, final Item number, final byte[] pict)
+  public byte[] format(final InputInfo info, final ANum number, final byte[] picture)
       throws QueryException {
 
     // find pattern separator and sub-patterns
     final TokenList tl = new TokenList();
-    byte[] pic = pict;
+    byte[] pic = picture;
     final int i = indexOf(pic, pattern);
     if(i == -1) {
       tl.add(pic);
     } else {
       tl.add(substring(pic, 0, i));
       pic = substring(pic, i + cl(pic, i));
-      if(contains(pic, pattern)) throw PICNUM.get(ii, pict);
+      if(contains(pic, pattern)) throw PICNUM_X.get(info, picture);
       tl.add(pic);
     }
-    final byte[][] patterns = tl.toArray();
+    final byte[][] patterns = tl.finish();
 
     // check and analyze patterns
-    if(!check(patterns)) throw PICNUM.get(ii, pict);
+    if(!check(patterns)) throw PICNUM_X.get(info, picture);
     final Picture[] pics = analyze(patterns);
 
     // return formatted string
-    return format(number, pics, ii);
+    return format(number, pics, info);
   }
 
   /**
@@ -146,15 +148,18 @@ public final class DecFormatter extends FormatUtil {
    */
   private boolean check(final byte[][] patterns) {
     for(final byte[] pt : patterns) {
-      boolean frac = false, pas = false, act = false;
+      boolean frac = false, pas = false, act = false, exp = false;
       boolean dg = false, opt1 = false, opt2 = false;
       int cl, pc = 0, pm = 0, ls = 0;
 
       // loop through all characters
-      for(int i = 0; i < pt.length; i += cl) {
+      final int pl = pt.length;
+      for(int i = 0; i < pl; i += cl) {
         final int ch = ch(pt, i);
         cl = cl(pt, i);
-        final boolean a = contains(active, ch);
+        boolean active = contains(actives, ch);
+        final boolean digit = contains(digits, ch);
+        if(exp && !digit) return false;
 
         if(ch == decimal) {
           // more than 1 decimal sign?
@@ -162,12 +167,20 @@ public final class DecFormatter extends FormatUtil {
           frac = true;
         } else if(ch == grouping) {
           // adjacent decimal sign?
-          if(i == 0 && frac || ls == decimal || i + cl < pt.length ?
-              ch(pt, i + cl) == decimal : !frac) return false;
+          if(i == 0 && frac || ls == decimal || i + cl < pl ? ch(pt, i + cl) == decimal : !frac)
+            return false;
+        } else if(ch == exponent) {
+          if(contains(actives, ls) && contains(actives, ch(pt, i + cl))) {
+            // more than one exponent sign
+            if(exp) return false;
+            exp = true;
+          } else {
+            active = false;
+          }
         } else if(ch == percent) {
-          if(++pc > 1) return false;
+          ++pc;
         } else if(ch == permille) {
-          if(++pm > 1) return false;
+          ++pm;
         } else if(ch == optional) {
           if(frac) {
             opt2 = true;
@@ -176,23 +189,23 @@ public final class DecFormatter extends FormatUtil {
             if(dg) return false;
             opt1 = true;
           }
-        } else if(contains(digits, ch)) {
+        } else if(digit) {
           // fractional part, and digit after optional sign?
           if(frac && opt2) return false;
           dg = true;
         }
 
         // passive character with preceding and following active character?
-        if(a && pas && act) return false;
+        if(active && pas && act) return false;
         // will be assigned if active characters were found
-        if(act) pas |= !a;
-        act |= a;
+        if(act) pas |= !active;
+        act |= active;
         // cache last character
         ls = ch;
       }
 
-      // more than 1 percent and permille sign?
-      if(pc + pm > 1) return false;
+      // percent and permille sign: more than 1, or exponent sign?
+      if(pc + pm > (exp ? 0 : 1)) return false;
       // no optional sign or digit?
       if(!opt1 && !opt2 && !dg) return false;
     }
@@ -217,33 +230,48 @@ public final class DecFormatter extends FormatUtil {
       int p = 0;
       // active character found
       boolean act = false;
+      // number of characters after exponent
+      int exp = -1;
       // number of optional characters
       final int[] opt = new int[2];
 
       // loop through all characters
-      for(int i = 0; i < pt.length; i += cl(pt, i)) {
+      final int pl = pt.length;
+      for(int i = 0, cl; i < pl; i += cl) {
         final int ch = ch(pt, i);
-        final boolean a = contains(active, ch);
+        cl = cl(pt, i);
+        boolean active = contains(actives, ch);
 
         if(ch == decimal) {
           ++p;
           act = false;
         } else if(ch == optional) {
           opt[p]++;
-        } else if(ch == grouping) {
-          if(p == 0) {
-            pic.group[p] = Array.add(pic.group[p], pic.min[p] + opt[p]);
+        } else if(ch == exponent) {
+          // check if following characters are all digits
+          boolean e = true;
+          for(int c = i + cl; c < pl && e; c += cl(pt, c)) e = contains(digits, ch(pt, c));
+          if(e && i + cl < pl) {
+            // test succeeds, exponent sign found
+            exp = 0;
+          } else {
+            // passive character: add to prefixes/suffixes
+            pic.xyzfix[p == 0 && act ? p + 1 : p].add(ch);
+            active = false;
           }
+        } else if(ch == grouping) {
+          if(p == 0) pic.group[p] = Array.add(pic.group[p], pic.min[p] + opt[p]);
         } else if(contains(digits, ch)) {
-          pic.min[p]++;
+          if(exp == -1) pic.min[p]++;
+          else exp++;
         } else {
           // passive characters
           pic.pc |= ch == percent;
           pic.pm |= ch == permille;
           // prefixes/suffixes
-          pic.fix[p == 0 && act ? p + 1 : p].add(ch);
+          pic.xyzfix[p == 0 && act ? p + 1 : p].add(ch);
         }
-        act |= a;
+        act |= active;
       }
       // finalize integer-part-grouping-positions
       final int[] igp = pic.group[0];
@@ -260,6 +288,7 @@ public final class DecFormatter extends FormatUtil {
       }
 
       pic.maxFrac = pic.min[1] + opt[1];
+      pic.minExp = Math.max(0, exp);
       pics[s] = pic;
     }
     return pics;
@@ -273,7 +302,7 @@ public final class DecFormatter extends FormatUtil {
    * @return picture variables
    * @throws QueryException query exception
    */
-  private byte[] format(final Item it, final Picture[] pics, final InputInfo ii)
+  private byte[] format(final ANum it, final Picture[] pics, final InputInfo ii)
       throws QueryException {
 
     // return results for NaN
@@ -286,15 +315,32 @@ public final class DecFormatter extends FormatUtil {
     final TokenBuilder res = new TokenBuilder();
     final TokenBuilder intgr = new TokenBuilder();
     final TokenBuilder fract = new TokenBuilder();
+    int exp = 0;
 
     if(d == Double.POSITIVE_INFINITY || d == Double.NEGATIVE_INFINITY) {
       intgr.add(inf);
     } else {
       // convert and round number
-      Item num = it;
-      if(pic.pc) num = Calc.MULT.ev(ii, num, Int.get(100));
-      if(pic.pm) num = Calc.MULT.ev(ii, num, Int.get(1000));
-      num = FNNum.abs(FNNum.round(num, num.dbl(ii), pic.maxFrac, true, ii), ii);
+      ANum num = it;
+      if(pic.pc) num = (ANum) Calc.MULT.ev(ii, num, Int.get(100));
+      if(pic.pm) num = (ANum) Calc.MULT.ev(ii, num, Int.get(1000));
+      if(pic.minExp != 0) {
+        final String s = (num instanceof Dbl || num instanceof Flt ?
+          Dec.get(num.dbl(ii)) : num).abs().toString();
+        final int sep = s.indexOf('.');
+        final int i = sep == -1 ? s.length() : sep;
+        final int m = pic.min[0];
+        double n = 1;
+        exp = i - m;
+        if(exp > 0) {
+          for(int a = exp; a-- > 0;) n *= 10;
+          num = (ANum) Calc.DIV.ev(ii, num, Dec.get(n));
+        } else {
+          for(int a = -exp; a-- > 0;) n *= 10;
+          num = (ANum) Calc.MULT.ev(ii, num, Dec.get(n));
+        }
+      }
+      num = num.round(pic.maxFrac, true).abs();
 
       // convert positive number to string, chop leading zero
       final String s = (num instanceof Dbl || num instanceof Flt ?
@@ -340,23 +386,35 @@ public final class DecFormatter extends FormatUtil {
     // add minus sign
     if(neg && pics.length != 2) res.add(minus);
     // add prefix and integer part
-    res.add(pic.fix[0].finish()).add(intgr.finish());
+    res.add(pic.xyzfix[0].toArray()).add(intgr.finish());
     // add fractional part
     if(!fract.isEmpty()) res.add(decimal).add(fract.finish());
     // add suffix
-    return res.add(pic.fix[1].finish()).finish();
+    res.add(pic.xyzfix[1].toArray());
+    // add exponent
+    if(pic.minExp != 0) {
+      res.add(exponent);
+      if(exp < 0) res.add(minus);
+      final String s = Integer.toString(Math.abs(exp));
+      final int sl = s.length();
+      for(int i = sl; i < pic.minExp; i++) res.add(zero);
+      for(int i = 0; i < sl; i++) res.add(zero + s.charAt(i) - '0');
+    }
+    return res.finish();
   }
 
   /** Picture variables. */
   static final class Picture {
     /** Prefix/suffix. */
-    final TokenBuilder[] fix = { new TokenBuilder(), new TokenBuilder() };
+    final TokenBuilder[] xyzfix = { new TokenBuilder(), new TokenBuilder() };
     /** Integer/fractional-part-grouping-positions. */
     final int[][] group = { {}, {} };
     /** Minimum-integer/fractional-part-size. */
     final int[] min = { 0, 0 };
     /** Maximum-fractional-part-size. */
     int maxFrac;
+    /** Minimum-exponent-size. */
+    int minExp;
     /** Percent flag. */
     boolean pc;
     /** Per-mille flag. */

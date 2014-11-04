@@ -1,7 +1,6 @@
 package org.basex.tests.w3c;
 
 import static org.basex.tests.w3c.QT3Constants.*;
-import static org.basex.tests.w3c.QT3Constants.ENCODING;
 import static org.basex.util.Prop.*;
 import static org.basex.util.Token.*;
 
@@ -16,15 +15,15 @@ import org.basex.core.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
 import org.basex.io.serial.*;
-import org.basex.io.serial.SerializerOptions.*;
 import org.basex.query.*;
 import org.basex.query.func.*;
-import org.basex.query.util.Compare.Mode;
+import org.basex.query.func.fn.Compare.Mode;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.tests.bxapi.*;
 import org.basex.tests.bxapi.xdm.*;
 import org.basex.util.*;
+import org.basex.util.options.Options.YesNo;
 
 /**
  * Driver for the XQuery/XPath/XSLT 3.* Test Suite, located at
@@ -34,7 +33,7 @@ import org.basex.util.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
-public final class QT3TS {
+public final class QT3TS extends Main {
   /** EQName pattern. */
   private static final Pattern BIND = Pattern.compile("^Q\\{(.*?)\\}(.+)$");
 
@@ -94,7 +93,7 @@ public final class QT3TS {
    */
   public static void main(final String[] args) throws Exception {
     try {
-      new QT3TS().run(args);
+      new QT3TS(args).run();
     } catch(final IOException ex) {
       Util.errln(ex);
       System.exit(1);
@@ -102,18 +101,25 @@ public final class QT3TS {
   }
 
   /**
-   * Runs all tests.
+   * Constructor.
    * @param args command-line arguments
+   */
+  protected QT3TS(String[] args) {
+    super(args);
+  }
+
+
+  /**
+   * Runs all tests.
    * @throws Exception exception
    */
-  private void run(final String[] args) throws Exception {
+  private void run() throws Exception {
     ctx.globalopts.set(GlobalOptions.DBPATH, sandbox().path() + "/data");
-    parseArguments(args);
+    parseArgs();
     init();
 
     final Performance perf = new Performance();
     ctx.options.set(MainOptions.CHOP, false);
-    ctx.options.set(MainOptions.INTPARSE, false);
 
     final SerializerOptions sopts = new SerializerOptions();
     sopts.set(SerializerOptions.INDENT, YesNo.NO);
@@ -239,10 +245,6 @@ public final class QT3TS {
     // expected result
     final XdmValue expected = new XQuery("*:result/*[1]", ctx).context(test).value();
 
-    // use XQuery 1.0 if XQ10 or XP20 is specified
-    if(new XQuery("*:dependency[@type='spec'][matches(@value,'(XQ10)([^+]|$)')]", ctx).
-        context(test).next() != null) ctx.options.set(MainOptions.XQUERY3, false);
-
     // check if environment is defined in test-case
     QT3Env e = null;
     final XdmValue ienv = new XQuery("*:environment[*]", ctx).context(test).value();
@@ -327,18 +329,19 @@ public final class QT3TS {
           query.addDocument(src.get(URI), file);
           final String role = src.get(ROLE);
           if(role == null) continue;
-          final Object call = query.funcCall("fn:doc", Str.get(file));
-          if(role.equals(".")) query.context(call);
-          else query.bind(role, call);
+
+          final XdmValue doc = query.document(file);
+          if(role.equals(".")) query.context(doc);
+          else query.bind(role, doc);
         }
         // bind resources
         for(final HashMap<String, String> src : e.resources) {
-          query.addResource(src.get(URI), file(base, src.get(FILE)), src.get(ENCODING));
+          query.addResource(src.get(URI), file(base, src.get(FILE)), src.get(Prop.ENCODING));
         }
         // bind collections
         query.addCollection(e.collURI, e.collSources.toArray());
         if(e.collContext) {
-          query.context(query.funcCall("fn:collection", Str.get(e.collURI)));
+          query.context(query.collection(e.collURI));
         }
         // bind context item
         if(e.context != null) {
@@ -371,9 +374,6 @@ public final class QT3TS {
       if(l > 100000000) slow.put(-l, name);
     }
 
-    // revert to XQuery as default
-    ctx.options.set(MainOptions.XQUERY3, true);
-
     final String exp = test(result, expected);
     final TokenBuilder tmp = new TokenBuilder();
     tmp.add(name).add(NL);
@@ -404,8 +404,7 @@ public final class QT3TS {
       right.add(tmp.finish());
       correct++;
     } else {
-      tmp.add("Expect: " + noComments(exp)).add(NL).add(NL);
-      wrong.add(tmp.finish());
+      wrong.add(tmp.add("Expect: ").add(noComments(exp)).add(NL).add(NL).finish());
     }
     if(report != null) report.addTest(name, exp == null);
   }
@@ -445,11 +444,13 @@ public final class QT3TS {
       // skip limits
       "@type = 'limits' and @value = ('big_integer') or " +
       // skip non-XQuery tests
-      "@type = 'spec' and not(contains(@value, 'XQ'))" +
+      "@type = 'spec' and not(matches(@value, 'XQ3|XQ\\d\\d\\+'))" +
       "]", ctx).context(test).value().size() == 0;
   }
 
-  /**
+  //if(new XQuery("*:dependency[@type='spec'][matches(@value,'(XQ10)([^+]|$)')]", ctx).
+
+      /**
    * Returns the specified environment, or {@code null}.
    * @param envs environments
    * @param ref reference
@@ -531,7 +532,7 @@ public final class QT3TS {
 
     final QNm resErr = result.err.getException().qname();
 
-    String name = exp, uri = string(QueryText.ERRORURI);
+    String name = exp, uri = string(QueryText.ERROR_URI);
     final Matcher m = BIND.matcher(exp);
     if(m.find()) {
       uri = m.group(1);
@@ -673,7 +674,7 @@ public final class QT3TS {
     try {
       if(!file.isEmpty()) exp = string(new IOFile(baseDir, file).read());
       exp = normNL(exp);
-      if(norm) exp = string(norm(token(exp)));
+      if(norm) exp = string(normalize(token(exp)));
 
       final String res = normNL(asString("serialize(., map{ 'indent':='no' })", value));
       if(exp.equals(res)) return null;
@@ -748,7 +749,7 @@ public final class QT3TS {
    * @return optional expected test suite result
    * @throws IOException I/O exception
    */
-  private String serialize(final XdmValue value, final SerializerOptions sprop)
+  private static String serialize(final XdmValue value, final SerializerOptions sprop)
       throws IOException {
 
     final ArrayOutput ao = new ArrayOutput();
@@ -768,17 +769,16 @@ public final class QT3TS {
     String exp = expect.getString();
     // normalize space
     final boolean norm = asBoolean("@normalize-space=('true','1')", expect);
-    if(norm) exp = string(norm(token(exp)));
+    if(norm) exp = string(normalize(token(exp)));
 
     final TokenBuilder tb = new TokenBuilder();
     int c = 0;
     for(final XdmItem it : value) {
-      if(c != 0) tb.add(' ');
+      if(c++ != 0) tb.add(' ');
       tb.add(it.getString());
-      c++;
     }
 
-    final String res = norm ? string(norm(tb.finish())) : tb.toString();
+    final String res = norm ? string(normalize(tb.finish())) : tb.toString();
     return exp.equals(res) ? null : exp;
   }
 
@@ -873,24 +873,9 @@ public final class QT3TS {
     return in.replaceAll("\r\n|\r|\n", NL);
   }
 
-  /**
-   * Parses the command-line arguments, specified by the user.
-   * @param args command-line arguments
-   * @throws IOException I/O exception
-   */
-  private void parseArguments(final String[] args) throws IOException {
-    final Args arg = new Args(args, this, " -v [pat]" + NL +
-        " [pat] perform tests starting with a pattern" + NL +
-        " -a  save all tests" + NL +
-        " -d  debugging mode" + NL +
-        " -e  ignore error codes" + NL +
-        " -i  also save ignored files" + NL +
-        " -p  path to the test suite" + NL +
-        " -r  generate report file" + NL +
-        " -s  print slow queries" + NL +
-        " -v  verbose output",
-        Util.info(Text.S_CONSOLE, Util.className(this)));
-
+  @Override
+  protected void parseArgs() throws IOException {
+    final MainParser arg = new MainParser(this);
     while(arg.more()) {
       if(arg.dash()) {
         final char c = arg.next();
@@ -977,5 +962,24 @@ public final class QT3TS {
    */
   private IOFile sandbox() {
     return new IOFile(Prop.TMP, testid);
+  }
+
+  @Override
+  public String header() {
+    return Util.info(Text.S_CONSOLE, Util.className(this));
+  }
+
+  @Override
+  public String usage() {
+    return " -v [pat]" + NL +
+        " [pat] perform tests starting with a pattern" + NL +
+        " -a  save all tests" + NL +
+        " -d  debugging mode" + NL +
+        " -e  ignore error codes" + NL +
+        " -i  also save ignored files" + NL +
+        " -p  path to the test suite" + NL +
+        " -r  generate report file" + NL +
+        " -s  print slow queries" + NL +
+        " -v  verbose output";
   }
 }

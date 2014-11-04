@@ -19,7 +19,7 @@ public final class VarStack extends ElementList {
    * Default constructor.
    */
   public VarStack() {
-    this(4);
+    this(Array.CAPACITY);
   }
 
   /**
@@ -32,11 +32,11 @@ public final class VarStack extends ElementList {
 
   /**
    * Adds the specified variable.
-   * @param v variable
+   * @param var variable
    */
-  public void push(final Var v) {
+  public void push(final Var var) {
     if(size == vars.length) vars = Array.copy(vars, new Var[newSize()]);
-    vars[size++] = v;
+    vars[size++] = var;
   }
 
   /**

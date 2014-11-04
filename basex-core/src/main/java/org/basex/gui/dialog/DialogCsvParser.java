@@ -54,7 +54,7 @@ final class DialogCsvParser extends DialogParser {
    */
   DialogCsvParser(final BaseXDialog d, final MainOptions opts) {
     super(d);
-    copts = opts.get(MainOptions.CSVPARSER);
+    copts = new CsvParserOptions(opts.get(MainOptions.CSVPARSER));
 
     final BaseXBack pp  = new BaseXBack(new TableLayout(2, 1, 0, 8));
     BaseXBack p = new BaseXBack(new TableLayout(4, 2, 8, 4));
@@ -64,10 +64,10 @@ final class DialogCsvParser extends DialogParser {
     p.add(encoding);
 
     final BaseXBack sep = new BaseXBack().layout(new TableLayout(1, 2, 6, 0));
-    final StringList sl = new StringList();
-    for(final CsvSep cs : CsvSep.values()) sl.add(cs.toString());
-    final String[] sa = sl.toArray();
-    seps = new BaseXCombo(d, sl.add("").toArray());
+    final StringList csv = new StringList();
+    for(final CsvSep cs : CsvSep.values()) csv.add(cs.toString());
+    final String[] sa = csv.toArray();
+    seps = new BaseXCombo(d, csv.add("").finish());
     sep.add(seps);
 
     final String s = copts.get(CsvOptions.SEPARATOR);
@@ -77,18 +77,18 @@ final class DialogCsvParser extends DialogParser {
       seps.setSelectedIndex(sa.length);
     }
     sepchar = new BaseXTextField(s, d);
+    sepchar.setColumns(2);
     sep.add(sepchar);
-    BaseXLayout.setWidth(sepchar, 35);
 
     p.add(new BaseXLabel(SEPARATOR, true, true));
     p.add(sep);
 
     p.add(new BaseXLabel(FORMAT + COL, true, true));
-    sl.reset();
     final CsvFormat[] formats = CsvFormat.values();
     final int fl = formats.length - 1;
-    for(int f = 0; f < fl; f++) sl.add(formats[f].toString());
-    format = new BaseXCombo(d, sl.toArray());
+    final StringList frmts = new StringList(fl);
+    for(int f = 0; f < fl; f++) frmts.add(formats[f].toString());
+    format = new BaseXCombo(d, frmts.finish());
     format.setSelectedItem(copts.get(CsvOptions.FORMAT));
     p.add(format);
     pp.add(p);
@@ -120,8 +120,7 @@ final class DialogCsvParser extends DialogParser {
       format.setEnabled(head);
       lax.setEnabled(head && copts.get(CsvOptions.FORMAT) == CsvFormat.DIRECT);
 
-      final IO io = CsvParser.toXML(new IOContent(EXAMPLE), copts);
-      final DBNode node = new DBNode(io, dialog.gui.context.options);
+      final DBNode node = new DBNode(CsvParser.toXML(new IOContent(EXAMPLE), copts));
       example.setText(example(MainParser.CSV.name(), EXAMPLE, node.serialize().toString()));
     } catch(final IOException ex) {
       example.setText(error(ex));

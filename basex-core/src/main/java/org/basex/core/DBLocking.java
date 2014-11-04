@@ -59,7 +59,7 @@ public final class DBLocking implements Locking {
   /**
    * Lock for global write locking.
    *
-   * Exclusive lock - if globally writing
+   * Exclusive lock - if globally writing,
    * Shared lock    - else
    */
   private final ReentrantReadWriteLock writeAll = new ReentrantReadWriteLock();
@@ -101,7 +101,7 @@ public final class DBLocking implements Locking {
 
   @Override
   public void acquire(final Proc pr, final StringList read, final StringList write) {
-    final Long thread = Thread.currentThread().getId();
+    final long thread = Thread.currentThread().getId();
     if(writeLocked.containsKey(thread) || readLocked.containsKey(thread))
       throw new IllegalMonitorStateException("Thread already holds one or more locks.");
 
@@ -112,7 +112,7 @@ public final class DBLocking implements Locking {
           || queue.peek() != thread) {
         try {
           queue.wait();
-        } catch(final InterruptedException e) {
+        } catch(final InterruptedException ex) {
           Thread.currentThread().interrupt();
         }
       }
@@ -131,7 +131,7 @@ public final class DBLocking implements Locking {
         while(globalReaders > 0) {
           try {
             globalLock.wait();
-          } catch(final InterruptedException e) {
+          } catch(final InterruptedException ex) {
             Thread.currentThread().interrupt();
           }
         }
@@ -142,7 +142,7 @@ public final class DBLocking implements Locking {
         while(localWriters > 0) {
           try {
             globalLock.wait();
-          } catch(final InterruptedException e) {
+          } catch(final InterruptedException ex) {
             Thread.currentThread().interrupt();
           }
         }

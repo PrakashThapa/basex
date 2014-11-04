@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.regex.*;
 
 import org.basex.http.*;
-import org.basex.query.util.inspect.*;
+import org.basex.query.func.inspect.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.var.*;
@@ -129,10 +129,10 @@ final class RestXqWadl {
    * @param xqdoc documentation (may be {@code null})
    * @param parent parent node
    */
-  private void addDoc(final byte[] xqdoc, final FElem parent) {
+  private static void addDoc(final byte[] xqdoc, final FElem parent) {
     if(xqdoc == null) return;
     final FElem doc = elem("doc", parent);
     doc.namespaces().add(EMPTY, token(XHTML_URL));
-    Inspect.add(xqdoc, http.context(), doc);
+    Inspect.add(xqdoc, doc);
   }
 }

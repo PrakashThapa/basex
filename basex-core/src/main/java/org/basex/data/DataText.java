@@ -105,6 +105,8 @@ public interface DataText {
   String DATASWL = "swl";
   /** Database - Updating flag. */
   String DATAUPD = "upd";
+  /** Database - Document path index. */
+  String DATADOC = "doc";
 
   // XML SERIALIZATION ============================================================================
 
@@ -169,6 +171,10 @@ public interface DataText {
   byte[] XQCOMM_O = token("(:");
   /** XQuery comment. */
   byte[] XQCOMM_C = token(":)");
+  /** Javascript comment. */
+  byte[] JSCOMM_O = token("/*");
+  /** Javascript comment. */
+  byte[] JSCOMM_C = token("*/");
 
   /** PI output. */
   byte[] PI_O = token("<?");

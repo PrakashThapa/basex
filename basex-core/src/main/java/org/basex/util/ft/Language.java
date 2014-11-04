@@ -3,7 +3,6 @@ package org.basex.util.ft;
 import java.util.*;
 
 import org.basex.core.*;
-import org.basex.util.*;
 
 /**
  * This class contains language tokens which are valid for the xml:lang
@@ -46,7 +45,7 @@ public final class Language implements Comparable<Language> {
   }
 
   /**
-   * Returns an instance for the specified language code, or {@code null}.
+   * Returns an instance for the specified language code or {@code null}.
    * @param lang name or code of language
    * @return language code
    */
@@ -69,12 +68,11 @@ public final class Language implements Comparable<Language> {
   }
 
   /**
-   * Returns the user language as default language, or English, if the user
-   * language cannot be assigned.
+   * Returns the user language as default language, or English if the language cannot be assigned.
    * @return default language
    */
   public static Language def() {
-    final Language lang = DISP.get(Prop.language);
+    final Language lang = DISP.get(MainOptions.LANGUAGE.value());
     return lang == null ? get("en") : lang;
   }
 

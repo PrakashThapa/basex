@@ -10,12 +10,13 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.List;
 
+import org.basex.api.client.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.core.cmd.Set;
 import org.basex.http.*;
 import org.basex.io.in.*;
-import org.basex.query.func.*;
+import org.basex.query.func.db.*;
 import org.basex.server.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
@@ -112,7 +113,7 @@ public final class WebDAVService<T> {
    */
   public long timestamp(final String db) throws IOException {
     final WebDAVQuery query = new WebDAVQuery(DATA.args(_DB_INFO.args("$path") +
-        "/descendant::" + FNDb.toName(Text.TIMESTAMP) + "[1]")).bind("path",  db);
+        "/descendant::" + DbFn.toName(Text.TIMESTAMP) + "[1]")).bind("path",  db);
 
     try {
       // retrieve and parse timestamp
@@ -162,7 +163,7 @@ public final class WebDAVService<T> {
     session.execute(new Open(db));
     session.execute(new Delete(path));
 
-    // create dummy, if parent is an empty folder
+    // create dummy if parent is an empty folder
     final int ix = path.lastIndexOf(SEP);
     if(ix > 0) createDummy(db, path.substring(0, ix));
   }
@@ -179,11 +180,11 @@ public final class WebDAVService<T> {
     session.execute(new Open(db));
     session.execute(new Rename(path, npath));
 
-    // create dummy, if old parent is an empty folder
+    // create dummy if old parent is an empty folder
     final int i1 = path.lastIndexOf(SEP);
     if(i1 > 0) createDummy(db, path.substring(0, i1));
 
-    // delete dummy, if new parent is an empty folder
+    // delete dummy if new parent is an empty folder
     final int i2 = npath.lastIndexOf(SEP);
     if(i2 > 0) deleteDummy(db, npath.substring(0, i2));
   }

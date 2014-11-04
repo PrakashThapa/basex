@@ -25,18 +25,18 @@ public final class BackupDrop extends NameUpdate {
   }
 
   @Override
-  public void merge(final Update up) throws QueryException {
-    throw BXDB_ONCEBACK.get(info, name, operation());
+  public void merge(final Update update) throws QueryException {
+    throw BXDB_ONCEBACK_X_X.get(info, name, operation());
   }
 
   @Override
   public void apply() throws QueryException {
-    if(!DropBackup.drop(name, qc.context)) throw UPDROPBACK.get(info, name, operation());
+    if(!DropBackup.drop(name, qc.context)) throw UPDROPBACK_X_X.get(info, name, operation());
   }
 
   @Override
   public void prepare() { }
 
   @Override
-  public String operation() { return "dropped"; }
+  protected String operation() { return "dropped"; }
 }

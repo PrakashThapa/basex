@@ -125,11 +125,11 @@ public final class GUI extends AGUI {
 
     // set window size
     final Dimension scr = Toolkit.getDefaultToolkit().getScreenSize();
-    final int[] ps = gopts.get(GUIOptions.GUILOC);
-    final int[] sz = gopts.get(GUIOptions.GUISIZE);
-    final int x = Math.max(0, Math.min(scr.width - sz[0], ps[0]));
-    final int y = Math.max(0, Math.min(scr.height - sz[1], ps[1]));
-    setBounds(x, y, sz[0], sz[1]);
+    final int[] loc = gopts.get(GUIOptions.GUILOC);
+    final int[] size = gopts.get(GUIOptions.GUISIZE);
+    final int x = Math.max(0, Math.min(scr.width - size[0], loc[0]));
+    final int y = Math.max(0, Math.min(scr.height - size[1], loc[1]));
+    setBounds(x, y, size[0], size[1]);
     if(gopts.get(GUIOptions.MAXSTATE)) {
       setExtendedState(MAXIMIZED_HORIZ);
       setExtendedState(MAXIMIZED_VERT);
@@ -194,8 +194,8 @@ public final class GUI extends AGUI {
           }
         };
         final int i = context.data() == null ? 2 : gopts.get(GUIOptions.SEARCHMODE);
-        final String[] hs = gopts.get(i == 0 ? GUIOptions.SEARCH : i == 1 ? GUIOptions.XQUERY
-                                                                         : GUIOptions.COMMANDS);
+        final String[] hs = gopts.get(
+            i == 0 ? GUIOptions.SEARCH : i == 1 ? GUIOptions.XQUERY : GUIOptions.COMMANDS);
         for(final String en : hs) {
           final JMenuItem jmi = new JMenuItem(en);
           jmi.addActionListener(al);
@@ -222,10 +222,11 @@ public final class GUI extends AGUI {
       }
     });
 
-    go = BaseXButton.get("c_go", EXECUTE_QUERY, false, this);
+    go = BaseXButton.get("c_go", RUN_QUERY, false, this);
     go.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(final ActionEvent e) {
+        input.store();
         execute();
       }
     });
@@ -319,7 +320,7 @@ public final class GUI extends AGUI {
   }
 
   /**
-   * Launches a query. Adds the default namespace, if available. The command is ignored if an update
+   * Launches a query. Adds the default namespace if available. The command is ignored if an update
    * operation takes place.
    * @param qu query to be run
    * @param edit editor panel
@@ -394,7 +395,7 @@ public final class GUI extends AGUI {
       if(gopts.get(GUIOptions.FILTERRT) && data != null && !context.root()) context.invalidate();
 
       // remember current command and context nodes
-      final Nodes current = context.current();
+      final DBNodes current = context.current();
       command = cmd;
 
       // execute command and cache result
@@ -436,13 +437,14 @@ public final class GUI extends AGUI {
       // check if query feedback was evaluated in the query view
       if(!ok && !stopped) {
         // display error in info view
+        text.setText(ao);
         if((!edit || inf.startsWith(S_BUGINFO)) && !info.visible()) {
           GUIMenuCmd.C_SHOWINFO.execute(this);
         }
       } else {
         // get query result
-        final Result result = cmd.result();
-        Nodes nodes = result instanceof Nodes && result.size() != 0 ? (Nodes) result : null;
+        final Result result = cmd.finish();
+        DBNodes nodes = result instanceof DBNodes && result.size() != 0 ? (DBNodes) result : null;
 
         if(context.data() != data) {
           // database reference has changed - notify views
@@ -455,19 +457,19 @@ public final class GUI extends AGUI {
         } else if(result != null) {
           // check if result has changed
           final boolean flt = gopts.get(GUIOptions.FILTERRT);
-          final Nodes nd = context.current();
-          if(flt || nd != null && !nd.sameAs(current)) {
+          final DBNodes curr = context.current();
+          if(flt || curr != null && !curr.equals(current)) {
             // refresh context if at least one node was found
-            if(nodes != null) notify.context((Nodes) result, flt, null);
+            if(nodes != null) notify.context(nodes, flt, null);
           } else if(context.marked != null) {
             // refresh highlight
-            Nodes m = context.marked;
+            DBNodes m = context.marked;
             if(nodes != null) {
               // use query result
               m = nodes;
             } else if(m.size() != 0) {
               // remove old highlight
-              m = new Nodes(data);
+              m = new DBNodes(data);
             }
             // refresh views
             if(context.marked != m) notify.mark(m, null);
@@ -535,7 +537,7 @@ public final class GUI extends AGUI {
     if(n == 0 && n2 == 2) {
       views.border(0);
     } else {
-      views.setBorder(new CompoundBorder(new EmptyBorder(3, 1, 3, 1), new EtchedBorder()));
+      views.setBorder(new CompoundBorder(BaseXLayout.border(3, 1, 3, 1), new EtchedBorder()));
     }
   }
 
@@ -561,7 +563,7 @@ public final class GUI extends AGUI {
     } else if(comp == menu) {
       if(!show) menuHeight = menu.getHeight();
       final int s = show ? menuHeight : 0;
-      BaseXLayout.setHeight(menu, s);
+      comp.setPreferredSize(new Dimension(comp.getPreferredSize().width, s));
       menu.setSize(menu.getWidth(), s);
     } else { // buttons, input
       if(show) control.add(comp, layout);
@@ -585,7 +587,7 @@ public final class GUI extends AGUI {
    * Refreshes the menu and the buttons.
    */
   public void refreshControls() {
-    final Nodes marked = context.marked;
+    final DBNodes marked = context.marked;
     if(marked != null) setResults(marked.size());
 
     filter.setEnabled(marked != null && marked.size() != 0);
@@ -611,8 +613,8 @@ public final class GUI extends AGUI {
     menu.refresh();
 
     final int i = context.data() == null ? 2 : gopts.get(GUIOptions.SEARCHMODE);
-    final StringsOption options = i == 0 ? GUIOptions.SEARCH : i == 1 ? GUIOptions.XQUERY
-                                                                     : GUIOptions.COMMANDS;
+    final StringsOption options =
+        i == 0 ? GUIOptions.SEARCH : i == 1 ? GUIOptions.XQUERY : GUIOptions.COMMANDS;
     hist.setEnabled(gopts.get(options).length != 0);
   }
 
@@ -690,14 +692,14 @@ public final class GUI extends AGUI {
       gopts.set(GUIOptions.UPDATEVERSION, used.toString());
     } else {
       try {
-        final String page = Token.string(new IOUrl(VERSION_URL).read());
+        final String page = Token.string(new IOUrl(Prop.VERSION_URL).read());
         final Matcher m = Pattern.compile("^(Version )?([\\w\\d.]*?)( .*|$)",
             Pattern.DOTALL).matcher(page);
         if(m.matches()) {
           final Version latest = new Version(m.group(2));
           if(disk.compareTo(latest) < 0) {
             if(BaseXDialog.confirm(this, Util.info(H_NEW_VERSION, Prop.NAME, latest))) {
-              BaseXDialog.browse(this, UPDATE_URL);
+              BaseXDialog.browse(this, Prop.UPDATE_URL);
             } else {
               // don't show update dialog anymore if it has been rejected once
               gopts.set(GUIOptions.UPDATEVERSION, latest.toString());

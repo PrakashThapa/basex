@@ -3,6 +3,7 @@ package org.basex.build;
 import java.io.*;
 
 import org.basex.data.*;
+import org.basex.data.atomic.*;
 import org.basex.io.*;
 
 /**
@@ -18,11 +19,21 @@ public final class MemBuilder extends Builder {
 
   /**
    * Constructor.
-   * @param nm name of database
+   * @param name name of database
    * @param parse parser
    */
-  public MemBuilder(final String nm, final Parser parse) {
-    super(nm, parse);
+  public MemBuilder(final String name, final Parser parse) {
+    super(name, parse);
+  }
+
+  /**
+   * Builds a main memory database instance.
+   * @param input input
+   * @return data database instance
+   * @throws IOException I/O exception
+   */
+  public static MemData build(final IO input) throws IOException {
+    return build(Parser.xmlParser(input));
   }
 
   /**
@@ -48,6 +59,13 @@ public final class MemBuilder extends Builder {
 
   @Override
   public MemData build() throws IOException {
+    dataClip();
+    data.meta.assign(parser);
+    return data;
+  }
+
+  @Override
+  public DataClip dataClip() throws IOException {
     init();
     try {
       parse();
@@ -56,7 +74,8 @@ public final class MemBuilder extends Builder {
       throw ex;
     }
     close();
-    return data;
+    data.finish();
+    return new DataClip(data);
   }
 
   /**
@@ -72,13 +91,9 @@ public final class MemBuilder extends Builder {
     md.createattr = true;
     md.textindex = true;
     md.attrindex = true;
-    final IO file = parser.src;
-    md.original = file != null ? file.path() : "";
-    md.filesize = file != null ? file.length() : 0;
-    md.time = file != null ? file.timeStamp() : System.currentTimeMillis();
     meta = data.meta;
-    tags = data.tagindex;
-    atts = data.atnindex;
+    elemNames = data.elemNames;
+    attrNames = data.attrNames;
     path.data(data);
   }
 
@@ -102,15 +117,15 @@ public final class MemBuilder extends Builder {
   }
 
   @Override
-  protected void addElem(final int dist, final int nm, final int asize, final int uri,
+  protected void addElem(final int dist, final int name, final int asize, final int uri,
       final boolean ne) {
-    data.elem(dist, nm, asize, asize, uri, ne);
+    data.elem(dist, name, asize, asize, uri, ne);
     data.insert(meta.size);
   }
 
   @Override
-  protected void addAttr(final int nm, final byte[] value, final int dist, final int uri) {
-    data.attr(meta.size, dist, nm, value, uri, false);
+  protected void addAttr(final int name, final byte[] value, final int dist, final int uri) {
+    data.attr(meta.size, dist, name, value, uri, false);
     data.insert(meta.size);
   }
 

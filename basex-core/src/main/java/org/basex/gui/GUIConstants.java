@@ -1,6 +1,6 @@
 package org.basex.gui;
 
-import static org.basex.gui.GUIPopupCmd.*;
+import static org.basex.gui.GUICommand.*;
 import static org.basex.gui.GUIMenuCmd.*;
 
 import java.awt.*;
@@ -198,7 +198,7 @@ public final class GUIConstants {
   /** Color for highlighting errors. */
   public static final Color LRED = new Color(255, 216, 216);
   /** Color for highlighting full-text hits. */
-  public static final Color GREEN = new Color(0, 176, 0);
+  public static final Color GREEN = new Color(0, 160, 0);
   /** Color for highlighting quotes. */
   public static final Color BLUE = new Color(0, 64, 192);
 
@@ -238,8 +238,18 @@ public final class GUIConstants {
 
   // FONTS ====================================================================
 
-  /** Font of text area. */
-  private static final Font TFONT = UIManager.getFont("TextArea.font");
+  /** Standard font size (unscaled). */
+  public static final int FONTSIZE = 13;
+
+  /** Dummy label, used for size calculations. */
+  public static final JLabel LABEL;
+  /** Standard line height. */
+  public static final int HEIGHT;
+  /** Standard scale factor (>= 1). */
+  public static final double SCALE;
+  /** Adapted scale factor. */
+  public static final double ASCALE;
+
   /** Large font. */
   public static Font lfont;
   /** Font. */
@@ -262,10 +272,12 @@ public final class GUIConstants {
   /** Bold character widths. */
   private static int[] bwidth;
   /** Monospace character widths. */
-  public static int[] mfwidth;
+  private static int[] mfwidth;
 
   // KEYS =====================================================================
 
+  /** No modifer. */
+  public static final int NO_MOD = 0;
   /** Shift key. */
   public static final int SHIFT = Event.SHIFT_MASK;
   /** Alt key. */
@@ -274,6 +286,13 @@ public final class GUIConstants {
   public static final int CTRL = Event.CTRL_MASK;
   /** Shortcut key (CTRL/META). */
   public static final int META = Prop.MAC ? Event.META_MASK : Event.CTRL_MASK;
+
+  static {
+    LABEL = new JLabel();
+    HEIGHT = LABEL.getFontMetrics(LABEL.getFont()).getHeight();
+    SCALE = Math.max(1, (HEIGHT - 16) / 10d + 1);
+    ASCALE = 1 + (SCALE - 1) / 2;
+  }
 
   /** Private constructor, preventing class instantiation. */
   private GUIConstants() { }
@@ -303,30 +322,30 @@ public final class GUIConstants {
     colormark4 = new Color(col(r, 1), col(g, 40), col(b, 80));
 
     // create color array
-    for(int l = 1; l < COLORS.length + 1; ++l) {
-      COLORS[l - 1] = new Color(Math.max(255 - l * r, 0),
-        Math.max(255 - l * g, 0), Math.max(255 - l * b, 0));
+    for(int c = 1; c < COLORS.length + 1; ++c) {
+      COLORS[c - 1] = new Color(Math.max(255 - c * r, 0),
+        Math.max(255 - c * g, 0), Math.max(255 - c * b, 0));
     }
-    final Color c = COLORS[16];
-    color2A = new Color(c.getRed(), c.getGreen(), c.getBlue(), 40);
-    color3A = new Color(c.getRed(), c.getGreen(), c.getBlue(), 100);
-    color4A = new Color(c.getRed(), c.getGreen(), c.getBlue(), 20);
+    final Color col = COLORS[16];
+    color2A = new Color(col.getRed(), col.getGreen(), col.getBlue(), 40);
+    color3A = new Color(col.getRed(), col.getGreen(), col.getBlue(), 100);
+    color4A = new Color(col.getRed(), col.getGreen(), col.getBlue(), 20);
 
-    final String f = opts.get(GUIOptions.FONT);
+    final String name = opts.get(GUIOptions.FONT);
     final int type = opts.get(GUIOptions.FONTTYPE);
-    fontSize = opts.get(GUIOptions.FONTSIZE);
-    font  = new Font(f, type, fontSize);
-    mfont = new Font(opts.get(GUIOptions.MONOFONT), type, fontSize);
-    bfont = new Font(f, Font.BOLD, fontSize);
-    lfont = new Font(f, type, 18 + (fontSize >> 1));
-    dmfont = new Font(opts.get(GUIOptions.MONOFONT), 0, TFONT.getSize() - 1);
 
-    final Container comp = new Container();
-    dwidth  = comp.getFontMetrics(dmfont).getWidths();
-    fwidth  = comp.getFontMetrics(font).getWidths();
-    lwidth  = comp.getFontMetrics(lfont).getWidths();
-    mfwidth = comp.getFontMetrics(mfont).getWidths();
-    bwidth  = comp.getFontMetrics(bfont).getWidths();
+    fontSize = (int) (opts.get(GUIOptions.FONTSIZE) * SCALE);
+    font  = new Font(name, type, fontSize);
+    mfont = new Font(opts.get(GUIOptions.MONOFONT), type, fontSize);
+    bfont = new Font(name, Font.BOLD, fontSize);
+    lfont = new Font(name, type, (int) (FONTSIZE * ASCALE * 1.5 + fontSize / 2.0));
+    dmfont = new Font(opts.get(GUIOptions.MONOFONT), 0, (int) (HEIGHT * 0.8));
+
+    dwidth  = LABEL.getFontMetrics(dmfont).getWidths();
+    fwidth  = LABEL.getFontMetrics(font).getWidths();
+    lwidth  = LABEL.getFontMetrics(lfont).getWidths();
+    mfwidth = LABEL.getFontMetrics(mfont).getWidths();
+    bwidth  = LABEL.getFontMetrics(bfont).getWidths();
   }
 
   /**

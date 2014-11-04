@@ -8,6 +8,7 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.plaf.basic.*;
 
+import org.basex.core.*;
 import org.basex.core.parse.*;
 import org.basex.data.*;
 import org.basex.gui.layout.*;
@@ -20,7 +21,6 @@ import org.basex.util.options.*;
  *
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
- * @author Andreas Weiler
  */
 public final class GUIInput extends BaseXTextField {
   /** Reference to main window. */
@@ -42,7 +42,10 @@ public final class GUIInput extends BaseXTextField {
     gui = main;
 
     final Font f = getFont();
-    setFont(f.deriveFont((float) f.getSize() + 2));
+    final int fs = f.getSize(), ns = (int) (fs * 1.2f);
+    setFont(f.deriveFont(ns));
+    final Dimension ps = getPreferredSize();
+    setPreferredSize(new Dimension(ps.width, ps.height + ns - fs));
 
     box = new BaseXCombo(main);
     box.addActionListener(new ActionListener() {
@@ -61,17 +64,10 @@ public final class GUIInput extends BaseXTextField {
           if(pop.isVisible()) {
             completeInput();
           } else {
-            // store current input in history
-            final Data data = main.context.data();
-            final int i = data == null ? 2 : gui.gopts.get(GUIOptions.SEARCHMODE);
-            final StringsOption options = i == 0 ? GUIOptions.SEARCH : i == 1 ?
-              GUIOptions.XQUERY : GUIOptions.COMMANDS;
-            new BaseXHistory(main, options).store(getText());
-
-            // evaluate the input
-            if(e.getModifiers() == 0) main.execute();
+            store();
           }
-          return;
+          // evaluate the input
+          if(e.getModifiers() == 0) gui.execute();
         }
         if(count == 0) return;
 
@@ -115,13 +111,23 @@ public final class GUIInput extends BaseXTextField {
     pop.setVisible(false);
   }
 
+  @Override
+  public void store() {
+    // store current input in history
+    final Data data = gui.context.data();
+    final int i = data == null ? 2 : gui.gopts.get(GUIOptions.SEARCHMODE);
+    final StringsOption options = i == 0 ? GUIOptions.SEARCH : i == 1 ?
+      GUIOptions.XQUERY : GUIOptions.COMMANDS;
+    new BaseXHistory(gui, options).store(getText());
+  }
+
   /**
    * Sets the input mode.
    * @param mode mode
    */
   void mode(final String mode) {
     setText("");
-    hint(mode);
+    hint(mode + Text.DOTS);
   }
 
   /**
@@ -192,8 +198,7 @@ public final class GUIInput extends BaseXTextField {
     if(data == null) return;
 
     StringList sl;
-    final QueryContext qc = new QueryContext(gui.context);
-    try {
+    try(final QueryContext qc = new QueryContext(gui.context)) {
       final QuerySuggest qs = new QuerySuggest(query, qc, data);
       qs.parseMain();
       sl = qs.complete();
@@ -201,8 +206,6 @@ public final class GUIInput extends BaseXTextField {
     } catch(final QueryException ex) {
       sl = ex.suggest();
       pre = query.substring(0, ex.column() - 1);
-    } finally {
-      qc.close();
     }
     if(getCaretPosition() < pre.length()) sl = null;
     createCombo(sl);

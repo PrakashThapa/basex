@@ -36,6 +36,18 @@ public abstract class IndexBuilder extends Proc {
   private int gcCount;
 
   /**
+   * Constructor.
+   * @param data reference
+   * @param max maximum number of operations per partial index
+   */
+  protected IndexBuilder(final Data data, final int max) {
+    this.data = data;
+    size = data.meta.size;
+    splitSize = max;
+    if(Performance.memory() >= maxMem) Performance.gc(1);
+  }
+
+  /**
    * Builds the index structure and returns an index instance.
    * @return index instance
    * @throws IOException I/O Exception
@@ -79,7 +91,7 @@ public abstract class IndexBuilder extends Proc {
   }
 
   /**
-   * Performs memory cleanup after writing partial memory, if necessary.
+   * Performs memory cleanup after writing partial memory if necessary.
    */
   protected final void finishSplit() {
     if(splitSize <= 0) Performance.gc(1);
@@ -97,18 +109,6 @@ public abstract class IndexBuilder extends Proc {
     sb.append(' ').append(count).append(" operations, ");
     sb.append(perf).append(" (").append(Performance.getMemory()).append(')');
     Util.errln(sb);
-  }
-
-  /**
-   * Constructor.
-   * @param d reference
-   * @param max maximum number of operations per partial index
-   */
-  protected IndexBuilder(final Data d, final int max) {
-    data = d;
-    size = data.meta.size;
-    splitSize = max;
-    if(Performance.memory() >= maxMem) Performance.gc(1);
   }
 
   @Override

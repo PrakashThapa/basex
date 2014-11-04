@@ -5,10 +5,10 @@ import static org.junit.Assert.*;
 
 import java.util.*;
 
+import org.basex.*;
 import org.basex.query.*;
 import org.basex.query.iter.*;
 import org.basex.query.value.item.*;
-import org.basex.*;
 import org.basex.util.list.*;
 import org.junit.*;
 
@@ -87,16 +87,16 @@ public final class CompressTest extends SandboxTest {
 
     final TokenList tl = new TokenList();
     final TokenBuilder tb = new TokenBuilder();
-    final QueryProcessor qp = new QueryProcessor(query, context);
-    final Iter ir = qp.iter();
-    for(Item it; (it = ir.next()) != null;) {
-      final byte[] token = it.string(null);
-      tl.add(token);
-      tb.add(token).add(' ');
+    try(final QueryProcessor qp = new QueryProcessor(query, context)) {
+      final Iter ir = qp.iter();
+      for(Item it; (it = ir.next()) != null;) {
+        final byte[] token = it.string(null);
+        tl.add(token);
+        tb.add(token).add(' ');
+      }
     }
-    qp.close();
 
-    run(tl.toArray());
+    run(tl.finish());
     run(tb.finish());
   }
 

@@ -6,9 +6,11 @@ import java.io.*;
 import java.util.concurrent.*;
 
 import org.basex.*;
+import org.basex.api.client.*;
 import org.basex.core.cmd.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * Admin stress test.
@@ -60,9 +62,9 @@ public final class AdminStressTest extends SandboxTest {
     stop.await();
 
     Performance.sleep(200);
-    final ClientSession cs = createClient();
-    for(int i = 0; i < NUM; ++i) cs.execute("drop event " + NAME + i);
-    cs.close();
+    try(final ClientSession cs = createClient()) {
+      for(int i = 0; i < NUM; ++i) cs.execute("drop event " + NAME + i);
+    }
 
     for(final Client c : c1) if(c.error != null) fail(c.error);
     for(final Client c : c2) if(c.error != null) fail(c.error);

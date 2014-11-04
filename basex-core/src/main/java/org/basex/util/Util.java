@@ -31,8 +31,8 @@ public final class Util {
    */
   public static String bug(final Throwable throwable) {
     final TokenBuilder tb = new TokenBuilder(S_BUGINFO);
-    tb.add(NL).add("Contact: ").add(MAILING_LIST);
-    tb.add(NL).add("Version: ").add(TITLE);
+    tb.add(NL).add("Contact: ").add(Prop.MAILING_LIST);
+    tb.add(NL).add("Version: ").add(Prop.TITLE);
     tb.add(NL).add("Java: ").add(System.getProperty("java.vendor"));
     tb.add(", ").add(System.getProperty("java.version"));
     tb.add(NL).add("OS: ").add(System.getProperty("os.name"));
@@ -44,24 +44,20 @@ public final class Util {
 
   /**
    * Throws a runtime exception for an unexpected exception.
-   * @param ext optional extension
    * @return runtime exception (indicates that an error is raised)
    */
-  public static RuntimeException notExpected(final Object... ext) {
-    final TokenBuilder tb = new TokenBuilder();
-    tb.addExt("%", ext.length == 0 ? "Not Expected." : ext[0]);
-    return new RuntimeException(tb.toString());
+  public static RuntimeException notExpected() {
+    return notExpected("Not Expected.");
   }
 
   /**
-   * Throws a runtime exception for an unimplemented method.
+   * Throws a runtime exception for an unexpected exception.
+   * @param message message
    * @param ext optional extension
    * @return runtime exception (indicates that an error is raised)
    */
-  public static UnsupportedOperationException notImplemented(final Object... ext) {
-    final TokenBuilder tb = new TokenBuilder("Not Implemented");
-    if(ext.length != 0) tb.addExt(" (%)", ext);
-    return new UnsupportedOperationException(tb.add('.').toString());
+  public static RuntimeException notExpected(final Object message, final Object... ext) {
+    return new RuntimeException(info(message, ext));
   }
 
   /**
@@ -271,7 +267,7 @@ public final class Util {
     sl.add(clazz.getName()).add("-D").add(args);
 
     try {
-      return new ProcessBuilder(sl.toArray()).start();
+      return new ProcessBuilder(sl.finish()).start();
     } catch(final IOException ex) {
       throw notExpected(ex);
     }

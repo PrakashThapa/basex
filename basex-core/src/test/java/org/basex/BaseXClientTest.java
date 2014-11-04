@@ -16,6 +16,7 @@ import org.junit.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
+@Ignore
 public final class BaseXClientTest extends BaseXTest {
   @Override
   protected String run(final String... args) throws IOException {
@@ -57,7 +58,7 @@ public final class BaseXClientTest extends BaseXTest {
   public void user() throws IOException {
     run("-cexit", "-cdrop user " + NAME);
     equals("5", new String[] { "-U" + NAME, "-P" + NAME, "-q5" },
-        new String[] {  "-ccreate user " + NAME + ' ' + Token.md5(NAME) });
+        new String[] { "-ccreate user " + NAME + ' ' + Token.md5(NAME) });
     run("-cexit", "-cdrop user " + NAME);
   }
 
@@ -89,7 +90,7 @@ public final class BaseXClientTest extends BaseXTest {
     final StringList sl = new StringList();
     sl.add("-p9999").add("-U" + Text.S_ADMIN).add("-P" + Text.S_ADMIN).add(args);
     try {
-      new BaseXClient(sl.toArray());
+      new BaseXClient(sl.finish());
       return ao.toString();
     } finally {
       System.setErr(ERR);

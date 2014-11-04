@@ -12,7 +12,7 @@ import org.basex.gui.*;
 import org.basex.gui.GUIConstants.Fill;
 import org.basex.gui.layout.*;
 import org.basex.gui.layout.BaseXLayout.DropHandler;
-import org.basex.gui.text.TextPanel.*;
+import org.basex.gui.text.TextPanel.SearchDir;
 import org.basex.util.options.*;
 
 /**
@@ -68,12 +68,12 @@ public final class SearchBar extends BaseXBack {
     search = new BaseXTextField(main);
     search.history(GUIOptions.SEARCHED, gui);
     search.setPreferredSize(null);
-    search.hint(Text.FIND);
+    search.hint(Text.FIND + Text.DOTS);
 
     replace = new BaseXTextField(main);
     replace.history(GUIOptions.REPLACED, gui);
     replace.setPreferredSize(null);
-    replace.hint(Text.REPLACE_WITH);
+    replace.hint(Text.REPLACE_WITH + Text.DOTS);
 
     regex = onOffButton("f_regex", Text.REGULAR_EXPR, GUIOptions.SR_REGEX);
     mcase = onOffButton("f_case", Text.MATCH_CASE, GUIOptions.SR_CASE);
@@ -95,7 +95,9 @@ public final class SearchBar extends BaseXBack {
         } else if(ESCAPE.is(e)) {
           deactivate(search.getText().isEmpty());
         } else if(ENTER.is(e)) {
-          editor.jump(e.isShiftDown() ? SearchDir.BACKWARD : SearchDir.FORWARD, true);
+          editor.jump(SearchDir.FORWARD, true);
+        } else if(SHIFT_ENTER.is(e)) {
+          editor.jump(SearchDir.BACKWARD, true);
         }
       }
       @Override

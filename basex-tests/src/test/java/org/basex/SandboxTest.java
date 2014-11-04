@@ -5,10 +5,10 @@ import static org.junit.Assert.*;
 
 import java.io.*;
 
+import org.basex.api.client.*;
 import org.basex.core.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
-import org.basex.server.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
 import org.junit.*;
@@ -77,7 +77,7 @@ public abstract class SandboxTest {
   protected static BaseXServer createServer(final String... args) throws IOException {
     System.setOut(NULL);
     try {
-      final StringList sl = new StringList().add("-z").add("-p9999").add("-e9998");
+      final StringList sl = new StringList().add("-z").add("-p9999").add("-e9998").add("-q");
       for(final String a : args) sl.add(a);
       final BaseXServer server = new BaseXServer(sl.toArray());
       server.context.globalopts.set(GlobalOptions.DBPATH, sandbox().path());

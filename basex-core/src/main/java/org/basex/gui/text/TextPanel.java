@@ -47,7 +47,9 @@ public class TextPanel extends BaseXPanel {
     /** Enforce parsing of input. */
     PARSE,
     /** Enforce execution of input. */
-    EXECUTE
+    EXECUTE,
+    /** Enforce testing of input. */
+    TEST
   }
 
   /** Text editor. */
@@ -156,7 +158,7 @@ public class TextPanel extends BaseXPanel {
 
   /**
    * Returns a currently marked string if it does not extend over more than one line.
-   * @return search string, or {@code null}
+   * @return search string or {@code null}
    */
   public String searchString() {
     final String string = editor.copy();
@@ -202,6 +204,7 @@ public class TextPanel extends BaseXPanel {
   protected final void setSyntax(final IO file, final boolean opened) {
     setSyntax(!opened || file.hasSuffix(IO.XQSUFFIXES) ? new SyntaxXQuery() :
       file.hasSuffix(IO.JSONSUFFIX) ? new SyntaxJSON() :
+      file.hasSuffix(IO.JSSUFFIX) ? new SyntaxJS() :
       file.hasSuffix(IO.XMLSUFFIXES) || file.hasSuffix(IO.HTMLSUFFIXES) ||
       file.hasSuffix(IO.XSLSUFFIXES) || file.hasSuffix(IO.BXSSUFFIX) ?
       new SyntaxXML() : Syntax.SIMPLE);
@@ -589,10 +592,10 @@ public class TextPanel extends BaseXPanel {
       down = false;
     } else if(NEXTPAGE_RO.is(e) && !hist.active()) {
       lc = editor.linesDown(getHeight() / fh, false, lastCol);
-    } else if(PREVPAGE.is(e) && !BaseXKeys.sc(e)) {
+    } else if(PREVPAGE.is(e) && !sc(e)) {
       lc = editor.linesUp(getHeight() / fh, shift, lastCol);
       down = false;
-    } else if(NEXTPAGE.is(e) && !BaseXKeys.sc(e)) {
+    } else if(NEXTPAGE.is(e) && !sc(e)) {
       lc = editor.linesDown(getHeight() / fh, shift, lastCol);
     } else if(NEXTLINE.is(e) && !MOVEDOWN.is(e)) {
       lc = editor.linesDown(1, shift, lastCol);

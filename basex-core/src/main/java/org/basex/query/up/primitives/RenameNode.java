@@ -22,20 +22,22 @@ public final class RenameNode extends NodeUpdate {
 
   /**
    * Constructor.
-   * @param p target node pre value
-   * @param d target data reference
-   * @param i input info
-   * @param nm new QName / new name value
+   * @param pre target node pre value
+   * @param data target data reference
+   * @param ii input info
+   * @param name new QName / new name value
    */
-  public RenameNode(final int p, final Data d, final InputInfo i,
-      final QNm nm) {
-    super(UpdateType.RENAMENODE, p, d, i);
-    name = nm;
+  public RenameNode(final int pre, final Data data, final InputInfo ii, final QNm name) {
+    super(UpdateType.RENAMENODE, pre, data, ii);
+    this.name = name;
   }
 
   @Override
-  public void merge(final Update up) throws QueryException {
-    throw UPMULTREN.get(info, node());
+  public void prepare(final MemData tmp) { }
+
+  @Override
+  public void merge(final Update update) throws QueryException {
+    throw UPMULTREN_X.get(info, node());
   }
 
   @Override
@@ -56,12 +58,7 @@ public final class RenameNode extends NodeUpdate {
   }
 
   @Override
-  public void addAtomics(final AtomicUpdateCache l) {
-    l.addRename(pre, name.string(), name.uri());
-  }
-
-  @Override
-  public NodeUpdate[] substitute(final MemData tmp) {
-    return new NodeUpdate[] { this };
+  public void addAtomics(final AtomicUpdateCache auc) {
+    auc.addRename(pre, name.string(), name.uri());
   }
 }

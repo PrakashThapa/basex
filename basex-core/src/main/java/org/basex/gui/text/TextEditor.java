@@ -528,7 +528,7 @@ public final class TextEditor {
     int p = pos;
     while(--p >= 0 && XMLToken.isChar(text[p]));
     ++p;
-    final String key = Token.string(text, p, pos - p);
+    final String key = string(text, p, pos - p);
     final byte[] value = XMLToken.getEntity(token(key));
     if(value != null) {
       replace(p, pos + (space ? 1 : 0), string(value));
@@ -568,15 +568,14 @@ public final class TextEditor {
     for(int i = s; i < e; i++) {
       final byte ch = tmp[i];
       if(ch == '\n') {
-        tl.add(bl.toArray());
-        bl.reset();
+        tl.add(bl.next());
       } else {
         bl.add(ch);
       }
     }
 
     // sort data and merge duplicate lines
-    if(!bl.isEmpty()) tl.add(bl.toArray());
+    if(!bl.isEmpty()) tl.add(bl.finish());
     tl.sort(gopts.get(GUIOptions.CASESORT), gopts.get(GUIOptions.ASCSORT));
     if(gopts.get(GUIOptions.MERGEDUPL)) tl.unique();
 

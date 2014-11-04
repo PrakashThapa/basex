@@ -1,7 +1,8 @@
 package org.basex.query.ast;
 
+import static org.basex.query.util.Err.*;
+
 import org.basex.query.func.*;
-import org.basex.query.util.*;
 import org.basex.query.value.item.*;
 import org.basex.query.var.*;
 import org.basex.util.*;
@@ -207,8 +208,7 @@ public final class FuncItemTest extends QueryPlanTest {
   @Test
   public void funcItemCoercion() {
     error("let $f := function($g as function() as item()) { $g() }" +
-        "return $f(function() { 1, 2 })",
-        Err.INVTREAT);
+        "return $f(function() { 1, 2 })", INVTREAT_X_X_X);
   }
 
   /** Tests if all functions are compiled when reflection takes places. */
@@ -240,5 +240,22 @@ public final class FuncItemTest extends QueryPlanTest {
         "exists(//" + Util.className(DynFuncCall.class) + ')',
         "exists(//" + Util.className(FuncItem.class) + ')'
     );
+  }
+
+  /** Tests if not-yet-known function references are parsed correctly. */
+  @Test
+  public void gh953() {
+    check("declare function local:go ($n) { $n, for-each($n/*, local:go(?)) };" +
+        "let $source := <a><b/></a> return local:go($source)",
+
+        String.format("<a>%n  <b/>%n</a>%n<b/>")
+    );
+  }
+
+  /** Tests if {@code fn:error()} is allowed with impossible types. */
+  @Test
+  public void gh958() {
+    error("declare function local:f() as item()+ { error() }; local:f()", FUNERR1);
+    error("function() as item()+ { error() }()", FUNERR1);
   }
 }

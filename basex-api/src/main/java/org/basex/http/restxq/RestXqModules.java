@@ -78,7 +78,7 @@ public final class RestXqModules {
           tb.add(Prop.NL).add(rxf.function.info.toString());
         }
         throw first.path == null ?
-          first.error(ERROR_CONFLICT, first.error, tb) :
+          first.error(ERROR_CONFLICT, error, tb) :
           first.error(PATH_CONFLICT, first.path, tb);
       }
     }
@@ -119,8 +119,7 @@ public final class RestXqModules {
         cache(http, file, cache);
       } else {
         final String path = file.path();
-        final boolean lib = path.endsWith(IO.XQMSUFFIX);
-        if(lib || path.endsWith(IO.XQSUFFIX)) {
+        if(file.hasSuffix(IO.XQSUFFIXES)) {
           RestXqModule module = modules.get(path);
           boolean parsed = false;
           if(module != null) {
@@ -128,7 +127,7 @@ public final class RestXqModules {
             parsed = module.uptodate();
           } else {
             // create new module
-            module = new RestXqModule(file, lib);
+            module = new RestXqModule(file);
           }
           // add module if it has been parsed, and if it contains annotations
           if(parsed || module.parse(http)) {

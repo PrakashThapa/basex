@@ -8,6 +8,7 @@ import java.io.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.data.*;
+import org.basex.data.atomic.*;
 import org.basex.index.name.*;
 import org.basex.io.*;
 import org.basex.io.in.DataInput;
@@ -23,7 +24,7 @@ import org.basex.util.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
-public final class DiskBuilder extends Builder {
+public final class DiskBuilder extends Builder implements AutoCloseable {
   /** Text compressor. */
   private static final ThreadLocal<Compress> COMP = new ThreadLocal<Compress>() {
     @Override
@@ -43,27 +44,26 @@ public final class DiskBuilder extends Builder {
 
   /** Database context. */
   private final Context context;
+  /** Closed flag. */
+  private boolean closed;
   /** Debug counter. */
   private int c;
 
   /**
    * Constructor.
-   * @param nm name of database
+   * @param name name of database
    * @param parse parser
    * @param ctx database context
    */
-  public DiskBuilder(final String nm, final Parser parse, final Context ctx) {
-    super(nm, parse);
+  public DiskBuilder(final String name, final Parser parse, final Context ctx) {
+    super(name, parse);
     context = ctx;
   }
 
   @Override
   public DiskData build() throws IOException {
-    final IO file = parser.src;
     final MetaData md = new MetaData(dbname, context);
-    md.original = file != null ? file.path() : "";
-    md.filesize = file != null ? file.length() : 0;
-    md.time = file != null ? file.timeStamp() : System.currentTimeMillis();
+    md.assign(parser);
     md.dirty = true;
 
     // calculate optimized output buffer sizes to reduce disk fragmentation
@@ -76,8 +76,8 @@ public final class DiskBuilder extends Builder {
     context.globalopts.dbpath(dbname).md();
 
     meta = md;
-    tags = new Names(md);
-    atts = new Names(md);
+    elemNames = new Names(md);
+    attrNames = new Names(md);
     try {
       tout = new DataOutput(new TableOutput(md, DATATBL));
       xout = new DataOutput(md.dbfile(DATATXT), bs);
@@ -104,9 +104,7 @@ public final class DiskBuilder extends Builder {
     md.dbfile(DATATMP).delete();
 
     // return database instance
-    final DiskData data = new DiskData(md, tags, atts, path, ns);
-    data.finishUpdate();
-    return data;
+    return new DiskData(md, elemNames, attrNames, path, ns);
   }
 
   @Override
@@ -120,7 +118,14 @@ public final class DiskBuilder extends Builder {
   }
 
   @Override
+  public DataClip dataClip() throws IOException {
+    return new DataClip(build());
+  }
+
+  @Override
   public void close() throws IOException {
+    if(closed) return;
+    closed = true;
     if(tout != null) tout.close();
     if(xout != null) xout.close();
     if(vout != null) vout.close();
@@ -142,11 +147,11 @@ public final class DiskBuilder extends Builder {
   }
 
   @Override
-  protected void addElem(final int dist, final int nm, final int asize, final int uri,
+  protected void addElem(final int dist, final int name, final int asize, final int uri,
       final boolean ne) throws IOException {
 
     tout.write1(asize << 3 | Data.ELEM);
-    tout.write2((ne ? 1 << 15 : 0) | nm);
+    tout.write2((ne ? 1 << 15 : 0) | name);
     tout.write1(uri);
     tout.write4(dist);
     tout.write4(asize);
@@ -156,11 +161,11 @@ public final class DiskBuilder extends Builder {
   }
 
   @Override
-  protected void addAttr(final int nm, final byte[] value, final int dist, final int uri)
+  protected void addAttr(final int name, final byte[] value, final int dist, final int uri)
       throws IOException {
 
     tout.write1(dist << 3 | Data.ATTR);
-    tout.write2(nm);
+    tout.write2(name);
     tout.write5(textOff(value, false));
     tout.write4(uri);
     tout.write4(meta.size++);

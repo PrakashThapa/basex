@@ -6,7 +6,8 @@ import java.io.*;
 
 import org.basex.core.*;
 import org.basex.core.parse.*;
-import org.basex.core.parse.Commands.*;
+import org.basex.core.parse.Commands.Cmd;
+import org.basex.core.parse.Commands.CmdDrop;
 import org.basex.data.*;
 import org.basex.server.*;
 import org.basex.util.*;
@@ -62,14 +63,15 @@ public final class DropUser extends AUser {
     }
 
     // try to lock database
-    if(!data.startUpdate()) return !info(DB_PINNED_X, data.meta.name);
+    if(!startUpdate(data)) return false;
 
     // drop local user
     if(data.meta.users.drop(data.meta.users.get(user))) {
       info(USER_DROPPED_X_X, user, db);
       data.meta.dirty = true;
     }
-    data.finishUpdate();
+    finishUpdate(data);
+
     Close.close(data, context);
     return true;
   }

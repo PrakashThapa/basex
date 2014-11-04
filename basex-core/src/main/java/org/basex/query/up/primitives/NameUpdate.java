@@ -27,7 +27,7 @@ public abstract class NameUpdate extends Update implements Comparable<NameUpdate
    * @param qc query context
    */
   NameUpdate(final UpdateType type, final String name, final InputInfo info,
-             final QueryContext qc) {
+      final QueryContext qc) {
 
     super(type, info);
     this.name = name;
@@ -53,8 +53,8 @@ public abstract class NameUpdate extends Update implements Comparable<NameUpdate
   protected abstract String operation();
 
   @Override
-  public void merge(final Update up) throws QueryException {
-    throw BXDB_ONCE.get(info, name, operation());
+  public void merge(final Update update) throws QueryException {
+    throw BXDB_ONCE_X_X.get(info, name, operation());
   }
 
   /**
@@ -102,8 +102,8 @@ public abstract class NameUpdate extends Update implements Comparable<NameUpdate
       throws QueryException {
 
     // close data instance in query processor
-    qc.resources.removeData(name);
+    qc.resources.remove(name);
     // check if database is stilled pinned by another process
-    if(qc.context.pinned(name)) throw BXDB_OPENED.get(info, name);
+    if(qc.context.pinned(name)) throw BXDB_OPENED_X.get(info, name);
   }
 }

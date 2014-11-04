@@ -6,13 +6,14 @@ import java.io.*;
 import java.util.*;
 
 import org.basex.*;
+import org.basex.api.client.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.core.cmd.Set;
 import org.basex.io.*;
 import org.basex.query.func.*;
-import org.basex.server.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * Tests for the {@link MainOptions#ADDRAW} option.
@@ -69,13 +70,10 @@ public class AddRawOptionTest extends SandboxTest {
    */
   private static void assertAllFilesExist() throws IOException {
     final HashSet<String> files = new HashSet<>();
-    final Session session = new LocalSession(context);
-    try {
-      final Query q = session.query(Function._DB_LIST.args(NAME));
-      while(q.more()) files.add(q.next());
-      q.close();
-    } finally {
-      session.close();
+    try(final Session session = new LocalSession(context)) {
+      try(final Query q = session.query(Function._DB_LIST.args(NAME))) {
+        while(q.more()) files.add(q.next());
+      }
     }
 
     assertFalse("No files were imported", files.isEmpty());

@@ -1,5 +1,6 @@
 package org.basex.query.expr;
 
+import static org.basex.query.util.Err.*;
 import static org.basex.util.Token.*;
 import static org.junit.Assert.*;
 
@@ -13,6 +14,7 @@ import org.basex.query.util.pkg.*;
 import org.basex.util.*;
 import org.basex.util.hash.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class tests the EXPath package API.
@@ -86,7 +88,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
   @Test
   public void mandatoryAttr() {
     error(new IOContent("<package xmlns:http='http://expath.org/ns/pkg' spec='1.0'/>"),
-        Err.BXRE_DESC, "Missing mandatory attribute not detected.");
+        BXRE_DESC_X, "Missing mandatory attribute not detected.");
   }
 
   /**
@@ -98,7 +100,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
     error(
         desc(PKG5, "pkg5", "12.0",
             "<dependency package='" + PKG4 + "'/>"),
-        Err.BXRE_NOTINST, "Missing dependency not detected.");
+        BXRE_NOTINST_X, "Missing dependency not detected.");
   }
 
   /**
@@ -110,7 +112,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
     error(
         desc(PKG5, "pkg5", "12.0",
             "<dependency package='" + PKG1 + "' versions='1.0 7.0'/>"),
-        Err.BXRE_NOTINST, "Missing dependency not detected.");
+        BXRE_NOTINST_X, "Missing dependency not detected.");
   }
 
   /**
@@ -122,7 +124,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
     error(
         desc(PKG5, "pkg5", "12.0",
             "<dependency package='" + PKG1 + "' versions='12.7'/>"),
-        Err.BXRE_NOTINST, "Missing dependency not detected.");
+        BXRE_NOTINST_X, "Missing dependency not detected.");
   }
 
   /**
@@ -134,7 +136,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
     error(
         desc(PKG5, "pkg5", "12.0",
             "<dependency package='" + PKG1 + "' versions='12.7'/>"),
-        Err.BXRE_NOTINST, "Missing dependency not detected.");
+        BXRE_NOTINST_X, "Missing dependency not detected.");
   }
 
   /**
@@ -146,7 +148,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
     error(
         desc(PKG5, "pkg5", "12.0",
             "<dependency package='" + PKG1 + "' semver-max='11'/>"),
-        Err.BXRE_NOTINST, "Missing dependency not detected.");
+        BXRE_NOTINST_X, "Missing dependency not detected.");
   }
 
   /**
@@ -157,7 +159,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
   public void notInstalledMinMax() {
     error(desc(PKG5, "pkg5", "12.0",
         "<dependency package='" + PKG1 + "' semver-min='5.7' "
-            + "semver-max='11'/>"), Err.BXRE_NOTINST,
+            + "semver-max='11'/>"), BXRE_NOTINST_X,
         "Missing dependency not detected.");
   }
 
@@ -169,7 +171,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
   public void alreadyAnotherInstalled() {
     error(desc(PKG5, "pkg5", "12.0",
         "<xquery><namespace>ns1</namespace><file>pkg1mod1.xql</file></xquery>"),
-        Err.BXRE_INST, "Already installed component not detected.");
+        BXRE_INST_X, "Already installed component not detected.");
   }
 
   /**
@@ -178,7 +180,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
   @Test
   public void notSupported() {
     error(desc(PKG5, "pkg5", "12.0",
-        "<dependency processor='basex' semver='5.0'/>"), Err.BXRE_VERSION,
+        "<dependency processor='basex' semver='5.0'/>"), BXRE_VERSION,
         "Unsupported package not detected.");
   }
 
@@ -208,13 +210,13 @@ public final class PackageAPITest extends AdvancedQueryTest {
    */
   @Test
   public void importTwoModulesFromPkg() throws QueryException {
-    final QueryProcessor qp = new QueryProcessor(
+    try(final QueryProcessor qp = new QueryProcessor(
       "import module namespace ns1='ns1';" +
       "import module namespace ns3='ns3';" +
       "(ns1:test2() eq 'pkg2mod1') and (ns3:test() eq 'pkg2mod2')",
-      context);
-    assertEquals(qp.execute().toString(), "true");
-    qp.execute();
+      context)) {
+      assertEquals(qp.execute().toString(), "true");
+    }
   }
 
   /**
@@ -228,7 +230,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
       new RepoManager(context).install("src/test/resources/pkg");
       fail("Not existing package not detected.");
     } catch(final QueryException ex) {
-      check(null, ex, Err.BXRE_WHICH);
+      check(null, ex, BXRE_WHICH_X);
     }
     // try to install a package
     new RepoInstall(REPO + "pkg3.xar", null).execute(context);
@@ -261,10 +263,10 @@ public final class PackageAPITest extends AdvancedQueryTest {
     assertTrue(file(dir + "/jar/wrapper.xq"));
 
     // use package
-    final QueryProcessor qp = new QueryProcessor(
-        "import module namespace j='jar'; j:print('test')", context);
-    assertEquals(qp.execute().toString(), "test");
-    qp.close();
+    try(final QueryProcessor qp = new QueryProcessor(
+        "import module namespace j='jar'; j:print('test')", context)) {
+      assertEquals(qp.execute().toString(), "test");
+    }
 
     // delete package
     assertTrue("Repo directory could not be deleted.", new IOFile(REPO, dir).delete());
@@ -277,16 +279,15 @@ public final class PackageAPITest extends AdvancedQueryTest {
   @Test
   public void importPkg() throws QueryException {
     // try with a package without dependencies
-    final QueryProcessor qp1 = new QueryProcessor(
-        "import module namespace ns3='ns3'; ns3:test()", context);
-    assertEquals(qp1.execute().toString(), "pkg2mod2");
-    qp1.execute();
-
+    try(final QueryProcessor qp = new QueryProcessor(
+        "import module namespace ns3='ns3'; ns3:test()", context)) {
+      assertEquals(qp.execute().toString(), "pkg2mod2");
+    }
     // try with a package with dependencies
-    final QueryProcessor qp2 = new QueryProcessor(
-        "import module namespace ns2='ns2'; ns2:test()", context);
-    assertEquals(qp2.execute().toString(), "pkg2mod2");
-    qp2.execute();
+    try(final QueryProcessor qp = new QueryProcessor(
+        "import module namespace ns2='ns2'; ns2:test()", context)) {
+      assertEquals(qp.execute().toString(), "pkg2mod2");
+    }
   }
 
   /**
@@ -300,7 +301,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
       new RepoManager(context).delete("xyz");
       fail("Not installed package not detected.");
     } catch(final QueryException ex) {
-      check(null, ex, Err.BXRE_WHICH);
+      check(null, ex, BXRE_WHICH_X);
     }
     // install a package without dependencies (pkg3)
     new RepoInstall(REPO + "pkg3.xar", null).execute(context);
@@ -333,7 +334,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
       new RepoManager(context).delete(PKG3ID);
       fail("Package involved in a dependency was deleted.");
     } catch(final QueryException ex) {
-      check(null, ex, Err.BXRE_DEP);
+      check(null, ex, BXRE_DEP_X_X);
     }
     // try to delete pkg4 (use package name)
     new RepoDelete(PKG4, null).execute(context);
@@ -380,8 +381,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
    */
   private static void ok(final IO desc) {
     try {
-      new PkgValidator(context.repo, null).check(
-         new PkgParser(context.repo, null).parse(desc));
+      new PkgValidator(context.repo, null).check(new PkgParser(null).parse(desc));
     } catch(final QueryException ex) {
       fail("Unexpected exception thrown: " + ex);
     }
@@ -395,8 +395,7 @@ public final class PackageAPITest extends AdvancedQueryTest {
    */
   private static void error(final IO desc, final Err err, final String exp) {
     try {
-      new PkgValidator(context.repo, null).check(
-         new PkgParser(context.repo, null).parse(desc));
+      new PkgValidator(context.repo, null).check(new PkgParser(null).parse(desc));
       fail(exp);
     } catch(final QueryException ex) {
       check(null, ex, err);

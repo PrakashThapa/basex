@@ -1,6 +1,6 @@
 package org.basex.qt3ts.prod;
 
-import org.basex.tests.bxapi.XQuery;
+import org.basex.tests.bxapi.*;
 import org.basex.tests.qt3ts.*;
 
 /**
@@ -747,7 +747,6 @@ public class ProdVarDeclExternal extends QT3TestSet {
    */
   @org.junit.Test
   public void k2ExternalVariablesWithout18() {
-    xquery10();
     final XQuery query = new XQuery(
       "declare variable $var external := 1; 1",
       ctx);

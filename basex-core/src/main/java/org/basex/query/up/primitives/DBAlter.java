@@ -36,14 +36,14 @@ public class DBAlter extends NameUpdate {
   public void apply() throws QueryException {
     close();
     close(newName, qc, info);
-    if(!AlterDB.alter(name, newName, qc.context)) throw UPDBERROR.get(info, name, operation());
+    if(!AlterDB.alter(name, newName, qc.context)) throw UPDBERROR_X_X.get(info, name, operation());
   }
 
   @Override
   public void prepare() throws QueryException { }
 
   @Override
-  public String operation() { return "renamed"; }
+  protected String operation() { return "renamed"; }
 
   @Override
   public void databases(final StringList db) {

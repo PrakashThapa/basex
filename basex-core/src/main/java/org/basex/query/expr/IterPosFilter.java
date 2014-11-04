@@ -4,6 +4,7 @@ import org.basex.query.*;
 import org.basex.query.iter.*;
 import org.basex.query.value.item.*;
 import org.basex.query.var.*;
+import org.basex.util.*;
 import org.basex.util.hash.*;
 
 /**
@@ -18,20 +19,18 @@ final class IterPosFilter extends Filter {
 
   /**
    * Constructor.
-   * @param f original filter
-   * @param o offset flag
+   * @param info input info
+   * @param off offset flag
+   * @param root root expression
+   * @param preds predicates
    */
-  IterPosFilter(final Filter f, final boolean o) {
-    super(f.info, f.root, f.preds);
-    off = o;
-    type = f.type;
-    last = f.last;
-    size = f.size;
-    pos = f.pos;
+  IterPosFilter(final InputInfo info, final boolean off, final Expr root, final Expr... preds) {
+    super(info, root, preds);
+    this.off = off;
   }
 
   @Override
-  public Iter iter(final QueryContext ctx) {
+  public Iter iter(final QueryContext qc) {
     return new Iter() {
       boolean skip, direct;
       Iter iter;
@@ -45,7 +44,7 @@ final class IterPosFilter extends Filter {
         if(iter == null) {
           if(off) {
             // evaluate offset and create position expression
-            final Item it = preds[0].ebv(ctx, info);
+            final Item it = preds[0].ebv(qc, info);
             final long l = it.itr(info);
             final Expr e = Pos.get(l, l, info);
             // don't accept fractional numbers
@@ -53,7 +52,7 @@ final class IterPosFilter extends Filter {
             pos = (Pos) e;
           }
 
-          iter = ctx.iter(root);
+          iter = qc.iter(root);
           cpos = 1;
 
           if(pos != null || last) {
@@ -70,58 +69,47 @@ final class IterPosFilter extends Filter {
         }
 
         // cache context
-        final long cp = ctx.pos;
-        final long cs = ctx.size;
+        final long cp = qc.pos;
+        final long cs = qc.size;
         try {
           Item item;
           if(direct) {
             // directly access relevant items
             item = iter.size() < cpos ? null : iter.get(cpos - 1);
-            ctx.pos = cpos++;
+            qc.pos = cpos++;
           } else {
             // loop through all items
             Item lnode = null;
             while((item = iter.next()) != null) {
               // evaluate predicates
-              ctx.checkStop();
-              ctx.size = 0;
-              ctx.pos = cpos++;
-              if(preds(item, ctx)) break;
+              qc.checkStop();
+              qc.size = 0;
+              qc.pos = cpos++;
+              if(preds(item, qc)) break;
               // remember last node
               lnode = item;
-              ctx.pos = cp;
-              ctx.size = cs;
+              qc.pos = cp;
+              qc.size = cs;
             }
             // returns the last item
             if(last) item = lnode;
           }
 
           // check if more items can be expected
-          skip = last || pos != null && pos.skip(ctx);
-          if(skip && direct) iter.reset();
+          skip = last || pos != null && pos.skip(qc);
           return item;
         } finally {
           // reset context and return result
-          ctx.pos = cp;
-          ctx.size = cs;
+          qc.pos = cp;
+          qc.size = cs;
         }
       }
     };
   }
 
   @Override
-  public Filter copy(final QueryContext ctx, final VarScope scp,
-      final IntObjMap<Var> vs) {
-    final Filter f = new CachedFilter(info, root == null ? null : root.copy(ctx, scp, vs),
-        Arr.copyAll(ctx, scp, vs, preds));
-    return copy(new IterPosFilter(f, off));
-  }
-
-  @Override
-  public Filter addPred(final QueryContext ctx, final VarScope scp, final Expr p)
-      throws QueryException {
-    // [LW] should be fixed
-    return ((Filter) new CachedFilter(info, root, preds).copy(ctx, scp)
-        ).addPred(ctx, scp, p);
+  public IterPosFilter copy(final QueryContext qc, final VarScope scp, final IntObjMap<Var> vs) {
+    return copy(new IterPosFilter(info, off, root.copy(qc, scp, vs),
+        Arr.copyAll(qc, scp, vs, preds)));
   }
 }

@@ -6,6 +6,7 @@ import org.basex.query.*;
 import org.basex.query.expr.*;
 import org.basex.query.func.*;
 import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.value.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
@@ -23,12 +24,12 @@ public abstract class FItem extends Item implements XQFunction {
 
   /**
    * Constructor.
-   * @param t type
-   * @param annotations this function item's annotations
+   * @param type type
+   * @param ann this function item's annotations
    */
-  protected FItem(final FuncType t, final Ann annotations) {
-    super(t);
-    ann = annotations;
+  protected FItem(final FuncType type, final Ann ann) {
+    super(type);
+    this.ann = ann;
   }
 
   @Override
@@ -37,38 +38,62 @@ public abstract class FItem extends Item implements XQFunction {
   }
 
   @Override
-  public final Value invokeValue(final QueryContext ctx, final InputInfo ii, final Value... args)
+  public final Value invokeValue(final QueryContext qc, final InputInfo ii, final Value... args)
       throws QueryException {
-    return FuncCall.value(this, args, ctx, ii);
+    return FuncCall.value(this, args, qc, ii);
   }
 
   @Override
-  public final Item invokeItem(final QueryContext ctx, final InputInfo ii, final Value... args)
+  public final Item invokeItem(final QueryContext qc, final InputInfo ii, final Value... args)
       throws QueryException {
-    return FuncCall.item(this, args, ctx, ii);
+    return FuncCall.item(this, args, qc, ii);
   }
 
   /**
    * Coerces this function item to the given function type.
    * @param ft function type
-   * @param ctx query context
+   * @param qc query context
    * @param ii input info
    * @param opt if the result should be optimized
    * @return coerced item
    * @throws QueryException query exception
    */
-  public abstract FItem coerceTo(final FuncType ft, final QueryContext ctx, final InputInfo ii,
+  public abstract FItem coerceTo(final FuncType ft, final QueryContext qc, final InputInfo ii,
       boolean opt) throws QueryException;
 
   @Override
   public final byte[] string(final InputInfo ii) throws QueryException {
-    throw FIVALUE.get(ii, type);
+    throw FIATOM_X.get(ii, type);
   }
 
   @Override
   public final boolean eq(final Item it, final Collation coll, final InputInfo ii)
       throws QueryException {
-    throw FIEQ.get(ii, type);
+    throw FIEQ_X.get(ii, type);
+  }
+
+  @Override
+  public boolean has(final Flag flag) {
+    return flag == Flag.UPD && annotations().contains(Ann.Q_UPDATING) || super.has(flag);
+  }
+
+  @Override
+  public Item atomItem(final InputInfo ii) throws QueryException {
+    throw FIATOM_X.get(ii, type);
+  }
+
+  /**
+   * Performs a deep comparison of two items.
+   * @param item item to be compared
+   * @param ii input info
+   * @param coll collation
+   * @return result of check
+   * @throws QueryException query exception
+   */
+  @SuppressWarnings("unused")
+  public boolean deep(final Item item, final InputInfo ii, final Collation coll)
+      throws QueryException {
+    throw FICMP_X.get(ii, type);
   }
 
   @Override

@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import org.basex.*;
+import org.basex.api.client.*;
 import org.basex.core.*;
 import org.basex.util.*;
 import org.junit.*;
@@ -50,7 +51,7 @@ public final class EventTest extends SandboxTest {
   @Before
   public void startSessions() throws IOException {
     session = createClient();
-    // drop event, if not done yet
+    // drop event if not done yet
     try {
       session.execute("drop event " + NAME);
     } catch(final IOException ignored) { }

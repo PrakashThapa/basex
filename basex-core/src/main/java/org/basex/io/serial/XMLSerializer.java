@@ -5,6 +5,7 @@ import static org.basex.query.util.Err.*;
 
 import java.io.*;
 
+import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.value.item.*;
 
@@ -29,24 +30,24 @@ public class XMLSerializer extends OutputSerializer {
   }
 
   @Override
-  protected void startOpen(final byte[] t) throws IOException {
-    if(tags.isEmpty()) {
+  protected void startOpen(final byte[] name) throws IOException {
+    if(elems.isEmpty()) {
       if(root) check();
       root = true;
     }
-    super.startOpen(t);
+    super.startOpen(name);
   }
 
   @Override
-  protected void finishText(final byte[] v) throws IOException {
-    if(tags.isEmpty()) check();
-    super.finishText(v);
+  protected void text(final byte[] value, final FTPos ftp) throws IOException {
+    if(elems.isEmpty()) check();
+    super.text(value, ftp);
   }
 
   @Override
-  protected void atomic(final Item i, final boolean iter) throws IOException {
-    if(tags.isEmpty()) check();
-    super.atomic(i, iter);
+  protected void atomic(final Item it, final boolean iter) throws IOException {
+    if(elems.isEmpty()) check();
+    super.atomic(it, iter);
   }
 
   /**

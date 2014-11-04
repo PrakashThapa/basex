@@ -3,7 +3,6 @@ package org.basex.query.value.item;
 import static org.basex.query.util.Err.*;
 
 import java.net.*;
-import java.util.regex.*;
 
 import org.basex.query.*;
 import org.basex.query.value.type.*;
@@ -15,47 +14,47 @@ import org.basex.util.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
-public final class Uri extends Str {
+public final class Uri extends AStr {
   /** Empty URI. */
   public static final Uri EMPTY = new Uri(Token.EMPTY);
-  /** URI validation regex as specified by RFC 3986: Appendix B. */
-  private static final Pattern VALID_URI = Pattern.compile(
-      "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
+  /** String data. */
+  private final byte[] value;
 
   /**
    * Constructor.
-   * @param v value
+   * @param value value
    */
-  private Uri(final byte[] v) {
-    super(v, AtomType.URI);
+  private Uri(final byte[] value) {
+    super(AtomType.URI);
+    this.value = value;
   }
 
   /**
    * Creates a new uri instance.
-   * @param uri value
+   * @param value value
    * @return uri instance
    */
-  public static Uri uri(final byte[] uri) {
-    return uri(uri, true);
+  public static Uri uri(final byte[] value) {
+    return uri(value, true);
   }
 
   /**
    * Creates a new uri instance.
-   * @param uri value
+   * @param value string value
    * @return uri instance
    */
-  public static Uri uri(final String uri) {
-    return uri(Token.token(uri), true);
+  public static Uri uri(final String value) {
+    return uri(Token.token(value), true);
   }
 
   /**
    * Creates a new uri instance.
-   * @param uri value
+   * @param value value
    * @param normalize chop leading and trailing whitespaces
    * @return uri instance
    */
-  public static Uri uri(final byte[] uri, final boolean normalize) {
-    final byte[] u = normalize ? Token.norm(uri) : uri;
+  public static Uri uri(final byte[] value, final boolean normalize) {
+    final byte[] u = normalize ? Token.normalize(value) : value;
     return u.length == 0 ? EMPTY : new Uri(u);
   }
 
@@ -68,14 +67,14 @@ public final class Uri extends Str {
    * @throws QueryException query exception
    */
   public Uri resolve(final Uri add, final InputInfo info) throws QueryException {
-    if(add.val.length == 0) return this;
+    if(add.value.length == 0) return this;
     try {
-      final URI base = new URI(Token.string(val));
-      final URI res = new URI(Token.string(add.val));
+      final URI base = new URI(Token.string(value));
+      final URI res = new URI(Token.string(add.value));
       final URI uri = base.resolve(res);
       return uri(Token.token(uri.toString()), false);
     } catch(final URISyntaxException ex) {
-      throw URIINVRES.get(info, ex.getMessage());
+      throw URIARG_X.get(info, ex.getMessage());
     }
   }
 
@@ -84,8 +83,7 @@ public final class Uri extends Str {
    * @return result of check
    */
   public boolean isAbsolute() {
-    final Matcher m = matcher();
-    return m.matches() && m.group(2) != null && m.group(9) == null;
+    return Token.contains(value, ':');
   }
 
   /**
@@ -93,14 +91,33 @@ public final class Uri extends Str {
    * @return result of check
    */
   public boolean isValid() {
-    return matcher().matches();
+    try {
+      new URI(Token.string(Token.uri(value, true)));
+      return true;
+    } catch(final URISyntaxException ex) {
+      return false;
+    }
+  }
+
+  @Override
+  public byte[] string(final InputInfo ii) {
+    return value;
   }
 
   /**
-   * Creates a regex matcher for the current URI.
-   * @return matcher
+   * Returns the string value.
+   * @return string value
    */
-  private Matcher matcher() {
-    return VALID_URI.matcher(Token.string(Token.uri(val, true)));
+  public byte[] string() {
+    return value;
+  }
+
+  @Override
+  public URI toJava() throws QueryException {
+    try {
+      return new URI(Token.string(value));
+    } catch(final URISyntaxException ex) {
+      throw new QueryException(ex);
+    }
   }
 }

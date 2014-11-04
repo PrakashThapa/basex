@@ -4,7 +4,7 @@ import static org.basex.core.Text.*;
 import static org.basex.util.Token.*;
 
 import org.basex.core.*;
-import org.basex.query.path.*;
+import org.basex.query.expr.path.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
 
@@ -107,8 +107,8 @@ public final class Find extends AQuery {
 
     // create final string
     final TokenBuilder tb = new TokenBuilder();
-    final String tag = "*";
-    tb.add(pre + (r ? "/" : "") + Axis.DESCORSELF + "::" + tag + preds);
+    final String name = "*";
+    tb.add(pre + (r ? "/" : "") + Axis.DESCORSELF + "::" + name + preds);
     return tb.toString();
   }
 
@@ -117,21 +117,19 @@ public final class Find extends AQuery {
    * @param filter filter terms
    * @param cols filter columns
    * @param elem element flag
-   * @param tag root tag
+   * @param name name of root element
    * @param root root flag
    * @return query
    */
   public static String findTable(final StringList filter, final TokenList cols, final BoolList elem,
-      final byte[] tag, final boolean root) {
+      final byte[] name, final boolean root) {
 
     final TokenBuilder tb = new TokenBuilder();
     final int is = filter.size();
     for(int i = 0; i < is; ++i) {
       final String[] spl = split(filter.get(i));
       for(final String s : spl) {
-        byte[] term = token(s);
-        if(contains(term, '"')) term = replace(term, '"', ' ');
-        term = trim(term);
+        final byte[] term = trim(replace(token(s), '"', ' '));
         if(term.length == 0) continue;
         tb.add('[');
 
@@ -152,7 +150,7 @@ public final class Find extends AQuery {
       }
     }
     return tb.isEmpty() ? "/" : (root ? "/" : "") +
-        Axis.DESCORSELF + "::*:" + string(tag) + tb;
+        Axis.DESCORSELF + "::*:" + string(name) + tb;
   }
 
   /**

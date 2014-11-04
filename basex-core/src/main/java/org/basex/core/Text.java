@@ -2,9 +2,13 @@ package org.basex.core;
 
 import static org.basex.core.Lang.*;
 
-import java.util.*;
-
-import org.basex.core.parse.Commands.*;
+import org.basex.core.parse.Commands.CmdCreate;
+import org.basex.core.parse.Commands.CmdDrop;
+import org.basex.core.parse.Commands.CmdIndex;
+import org.basex.core.parse.Commands.CmdInfo;
+import org.basex.core.parse.Commands.CmdPerm;
+import org.basex.core.parse.Commands.CmdRepo;
+import org.basex.core.parse.Commands.CmdShow;
 import org.basex.util.*;
 
 /**
@@ -46,23 +50,6 @@ public interface Text {
   /** False flag. */
   String FALSE = "false";
 
-  /** Project namespace. */
-  String PROJECT_NAME = Prop.NAME.toLowerCase(Locale.ENGLISH);
-  /** URL. */
-  String URL = "http://" + PROJECT_NAME + ".org";
-  /** URL of the community page. */
-  String COMMUNITY_URL = URL + "/community";
-  /** URL of the documentation. */
-  String DOC_URL = "http://docs." + PROJECT_NAME + ".org";
-  /** URL of the update page. */
-  String UPDATE_URL = URL + "/products/download/all-downloads/";
-  /** Version URL. */
-  String VERSION_URL = "http://files." + PROJECT_NAME + ".org/version.txt";
-  /** Mail. */
-  String MAILING_LIST = PROJECT_NAME + "-talk@mailman.uni-konstanz.de";
-  /** Title and version. */
-  String TITLE = Prop.NAME + ' ' + Prop.VERSION;
-
   /** Local (standalone) mode. */
   String S_STANDALONE = "Standalone";
   /** Start information. */
@@ -79,6 +66,7 @@ public interface Text {
     "  -r<num>     Set number of query executions" + NL +
     "  -R          Turn query execution on/off" + NL +
     "  -s<pars>    Set serialization parameter(s)" + NL +
+    "  -t[path]    Run tests in file or directory" + NL +
     "  -u          Write updates back to original files" + NL +
     "  -v/V        Show (all) process info" + NL +
     "  -w          Preserve whitespaces from input files" + NL +
@@ -121,7 +109,6 @@ public interface Text {
     "  -c<cmds>  Execute initial database commands" + NL +
     "  -d        Activate debugging mode" + NL +
     "  -e<port>  Set event port" + NL +
-    "  -i        Enter interactive mode" + NL +
     "  -n<name>  Set host the server is bound to" + NL +
     "  -p<port>  Set server port" + NL +
     "  -S        Start as service" + NL +
@@ -153,7 +140,7 @@ public interface Text {
   /** Bug info. */
   String S_BUGINFO = "Improper use? Potential bug? Your feedback is welcome:";
   /** Console text. */
-  String S_CONSOLE = TITLE + " [%]" + NL;
+  String S_CONSOLE = Prop.TITLE + " [%]" + NL;
 
   /** Localhost. */
   String S_LOCALHOST = "localhost";
@@ -192,8 +179,6 @@ public interface Text {
 
   /** Index info. */
   String HASH = "Hash";
-  /** Index info. */
-  String FUZZY = "Fuzzy";
   /** Index info. */
   String SORTED_LIST = "Sorted List";
 
@@ -270,11 +255,6 @@ public interface Text {
   String USERNAME = lang("username");
   /** Password. */
   String PASSWORD = lang("password");
-
-  /** Option flag. */
-  String INFOON = lang("ON");
-  /** Option flag. */
-  String INFOOFF = lang("OFF");
 
   // COMMANDS =================================================================
 
@@ -400,6 +380,10 @@ public interface Text {
   /** Command help. */
   String[] HELPRUN = {
     '[' + S_PATH + ']', lang("c_run1"), lang("c_run2", S_PATH)
+  };
+  /** Command help. */
+  String[] HELPTEST = {
+    '[' + S_PATH + ']', lang("c_test1"), lang("c_test2", S_PATH)
   };
   /** Command help. */
   String[] HELPEXECUTE = {
@@ -553,8 +537,6 @@ public interface Text {
 
   /** Database created. */
   String DB_CREATED_X_X = lang("db_created_%_%");
-  /** Path added. */
-  String PATH_ADDED_X_X = lang("path_added_%_%");
   /** Parse error. */
   String NOT_PARSED_X = lang("not_parsed_%");
 
@@ -568,6 +550,8 @@ public interface Text {
   String RES_RENAMED_X_X = lang("res_renamed_%_%");
   /** Resource replaced. */
   String RES_REPLACED_X_X = lang("res_replaced_%_%");
+  /** Resource added. */
+  String RES_ADDED_X = lang("res_added_%");
   /** "Resource Properties". */
   String RES_PROPS = lang("res_props");
 
@@ -590,6 +574,8 @@ public interface Text {
   String DB_NOT_FOUND_X = lang("db_not_found_%");
   /** Name invalid. */
   String NAME_INVALID_X = lang("name_invalid_%");
+  /** Paht invalid. */
+  String PATH_INVALID_X = lang("path_invalid_%");
   /** Database pinned. */
   String DB_PINNED_X = lang("db_pinned_%");
   /** Database updated. */
@@ -814,7 +800,9 @@ public interface Text {
   /** Command info. */
   String RECENTLY_OPENED = lang("recently_opened");
   /** Command info. */
-  String EXECUTE_QUERY = lang("execute_query");
+  String RUN_QUERY = lang("run_query");
+  /** Command info. */
+  String RUN_TESTS = lang("run_tests");
   /** Command info. */
   String INPUT_HISTORY = lang("input_history");
 
@@ -848,7 +836,7 @@ public interface Text {
   /** Info on up-to-date. */
   String UP_TO_DATE = lang("up_to_date");
 
-  /** Info on tags. */
+  /** Info on elements. */
   String ELEMENTS = lang("elements");
   /** Info on attributes. */
   String ATTRIBUTES = lang("attributes");
@@ -910,6 +898,8 @@ public interface Text {
   String NEW = lang("new");
   /** Command info. */
   String DELETE = lang("delete");
+  /** Command info. */
+  String INSTALL_FROM_URL = lang("install_from_url");
   /** Command info. */
   String INSTALL = lang("install");
   /** Command info. */
@@ -1078,6 +1068,8 @@ public interface Text {
   String FILE_OR_DIR = lang("file_or_dir");
   /** Use Catalog file Checkbox. */
   String USE_CATALOG_FILE = lang("use_catalog_file");
+  /** Use XInclude. */
+  String USE_XINCLUDE = lang("use_xinclude");
   /** Use Catalog file not found on CP. */
   String HELP1_USE_CATALOG = lang("help1_use_catalog");
   /** Use Catalog file not found on CP. */
@@ -1147,10 +1139,10 @@ public interface Text {
   String MERGE_TYPES = lang("merge_types");
   /** Merge type information. */
   String INCLUDE_STRINGS = lang("include_strings");
-  /** Specification. */
-  String SPECIFICATION = lang("specification");
   /** Unescape characters. */
   String UNESCAPE_CHARS = lang("unescape_chars");
+  /** Liberal parsing. */
+  String LIBERAL_PARSING = lang("liberal_parsing");
 
   /** General info. */
   String GENERAL = lang("general");
@@ -1263,6 +1255,8 @@ public interface Text {
   String SAVE_BEFORE_EXECUTE = lang("save_before_execute");
   /** Automatically add characters. */
   String AUTO_ADD_CHARS = lang("auto_add_chars");
+  /** Default file filter. */
+  String FILE_FILTER = lang("file_filter");
 
   /** Comment. */
   String COMMENT = lang("comment");

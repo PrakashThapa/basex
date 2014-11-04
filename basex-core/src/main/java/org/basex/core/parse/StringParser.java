@@ -47,7 +47,7 @@ public final class StringParser extends CmdParser {
 
   @Override
   protected void parse(final ArrayList<Command> cmds) throws QueryException {
-    final Scanner sc = new Scanner(input).useDelimiter(single ? "\0" : "\r\n?|\n");
+    final Scanner sc = new Scanner(string).useDelimiter(single ? "\0" : "\r\n?|\n");
     while(sc.hasNext()) {
       final String line = sc.next().trim();
       if(line.isEmpty() || line.startsWith("#")) continue;
@@ -160,6 +160,8 @@ public final class StringParser extends CmdParser {
         return new XQuery(xquery(cmd));
       case RUN:
         return new Run(string(cmd));
+      case TEST:
+        return new Test(string(cmd));
       case EXECUTE:
         return new Execute(string(cmd, false));
       case FIND:
@@ -175,6 +177,7 @@ public final class StringParser extends CmdParser {
       case HELP:
         return new Help(name(null));
       case EXIT:
+      case QUIT:
         return new Exit();
       case FLUSH:
         return new Flush();
@@ -211,7 +214,7 @@ public final class StringParser extends CmdParser {
         }
         break;
     }
-    throw Util.notExpected("command specified, but not implemented yet");
+    throw Util.notExpected("Command specified, but not implemented yet");
   }
 
   /**
@@ -280,15 +283,12 @@ public final class StringParser extends CmdParser {
     consumeWS();
     final StringBuilder sb = new StringBuilder();
     if(!eoc()) {
-      final QueryContext qc = new QueryContext(ctx);
-      try {
+      try(final QueryContext qc = new QueryContext(ctx)) {
         final QueryParser p = new QueryParser(parser.input, null, qc, null);
         p.pos = parser.pos;
         p.parseMain();
         sb.append(parser.input.substring(parser.pos, p.pos));
         parser.pos = p.pos;
-      } finally {
-        qc.close();
       }
     }
     return finish(sb, cmd);
@@ -373,13 +373,13 @@ public final class StringParser extends CmdParser {
 
   /**
    * Parses and returns a string result.
-   * @param s input string, or {@code null} if invalid
+   * @param input input string or {@code null} if invalid
    * @param cmd referring command; if specified, the result must not be empty
-   * @return string result, or {@code null}
+   * @return string result or {@code null}
    * @throws QueryException query exception
    */
-  private String finish(final StringBuilder s, final Cmd cmd) throws QueryException {
-    if(s != null && s.length() != 0) return s.toString();
+  private String finish(final StringBuilder input, final Cmd cmd) throws QueryException {
+    if(input != null && input.length() != 0) return input.toString();
     if(cmd != null) throw help(null, cmd);
     return null;
   }
@@ -491,12 +491,12 @@ public final class StringParser extends CmdParser {
   /**
    * Returns a query exception instance.
    * @param comp input completions
-   * @param m message
-   * @param e extension
+   * @param msg message
+   * @param ext extension
    * @return query exception
    */
-  private QueryException error(final Enum<?>[] comp, final String m, final Object... e) {
-    return new QueryException(parser.info(), new QNm(), m, e).suggest(parser, list(comp));
+  private QueryException error(final Enum<?>[] comp, final String msg, final Object... ext) {
+    return new QueryException(parser.info(), new QNm(), msg, ext).suggest(parser, list(comp));
   }
 
   /**

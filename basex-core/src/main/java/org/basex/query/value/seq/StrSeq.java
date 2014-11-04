@@ -22,11 +22,11 @@ public final class StrSeq extends NativeSeq {
 
   /**
    * Constructor.
-   * @param vals values
+   * @param values values
    */
-  private StrSeq(final byte[][] vals) {
-    super(vals.length, AtomType.STR);
-    values = vals;
+  private StrSeq(final byte[][] values) {
+    super(values.length, AtomType.STR);
+    this.values = values;
   }
 
   @Override
@@ -62,8 +62,8 @@ public final class StrSeq extends NativeSeq {
    * @return value
    */
   public static Value get(final TokenList items) {
-    return items.isEmpty() ? Empty.SEQ : items.size() == 1 ?
-        Str.get(items.get(0)) : new StrSeq(items.toArray());
+    return items.isEmpty() ? Empty.SEQ : items.size() == 1 ? Str.get(items.get(0)) :
+      new StrSeq(items.toArray());
   }
 
   /**
@@ -72,26 +72,24 @@ public final class StrSeq extends NativeSeq {
    * @return value
    */
   public static Value get(final byte[][] items) {
-    return items.length == 0 ? Empty.SEQ : items.length == 1 ?
-        Str.get(items[0]) : new StrSeq(items);
+    return items.length == 0 ? Empty.SEQ : items.length == 1 ? Str.get(items[0]) :
+      new StrSeq(items);
   }
 
   /**
    * Creates a sequence with the items in the specified expressions.
-   * @param vals values
+   * @param values values
    * @param size size of resulting sequence
    * @return value
    * @throws QueryException query exception
    */
-  public static Value get(final Value[] vals, final int size) throws QueryException {
+  public static Value get(final Value[] values, final int size) throws QueryException {
     final byte[][] tmp = new byte[size][];
     int t = 0;
-    for(final Value val : vals) {
+    for(final Value val : values) {
       // speed up construction, depending on input
       final int vs = (int) val.size();
-      if(val instanceof Item) {
-        tmp[t++] = ((Item) val).string(null);
-      } else if(val instanceof StrSeq) {
+      if(val instanceof StrSeq) {
         final StrSeq sq = (StrSeq) val;
         System.arraycopy(sq.values, 0, tmp, t, vs);
         t += vs;

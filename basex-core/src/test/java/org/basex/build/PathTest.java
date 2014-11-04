@@ -2,12 +2,15 @@ package org.basex.build;
 
 import static org.junit.Assert.*;
 
-import org.basex.core.*;
-import org.basex.core.cmd.*;
-import org.basex.query.*;
 import org.basex.*;
+import org.basex.core.*;
+import org.basex.core.MainOptions.MainParser;
+import org.basex.core.cmd.*;
+import org.basex.io.*;
+import org.basex.query.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * Tests queries with path in it on collections.
@@ -59,9 +62,9 @@ public final class PathTest extends SandboxTest {
   @Test
   public void documentTestInput() throws Exception {
     final String count = "count(collection('" + INPUT + "/input'))";
-    final QueryProcessor qp = new QueryProcessor(count, context);
-    assertEquals(1, Integer.parseInt(qp.execute().toString()));
-    qp.close();
+    try(final QueryProcessor qp = new QueryProcessor(count, context)) {
+      assertEquals(1, Integer.parseInt(qp.execute().toString()));
+    }
   }
 
   /**
@@ -71,9 +74,9 @@ public final class PathTest extends SandboxTest {
   @Test
   public void documentTestWeek() throws Exception {
     final String count = "count(collection('" + WEEK1 + "/week/monday'))";
-    final QueryProcessor qp = new QueryProcessor(count, context);
-    assertEquals(3, Integer.parseInt(qp.execute().toString()));
-    qp.close();
+    try(final QueryProcessor qp = new QueryProcessor(count, context)) {
+      assertEquals(3, Integer.parseInt(qp.execute().toString()));
+    }
   }
 
   /**
@@ -84,6 +87,21 @@ public final class PathTest extends SandboxTest {
   public void withIndexTest() throws Exception {
     weekTest();
     weekTest2();
+  }
+
+  /**
+   * #905: Ensure that parser options will not affect doc() and collection().
+   * May be moved to a separate test class in future.
+   * @throws Exception exception
+   */
+  @Test
+  public void docParsing() throws Exception {
+    final IOFile path = new IOFile(sandbox(), "doc.xml");
+    path.write(Token.token("<a/>"));
+    context.options.set(MainOptions.PARSER, MainParser.JSON);
+    try(final QueryProcessor qp = new QueryProcessor("doc('" + path + "')", context)) {
+      assertEquals("<a/>", qp.execute().toString());
+    }
   }
 
   /**
@@ -106,15 +124,15 @@ public final class PathTest extends SandboxTest {
   private static void weekTest() throws Exception {
     final String count = "count(collection('" + WEEK1 +
       "/week/monday')/root/monday/text[text() = 'text'])";
-    final QueryProcessor qp = new QueryProcessor(count, context);
-    assertEquals(3, Integer.parseInt(qp.execute().toString()));
-    qp.close();
+    try(final QueryProcessor qp = new QueryProcessor(count, context)) {
+      assertEquals(3, Integer.parseInt(qp.execute().toString()));
+    }
     // cross-check
     final String count2 = "count(collection('" + WEEK1 +
       "/week')/root/monday/text[text() = 'text'])";
-    final QueryProcessor qp2 = new QueryProcessor(count2, context);
-    assertEquals(4, Integer.parseInt(qp2.execute().toString()));
-    qp2.close();
+    try(final QueryProcessor qp2 = new QueryProcessor(count2, context)) {
+      assertEquals(4, Integer.parseInt(qp2.execute().toString()));
+    }
   }
 
   /** Checks the results of the queries with the db week.
@@ -125,9 +143,8 @@ public final class PathTest extends SandboxTest {
       "/week/monday')/root/monday/text[text() = 'text'])," +
       " count(collection('" + WEEK2 +
       "/week/tuesday')/root/monday/text[text() = 'text']) ";
-    final QueryProcessor qp = new QueryProcessor(count, context);
-    final String result = qp.execute().toString();
-    assertEquals("3 1", result);
-    qp.close();
+    try(final QueryProcessor qp = new QueryProcessor(count, context)) {
+      assertEquals("3 1", qp.execute().toString());
+    }
   }
 }

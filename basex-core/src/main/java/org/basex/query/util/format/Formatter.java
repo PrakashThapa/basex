@@ -133,7 +133,7 @@ public abstract class Formatter extends FormatUtil {
     boolean iso = false;
     if(cal.length != 0) {
       final Matcher m = CALENDAR.matcher(string(cal));
-      if(!m.matches()) throw CALQNAME.get(ii, cal);
+      if(!m.matches()) throw CALQNAME_X.get(ii, cal);
       final QNm qnm = new QNm(m.group(3), m.group(1) == null ||
           m.group(2).isEmpty() ? null : m.group(2));
       if(!qnm.hasURI()) {
@@ -141,7 +141,7 @@ public abstract class Formatter extends FormatUtil {
         final byte[] ln = qnm.local();
         final int cl = CALENDARS.length;
         while(++c < cl && !eq(CALENDARS[c], ln));
-        if(c == cl) throw CALWHICH.get(ii, cal);
+        if(c == cl) throw CALWHICH_X.get(ii, cal);
         if(c > 1) tb.add("[Calendar: AD]");
         iso = c == 0;
       }
@@ -154,7 +154,7 @@ public abstract class Formatter extends FormatUtil {
       if(ch == -1) {
         // retrieve variable marker
         final byte[] marker = dp.marker();
-        if(marker.length == 0) throw PICDATE.get(ii, pic);
+        if(marker.length == 0) throw PICDATE_X.get(ii, pic);
 
         // parse component specifier
         final int compSpec = ch(marker, 0);
@@ -244,9 +244,9 @@ public abstract class Formatter extends FormatUtil {
             err = tim;
             break;
           default:
-            throw INVCOMPSPEC.get(ii, marker);
+            throw INVCOMPSPEC_X.get(ii, marker);
         }
-        if(err) throw PICINVCOMP.get(ii, marker, date.type);
+        if(err) throw PICINVCOMP_X_X.get(ii, marker, date.type);
         if(pres == null) continue;
 
         // parse presentation modifier(s) and width modifier
@@ -254,7 +254,8 @@ public abstract class Formatter extends FormatUtil {
         if(max) {
           // limit maximum length of numeric output
           int mx = 0;
-          for(int s = 0; s < fp.primary.length; s += cl(fp.primary, s)) mx++;
+          final int fl = fp.primary.length;
+          for(int s = 0; s < fl; s += cl(fp.primary, s)) mx++;
           if(mx > 1) fp.max = mx;
         }
 
@@ -336,7 +337,6 @@ public abstract class Formatter extends FormatUtil {
 
     final TokenBuilder tb = new TokenBuilder();
     final int ch = fp.first;
-
     if(ch == 'w') {
       tb.add(word(n, fp.ordinal));
     } else if(ch == KANJI[1]) {
@@ -436,7 +436,7 @@ public abstract class Formatter extends FormatUtil {
 
     int n = c == 0 ? num / 60 : num % 60;
     if(num < 0) n = -n;
-    return number(n, new IntFormat(format.finish(), null), zeroes(format.cp(0)));
+    return number(n, new IntFormat(format.toArray(), null), zeroes(format.cp(0)));
   }
 
   /**

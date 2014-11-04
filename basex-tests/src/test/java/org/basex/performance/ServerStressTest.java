@@ -3,8 +3,7 @@ package org.basex.performance;
 import java.util.*;
 
 import org.basex.*;
-import org.basex.server.*;
-import org.basex.SandboxTest;
+import org.basex.api.client.*;
 import org.basex.util.*;
 import org.junit.*;
 
@@ -76,16 +75,16 @@ public final class ServerStressTest extends SandboxTest {
     // run server instance
     server = createServer();
     // create test database
-    final ClientSession cs = createClient();
-    cs.execute("create db test " + INPUT);
-    // run clients
-    final Client[] cl = new Client[clients];
-    for(int i = 0; i < clients; ++i) cl[i] = new Client(runs);
-    for(final Client c : cl) c.start();
-    for(final Client c : cl) c.join();
-    // drop database and stop server
-    cs.execute("drop db test");
-    cs.close();
+    try(final ClientSession cs = createClient()) {
+      cs.execute("create db test " + INPUT);
+      // run clients
+      final Client[] cl = new Client[clients];
+      for(int i = 0; i < clients; ++i) cl[i] = new Client(runs);
+      for(final Client c : cl) c.start();
+      for(final Client c : cl) c.join();
+      // drop database and stop server
+      cs.execute("drop db test");
+    }
     stopServer(server);
   }
 

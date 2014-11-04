@@ -2,12 +2,12 @@ package org.basex.core;
 
 import static org.junit.Assert.*;
 
+import org.basex.*;
 import org.basex.core.cmd.*;
 import org.basex.index.*;
-import org.basex.*;
 import org.basex.query.func.*;
 import org.basex.util.list.*;
-import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class tests commands and XQueries for correct identification of databases
@@ -350,7 +350,6 @@ public class CommandLockingTest extends SandboxTest {
                             final StringList reqWt, final StringList allowWt) {
     // Fetch databases BaseX thinks it needs to lock
     final LockResult lr = new LockResult();
-    // [CG] cmd.updating needed because of some side-effects (instantiate QueryProcessor?)
     cmd.updating(DUMMY_CONTEXT);
     cmd.databases(lr);
     // Need sorted lists for compareAll

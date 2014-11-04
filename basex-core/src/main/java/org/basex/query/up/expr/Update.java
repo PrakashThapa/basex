@@ -5,7 +5,7 @@ import static org.basex.util.Token.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
@@ -23,14 +23,14 @@ abstract class Update extends Arr {
 
   /**
    * Constructor.
-   * @param sctx static context
+   * @param sc static context
    * @param info input info
    * @param expr expressions
    */
-  Update(final StaticContext sctx, final InputInfo info, final Expr... expr) {
+  Update(final StaticContext sc, final InputInfo info, final Expr... expr) {
     super(info, expr);
-    sc = sctx;
-    type = SeqType.EMP;
+    this.sc = sc;
+    seqType = SeqType.EMP;
   }
 
   @Override

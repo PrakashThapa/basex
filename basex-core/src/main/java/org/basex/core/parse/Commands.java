@@ -85,6 +85,8 @@ public interface Commands {
   String OPTIMIZE_ALL = "optimize-all";
   /** Command string: "password". */
   String PASSWORD = "password";
+  /** Command string: "quit". */
+  String QUIT = "quit";
   /** Command string: "rename". */
   String RENAME = "rename";
   /** Command string: "replace". */
@@ -115,6 +117,8 @@ public interface Commands {
   String SHOW_USERS = "show-users";
   /** Command string: "store". */
   String STORE = "store";
+  /** Command string: "test". */
+  String TEST = "test";
   /** Command string: "xquery". */
   String XQUERY = "xquery";
 
@@ -174,20 +178,20 @@ public interface Commands {
     CREATE(HELPCREATE), CS(HELPCS), DELETE(HELPDELETE), DROP(HELPDROP), EXIT(HELPEXIT),
     EXPORT(HELPEXPORT), FIND(HELPFIND), FLUSH(HELPFLUSH), GET(HELPGET), GRANT(HELPGRANT),
     HELP(HELPHELP), INFO(HELPINFO), INSPECT(HELPINSPECT), KILL(HELPKILL), LIST(HELPLIST),
-    OPEN(HELPOPEN), OPTIMIZE(HELPOPTIMIZE), PASSWORD(HELPPASSWORD), RENAME(HELPRENAME),
-    REPLACE(HELPREPLACE), REPO(HELPREPO), RESTORE(HELPRESTORE), RETRIEVE(HELPRETRIEVE),
-    RUN(HELPRUN), EXECUTE(HELPEXECUTE), SET(HELPSET), SHOW(HELPSHOW), STORE(HELPSTORE),
-    XQUERY(HELPXQUERY);
+    OPEN(HELPOPEN), OPTIMIZE(HELPOPTIMIZE), PASSWORD(HELPPASSWORD), QUIT(HELPEXIT),
+    RENAME(HELPRENAME), REPLACE(HELPREPLACE), REPO(HELPREPO), RESTORE(HELPRESTORE),
+    RETRIEVE(HELPRETRIEVE), RUN(HELPRUN), EXECUTE(HELPEXECUTE), SET(HELPSET),
+    SHOW(HELPSHOW), STORE(HELPSTORE), TEST(HELPTEST), XQUERY(HELPXQUERY);
 
     /** Help texts. */
     private final String[] help;
 
     /**
      * Default constructor.
-     * @param h help texts, or {@code null} if command is hidden.
+     * @param help help texts or {@code null} if command is hidden.
      */
-    Cmd(final String... h) {
-      help = h;
+    Cmd(final String... help) {
+      this.help = help;
     }
 
     /**

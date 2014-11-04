@@ -37,12 +37,12 @@ public final class NodeSeqBuilder extends AxisIter {
 
   /**
    * Lightweight constructor, assigning the specified array of sorted nodes.
-   * @param it node array
-   * @param s size
+   * @param nodes node array
+   * @param size size
    */
-  public NodeSeqBuilder(final ANode[] it, final int s) {
-    nodes = it;
-    size = s;
+  public NodeSeqBuilder(final ANode[] nodes, final int size) {
+    this.nodes = nodes;
+    this.size = size;
   }
 
   /**
@@ -79,12 +79,6 @@ public final class NodeSeqBuilder extends AxisIter {
     if(size == nodes.length) nodes = Array.copy(nodes, new ANode[Array.newSize(size)]);
     if(check && !sort && size != 0) sort = nodes[size - 1].diff(n) > 0;
     nodes[size++] = n;
-  }
-
-  @Override
-  public boolean reset() {
-    pos = -1;
-    return true;
   }
 
   @Override
@@ -167,7 +161,7 @@ public final class NodeSeqBuilder extends AxisIter {
   }
 
   /**
-   * Sorts the nodes, if necessary.
+   * Sorts the nodes if necessary.
    * @return self reference
    */
   public NodeSeqBuilder sort() {
@@ -287,17 +281,5 @@ public final class NodeSeqBuilder extends AxisIter {
   @Override
   public String toString() {
     return Util.className(this) + Arrays.toString(Arrays.copyOf(nodes, size));
-  }
-
-  /**
-   * Creates a copy of this sequence builder.
-   * @return copy
-   */
-  public NodeSeqBuilder copy() {
-    final NodeSeqBuilder b = new NodeSeqBuilder(nodes.clone(), size);
-    b.pos = pos;
-    b.sort = sort;
-    b.check = check;
-    return b;
   }
 }

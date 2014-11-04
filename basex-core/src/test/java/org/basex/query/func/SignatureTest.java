@@ -1,16 +1,15 @@
 package org.basex.query.func;
 
-import java.util.*;
-import java.util.Set;
-
-import org.basex.core.cmd.*;
-import org.basex.io.*;
-import org.basex.query.util.*;
-import org.basex.query.value.type.*;
-import org.basex.query.*;
-import org.junit.*;
-
+import static org.basex.query.util.Err.*;
 import static org.junit.Assert.*;
+
+import java.util.*;
+
+import org.basex.build.*;
+import org.basex.io.*;
+import org.basex.query.*;
+import org.basex.query.value.type.*;
+import org.junit.*;
 
 /**
  * Tests all function signatures.
@@ -25,8 +24,7 @@ public class SignatureTest extends AdvancedQueryTest {
    */
   @Test
   public void signatures() throws Exception {
-    context.openDB(CreateDB.mainMem(new IOContent("<a/>"), context));
-    context.data().meta.name = "X";
+    context.openDB(MemBuilder.build(new IOContent("<a/>")));
     for(final Function f : Function.values()) check(f);
   }
 
@@ -74,11 +72,11 @@ public class SignatureTest extends AdvancedQueryTest {
       if((def.min > 0 || al != 0) && (any == 0 || any != al)) {
         final String query = qu.append(')').toString();
         // wrong types: XPTY0004, FORG0006, FODC0002, BXDB0001, BXDB0004
-        if(in) error(query, Err.INVCAST, Err.NONUMBER, Err.INVFUNCITEM,
-            Err.STRNODTYPE, Err.ELMMAPTYPE, Err.BINARYTYPE,
-            Err.STRBINTYPE, Err.WHICHRES, Err.BXDB_NODB, Err.BXDB_INDEX);
+        if(in) error(query, INVCAST_X_X_X, NONUMBER_X_X, INVFUNCITEM_X, STRNOD_X_X,
+            ELMMAP_X_X_X, BINARY_X, STRBIN_X_X, WHICHRES_X, BXDB_NODB_X_X,
+            BXDB_INDEX_X);
         // wrong number of arguments: XPST0017
-        else error(query, Err.FUNCARGSG, Err.FUNCARGPL);
+        else error(query, FUNCARGS_X_X_X);
       }
     }
   }

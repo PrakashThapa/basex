@@ -38,7 +38,6 @@ public final class BaseXList extends BaseXBack {
   /** Numeric list. */
   private boolean num = true;
 
-
   /**
    * Default constructor.
    * @param choice the input values for the list
@@ -98,15 +97,15 @@ public final class BaseXList extends BaseXBack {
         final int nv = op2 == np2 ? np1 : np2;
         final String val = values[nv];
         list.setSelectedValue(val, true);
+        multi = il.size() > 1;
         if(e.isShiftDown() && !single) {
-          list.setSelectedIndices(il.toArray());
+          list.setSelectedIndices(il.finish());
           text.setText("");
         } else {
           list.setSelectedIndex(nv);
           text.setText(val);
           text.selectAll();
         }
-        multi = il.size() > 1;
       }
 
       @Override
@@ -147,7 +146,7 @@ public final class BaseXList extends BaseXBack {
           if(!il.isEmpty()) {
             list.setSelectedValue(values[il.get(il.size() - 1)], true);
           }
-          list.setSelectedIndices(il.toArray());
+          list.setSelectedIndices(il.finish());
         }
         d.action(BaseXList.this);
         typed = false;
@@ -187,7 +186,7 @@ public final class BaseXList extends BaseXBack {
     list.addMouseListener(mouse);
     list.addMouseMotionListener(mouse);
     text.setFont(list.getFont());
-    BaseXLayout.setWidth(text, list.getWidth());
+    text.setPreferredSize(new Dimension(list.getWidth(), text.getPreferredSize().height));
     BaseXLayout.addInteraction(list, d);
 
     scroll = new JScrollPane(list);
@@ -279,8 +278,8 @@ public final class BaseXList extends BaseXBack {
 
   @Override
   public void setSize(final int w, final int h) {
-    BaseXLayout.setWidth(text, w);
-    BaseXLayout.setSize(scroll, w, h);
+    setWidth(w);
+    BaseXLayout.setHeight(scroll, h);
   }
 
   /**

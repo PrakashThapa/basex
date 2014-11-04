@@ -37,7 +37,7 @@ public class CsvOptions extends Options {
 
     @Override
     public String toString() {
-      return super.toString().toLowerCase(Locale.ENGLISH);
+      return name().toLowerCase(Locale.ENGLISH);
     }
   }
 
@@ -62,7 +62,7 @@ public class CsvOptions extends Options {
 
     @Override
     public String toString() {
-      return super.toString().toLowerCase(Locale.ENGLISH);
+      return name().toLowerCase(Locale.ENGLISH);
     }
   }
 
@@ -88,5 +88,19 @@ public class CsvOptions extends Options {
       if(XMLToken.valid(ch)) return ch;
     }
     return -1;
+  }
+
+  /**
+   * Default constructor.
+   */
+  public CsvOptions() {
+  }
+
+  /**
+   * Constructor with options to be copied.
+   * @param opts options
+   */
+  CsvOptions(final CsvOptions opts) {
+    super(opts);
   }
 }

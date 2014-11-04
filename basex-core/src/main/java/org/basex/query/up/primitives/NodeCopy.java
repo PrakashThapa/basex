@@ -4,6 +4,7 @@ import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.query.up.*;
 import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
@@ -17,33 +18,30 @@ import org.basex.util.*;
  */
 public abstract class NodeCopy extends NodeUpdate {
   /** Nodes to be inserted. */
-  ANodeList insert;
-  /** Insertion sequence data clip. */
+  ANodeList nodes;
+  /** Insertion sequence data clip (will be populated by {@link #prepare}). */
   DataClip insseq;
 
   /**
    * Constructor.
-   * @param t type
-   * @param p target node pre value
-   * @param d data
-   * @param i input info
-   * @param n node copy
+   * @param type type
+   * @param pre target node pre value
+   * @param data data
+   * @param ii input info
+   * @param nodes node copy insertion sequence
    */
-  NodeCopy(final UpdateType t, final int p, final Data d, final InputInfo i, final ANodeList n) {
-    super(t, p, d, i);
-    insert = n;
+  NodeCopy(final UpdateType type, final int pre, final Data data, final InputInfo ii,
+      final ANodeList nodes) {
+    super(type, pre, data, ii);
+    this.nodes = nodes;
   }
 
-  /**
-   * Prepares this update primitive before execution. This includes e.g. the
-   * preparation of insertion sequences.
-   * @param tmp temporary database
-   */
+  @Override
   public final void prepare(final MemData tmp) {
     // merge texts. after that, text nodes still need to be merged,
     // as two adjacent iterators may lead to two adjacent text nodes
-    final ANodeList list = mergeNodeCacheText(insert);
-    insert = null;
+    final ANodeList list = mergeNodeCacheText(nodes);
+    nodes = null;
     // build main memory representation of nodes to be copied
     final int start = tmp.meta.size;
     new DataBuilder(tmp).build(list);
@@ -105,6 +103,7 @@ public abstract class NodeCopy extends NodeUpdate {
 
   @Override
   public final String toString() {
-    return Util.className(this) + '[' + node() + ", " + size() + " ops]";
+    return new StringBuilder(Util.className(this)).append('[').append(']').
+        append(", ").append(insseq != null ? size() : nodes.size()).append(" ops]").toString();
   }
 }

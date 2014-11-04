@@ -14,7 +14,6 @@ import org.basex.io.*;
 import org.basex.io.in.*;
 import org.basex.io.out.*;
 import org.basex.util.*;
-import org.basex.util.Base64;
 import org.basex.util.list.*;
 import org.junit.*;
 
@@ -112,7 +111,7 @@ public abstract class HTTPTest extends SandboxTest {
   }
 
   /**
-   * Executes the specified GET request and returns the result.
+   * Executes the specified HTTP request and returns the result.
    * @param query request
    * @param method HTTP method
    * @return string result, or {@code null} for a failure.
@@ -120,11 +119,23 @@ public abstract class HTTPTest extends SandboxTest {
    */
   private static String request(final String query, final HTTPMethod method)
       throws IOException {
+    return request(query, method.name());
+  }
+
+  /**
+   * Executes the specified HTTP request and returns the result.
+   * @param query request
+   * @param method HTTP method
+   * @return string result, or {@code null} for a failure.
+   * @throws IOException I/O exception
+   */
+  protected static String request(final String query, final String method)
+      throws IOException {
 
     final URL url = new URL(root + query);
     final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     try {
-      conn.setRequestMethod(method.name());
+      conn.setRequestMethod(method);
       return read(new BufferInput(conn.getInputStream())).replaceAll("\r?\n *", "");
     } catch(final IOException ex) {
       throw error(conn, ex);
@@ -151,7 +162,7 @@ public abstract class HTTPTest extends SandboxTest {
     conn.setRequestMethod(POST.name());
     conn.setRequestProperty(MimeTypes.CONTENT_TYPE, type);
     // basic authentication
-    final String encoded = Base64.encode(Text.S_ADMIN + ':' + Text.S_ADMIN);
+    final String encoded = org.basex.util.Base64.encode(Text.S_ADMIN + ':' + Text.S_ADMIN);
     conn.setRequestProperty(HTTPText.AUTHORIZATION, HTTPText.BASIC + ' ' + encoded);
     // send query
     try(final OutputStream out = conn.getOutputStream()) {

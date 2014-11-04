@@ -4,12 +4,14 @@ import static org.junit.Assert.*;
 
 import java.io.*;
 
+import org.basex.*;
+import org.basex.build.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.io.*;
-import org.basex.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * Test index updates when using memory storage ({@link MemData}).
@@ -31,7 +33,7 @@ public class MemDataTest extends SandboxTest {
    */
   @Before
   public void setUp() throws IOException {
-    data = CreateDB.mainMem(new IOContent(XML), context);
+    data = MemBuilder.build(new IOContent(XML));
     context.openDB(data);
   }
 
@@ -81,7 +83,6 @@ public class MemDataTest extends SandboxTest {
     final String c = new XQuery("count(//d[text() = 'test2'])").execute(context);
     assertEquals("Second node not found", 2, Integer.parseInt(c));
   }
-
 
   /**
    * Insert node update test.

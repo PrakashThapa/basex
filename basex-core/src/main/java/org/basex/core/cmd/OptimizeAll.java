@@ -7,7 +7,7 @@ import java.io.*;
 import org.basex.build.*;
 import org.basex.core.*;
 import org.basex.core.parse.*;
-import org.basex.core.parse.Commands.*;
+import org.basex.core.parse.Commands.Cmd;
 import org.basex.data.*;
 import org.basex.index.*;
 import org.basex.io.*;
@@ -88,7 +88,7 @@ public final class OptimizeAll extends ACreate {
    * Recreates the database, drops the old instance and renames the recreated instance.
    * @param data disk data
    * @param ctx database context
-   * @param cmd command reference, or {@code null}
+   * @param cmd command reference or {@code null}
    * @throws IOException I/O Exception during index rebuild
    * @throws BaseXException database exception
    */
@@ -121,40 +121,35 @@ public final class OptimizeAll extends ACreate {
     ctx.options.set(MainOptions.STOPWORDS,  m.stopwords);
 
     // build database and index structures
-    final DiskBuilder builder = new DiskBuilder(tname, new DBParser(old, cmd), ctx);
-    try {
+    try(final DiskBuilder builder = new DiskBuilder(tname, new DBParser(old, cmd), ctx)) {
       final DiskData d = builder.build();
-      if(m.createtext) create(IndexType.TEXT, d, cmd);
-      if(m.createattr) create(IndexType.ATTRIBUTE, d, cmd);
-      if(m.createftxt) create(IndexType.FULLTEXT, d, cmd);
-      // adopt original meta data
-      d.meta.createtext = m.createtext;
-      d.meta.createattr = m.createattr;
-      d.meta.createftxt = m.createftxt;
-      d.meta.filesize   = m.filesize;
-      d.meta.users      = m.users;
-      d.meta.dirty      = true;
-
-      // move binary files
-      final IOFile bin = data.meta.binaries();
-      if(bin.exists()) bin.rename(d.meta.binaries());
-      final IOFile upd = old.updateFile();
-      if(upd.exists()) upd.copyTo(d.updateFile());
-      d.close();
-    } finally {
       try {
-        builder.close();
-      } catch(final IOException ex) {
-        Util.debug(ex);
+        if(m.createtext) create(IndexType.TEXT, d, cmd);
+        if(m.createattr) create(IndexType.ATTRIBUTE, d, cmd);
+        if(m.createftxt) create(IndexType.FULLTEXT, d, cmd);
+        // adopt original meta data
+        d.meta.createtext = m.createtext;
+        d.meta.createattr = m.createattr;
+        d.meta.createftxt = m.createftxt;
+        d.meta.filesize   = m.filesize;
+        d.meta.users      = m.users;
+        d.meta.dirty      = true;
+
+        // move binary files
+        final IOFile bin = data.meta.binaries();
+        if(bin.exists()) bin.rename(d.meta.binaries());
+        final IOFile upd = old.updateFile();
+        if(upd.exists()) upd.copyTo(d.updateFile());
+      } finally {
+        d.close();
       }
     }
+    // return database instance
     Close.close(data, ctx);
 
     // drop old database and rename temporary to final name
-    if(!DropDB.drop(m.name, ctx))
-      throw new BaseXException(DB_NOT_DROPPED_X, m.name);
-    if(!AlterDB.alter(tname, m.name, ctx))
-      throw new BaseXException(DB_NOT_RENAMED_X, tname);
+    if(!DropDB.drop(m.name, ctx)) throw new BaseXException(DB_NOT_DROPPED_X, m.name);
+    if(!AlterDB.alter(tname, m.name, ctx)) throw new BaseXException(DB_NOT_RENAMED_X, tname);
   }
 
   /**
@@ -166,26 +161,26 @@ public final class OptimizeAll extends ACreate {
   private static final class DBParser extends Parser {
     /** Disk data. */
     private final DiskData data;
-    /** Calling command (can be {@code null}). */
+    /** Calling command (may be {@code null}). */
     final OptimizeAll cmd;
 
     /**
      * Constructor.
-     * @param d disk data
-     * @param c calling command (can be {@code null})
+     * @param data disk data
+     * @param cmd calling command (may be {@code null})
      */
-    DBParser(final DiskData d, final OptimizeAll c) {
-      super(d.meta.original.isEmpty() ? null : IO.get(d.meta.original), d.meta.options);
-      data = d;
-      cmd = c;
+    DBParser(final DiskData data, final OptimizeAll cmd) {
+      super(data.meta.original.isEmpty() ? null : IO.get(data.meta.original), data.meta.options);
+      this.data = data;
+      this.cmd = cmd;
     }
 
     @Override
     public void parse(final Builder build) throws IOException {
       final Serializer ser = new BuilderSerializer(build) {
         @Override
-        protected void startOpen(final byte[] t) throws IOException {
-          super.startOpen(t);
+        protected void startOpen(final byte[] name) throws IOException {
+          super.startOpen(name);
           if(cmd != null) cmd.pre++;
         }
 

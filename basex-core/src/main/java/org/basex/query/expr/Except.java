@@ -4,7 +4,7 @@ import static org.basex.query.QueryText.*;
 
 import org.basex.query.*;
 import org.basex.query.iter.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.var.*;
@@ -20,24 +20,23 @@ import org.basex.util.hash.*;
 public final class Except extends Set {
   /**
    * Constructor.
-   * @param ii input info
-   * @param e expression list
+   * @param info input info
+   * @param exprs expressions
    */
-  public Except(final InputInfo ii, final Expr[] e) {
-    super(ii, e);
+  public Except(final InputInfo info, final Expr[] exprs) {
+    super(info, exprs);
   }
 
   @Override
-  public Expr compile(final QueryContext ctx, final VarScope scp) throws QueryException {
-    super.compile(ctx, scp);
+  public Expr optimize(final QueryContext qc, final VarScope scp) throws QueryException {
+    super.optimize(qc, scp);
 
-    final int es = expr.length;
-    final ExprList el = new ExprList(es);
-    for(final Expr ex : expr) {
+    final ExprList el = new ExprList(exprs.length);
+    for(final Expr ex : exprs) {
       if(ex.isEmpty()) {
         // remove empty operands (return empty sequence if first value is empty)
-        if(el.isEmpty()) return optPre(null, ctx);
-        ctx.compInfo(OPTREMOVE, this, ex);
+        if(el.isEmpty()) return optPre(qc);
+        qc.compInfo(OPTREMOVE, this, ex);
       } else {
         el.add(ex);
       }
@@ -45,13 +44,13 @@ public final class Except extends Set {
     // ensure that results are always sorted
     if(el.size() == 1 && iterable) return el.get(0);
     // replace expressions with optimized list
-    if(el.size() != es) expr = el.finish();
+    exprs = el.finish();
     return this;
   }
 
   @Override
-  public Expr copy(final QueryContext ctx, final VarScope scp, final IntObjMap<Var> vs) {
-    final Except ex = new Except(info, copyAll(ctx, scp, vs, expr));
+  public Expr copy(final QueryContext qc, final VarScope scp, final IntObjMap<Var> vs) {
+    final Except ex = new Except(info, copyAll(qc, scp, vs, exprs));
     ex.iterable = iterable;
     return copyType(ex);
   }
@@ -60,13 +59,13 @@ public final class Except extends Set {
   protected NodeSeqBuilder eval(final Iter[] iter) throws QueryException {
     final NodeSeqBuilder nc = new NodeSeqBuilder().check();
 
-    for(Item it; (it = iter[0].next()) != null;) nc.add(checkNode(it));
+    for(Item it; (it = iter[0].next()) != null;) nc.add(toNode(it));
     final boolean db = nc.dbnodes();
 
-    for(int e = 1; e != expr.length && nc.size() != 0; ++e) {
+    for(int e = 1; e != exprs.length && nc.size() != 0; ++e) {
       final Iter ir = iter[e];
       for(Item it; (it = ir.next()) != null;) {
-        final int i = nc.indexOf(checkNode(it), db);
+        final int i = nc.indexOf(toNode(it), db);
         if(i != -1) nc.delete(i);
       }
     }

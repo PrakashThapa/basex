@@ -1,6 +1,5 @@
 package org.basex.util.options;
 
-
 /**
  * Single option, stored in {@link Options} instances.
  *
@@ -14,10 +13,10 @@ public abstract class Option<O> {
 
   /**
    * Constructor without default value.
-   * @param n name
+   * @param name name
    */
-  Option(final String n) {
-    name = n;
+  Option(final String name) {
+    this.name = name;
   }
 
   /**
@@ -32,13 +31,13 @@ public abstract class Option<O> {
    * Returns the default value.
    * @return default value
    */
-  public abstract Object value();
+  public abstract O value();
 
   /**
    * Copies mutable default values. Otherwise, returns the existing instance.
    * @return default value
    */
-  public Object copy() {
+  public O copy() {
     return value();
   }
 

@@ -7,6 +7,7 @@ import static org.basex.io.MimeTypes.*;
 import static org.basex.util.Token.*;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 import javax.servlet.*;
@@ -20,7 +21,6 @@ import org.basex.io.*;
 import org.basex.io.serial.*;
 import org.basex.server.*;
 import org.basex.util.*;
-import org.basex.util.Base64;
 import org.basex.util.list.*;
 import org.basex.util.options.*;
 
@@ -36,7 +36,7 @@ public final class HTTPContext {
   /** Servlet response. */
   public final HttpServletResponse res;
   /** Request method. */
-  public final HTTPMethod method;
+  public final String method;
   /** Request method. */
   public final HTTPParams params;
 
@@ -53,6 +53,8 @@ public final class HTTPContext {
   private static Context context;
   /** Initialization flag. */
   private static boolean init;
+  /** Initialized failed. */
+  private static IOException exception;
 
   /** Performance. */
   private final Performance perf = new Performance();
@@ -73,17 +75,16 @@ public final class HTTPContext {
     res = rs;
     params = new HTTPParams(this);
 
-    final String mth = rq.getMethod();
-    method = HTTPMethod.get(mth);
+    method = rq.getMethod();
 
     final StringBuilder uri = new StringBuilder(req.getRequestURL());
     final String qs = req.getQueryString();
     if(qs != null) uri.append('?').append(qs);
-    log('[' + mth + "] " + uri, null);
+    log('[' + method + "] " + uri, null);
 
     // set UTF8 as default encoding (can be overwritten)
     res.setCharacterEncoding(UTF8);
-    segments = toSegments(req.getPathInfo());
+    segments = decode(toSegments(req.getPathInfo()));
 
     // adopt servlet-specific credentials or use global ones
     final GlobalOptions mprop = context().globalopts;
@@ -95,7 +96,7 @@ public final class HTTPContext {
     if(auth != null) {
       final String[] values = auth.split(" ");
       if(values[0].equals(BASIC)) {
-        final String[] cred = Base64.decode(values[1]).split(":", 2);
+        final String[] cred = org.basex.util.Base64.decode(values[1]).split(":", 2);
         if(cred.length != 2) throw new LoginException(NOPASSWD);
         user = cred[0];
         pass = cred[1];
@@ -280,6 +281,14 @@ public final class HTTPContext {
   }
 
   /**
+   * Returns an exception that may have been caught by the initialization of the database server.
+   * @return exception
+   */
+  public static IOException exception() {
+    return exception;
+  }
+
+  /**
    * Assigns serialization parameters.
    * @param opts serialization parameters.
    */
@@ -359,7 +368,14 @@ public final class HTTPContext {
     }
 
     // start server instance
-    if(!context.globalopts.get(GlobalOptions.HTTPLOCAL)) new BaseXServer(context);
+    if(!context.globalopts.get(GlobalOptions.HTTPLOCAL)) {
+      try {
+        new BaseXServer(context);
+      } catch(final IOException ex) {
+        exception = ex;
+        throw ex;
+      }
+    }
   }
 
   /**
@@ -384,6 +400,24 @@ public final class HTTPContext {
       if(!tb.isEmpty()) sl.add(tb.toString());
     }
     return sl.toArray();
+  }
+
+  /**
+   * Decodes the specified path segments.
+   * @param segments strings to be decoded
+   * @return argument
+   * @throws IllegalArgumentException invalid path segments
+   */
+  public static String[] decode(final String[] segments) {
+    try {
+      final int sl = segments.length;
+      for(int s = 0; s < sl; s++) {
+        segments[s] = URLDecoder.decode(segments[s], Prop.ENCODING);
+      }
+      return segments;
+    } catch(final UnsupportedEncodingException ex) {
+      throw new IllegalArgumentException(ex);
+    }
   }
 
   // PRIVATE METHODS ====================================================================

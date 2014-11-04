@@ -8,7 +8,7 @@ import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.query.*;
 import org.basex.query.up.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
 
@@ -37,20 +37,23 @@ public final class ReplaceValue extends NodeUpdate {
 
   /**
    * Constructor.
-   * @param p target node PRE value
-   * @param d target data reference
-   * @param i input info
-   * @param v new value
+   * @param pre target node PRE value
+   * @param data target data reference
+   * @param ii input info
+   * @param value new value
    */
-  public ReplaceValue(final int p, final Data d, final InputInfo i, final byte[] v) {
-    super(UpdateType.REPLACEVALUE, p, d, i);
-    value = v;
-    rec = d.kind(pre) == Data.ELEM;
+  public ReplaceValue(final int pre, final Data data, final InputInfo ii, final byte[] value) {
+    super(UpdateType.REPLACEVALUE, pre, data, ii);
+    this.value = value;
+    rec = data.kind(pre) == Data.ELEM;
   }
 
   @Override
-  public void merge(final Update up) throws QueryException {
-    throw UPMULTREPV.get(info, node());
+  public void prepare(final MemData tmp) { }
+
+  @Override
+  public void merge(final Update update) throws QueryException {
+    throw UPMULTREPV_X.get(info, node());
   }
 
   @Override
@@ -86,9 +89,8 @@ public final class ReplaceValue extends NodeUpdate {
   }
 
   @Override
-  public void addAtomics(final AtomicUpdateCache l) {
-    if(!substituted())
-      l.addUpdateValue(pre, value);
+  public void addAtomics(final AtomicUpdateCache auc) {
+    if(!substituted()) auc.addUpdateValue(pre, value);
   }
 
   @Override

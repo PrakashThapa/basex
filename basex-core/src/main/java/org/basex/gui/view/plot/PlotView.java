@@ -90,7 +90,7 @@ public final class PlotView extends View {
   private boolean rightClick;
   /** Context which is displayed in the plot after a context change which was
    * triggered by the plot itself. */
-  private Nodes nextContext;
+  private DBNodes nextContext;
 
   /**
    * Default constructor.
@@ -278,9 +278,8 @@ public final class PlotView extends View {
     g.setFont(font);
     g.setColor(Color.black);
     final Data data = gui.context.data();
-    final boolean nd = data == null;
-    if(nd || plotWidth - sz < 0 || plotHeight - sz < 0) {
-      BaseXLayout.drawCenter(g, nd ? NO_DATA : NO_PIXELS, w, h / 2 - MARGIN[0]);
+    if(data == null || plotWidth - sz < 0 || plotHeight - sz < 0) {
+      BaseXLayout.drawCenter(g, data == null ? NO_DATA : NO_PIXELS, w, h / 2 - MARGIN[0]);
       return;
     }
 
@@ -302,7 +301,7 @@ public final class PlotView extends View {
      */
     int focused = gui.context.focused;
     if(focused != -1) {
-      final int itmID = data.tagindex.id(plotData.item);
+      final int itmID = data.elemNames.id(plotData.item);
       int k = data.kind(focused);
       int name = data.name(focused);
       while(focused > 0 && itmID != name) {
@@ -388,7 +387,7 @@ public final class PlotView extends View {
     final Graphics gi = markedImg.getGraphics();
     smooth(gi);
 
-    final Nodes marked = gui.context.marked;
+    final DBNodes marked = gui.context.marked;
     if(marked.size() == 0) return;
     final int[] m = Arrays.copyOf(marked.pres, marked.pres.length);
     int i = 0;
@@ -879,7 +878,7 @@ public final class PlotView extends View {
     final int size = itemImg.getWidth() / 2;
     int focusedPre = gui.context.focused;
     // if mouse pointer is outside of the plot the focused item is set to -1,
-    // focus may be refreshed, if necessary
+    // focus may be refreshed if necessary
     if(mouseX < MARGIN[1] ||
         mouseX > getWidth() - MARGIN[3] + size ||
         mouseY < MARGIN[0] - size || mouseY > getHeight() - MARGIN[2]) {
@@ -938,11 +937,9 @@ public final class PlotView extends View {
       // get coordinates for current item
       final int x = calcCoordinate(true, plotData.xAxis.co[i]);
       final int y = calcCoordinate(false, plotData.yAxis.co[i]);
-      if(mx == x && my == y) {
-        il.add(plotData.pres[i]);
-      }
+      if(mx == x && my == y) il.add(plotData.pres[i]);
     }
-    return il.toArray();
+    return il.finish();
   }
 
   /**
@@ -1044,8 +1041,7 @@ public final class PlotView extends View {
       y = calcCoordinate(false, plotData.yAxis.co[i]);
       if(selectionBox.contains(x, y)) il.add(plotData.pres[i]);
     }
-
-    gui.notify.mark(new Nodes(il.toArray(), gui.context.data()), this);
+    gui.notify.mark(new DBNodes(gui.context.data(), il.finish()), this);
     nextContext = gui.context.marked;
     drawSubNodes = false;
     markingChanged = true;
@@ -1073,7 +1069,7 @@ public final class PlotView extends View {
     if(r) { rightClick = true; return; }
     // no item is focused. no nodes marked after mouse click
     if(gui.context.focused == -1) {
-      gui.notify.mark(new Nodes(gui.context.data()), this);
+      gui.notify.mark(new DBNodes(gui.context.data()), this);
       return;
     }
 
@@ -1083,19 +1079,19 @@ public final class PlotView extends View {
     final int[] il = overlappingNodes(pre);
     // right mouse or shift down
     if(e.isShiftDown()) {
-      final Nodes marked = gui.context.marked;
+      final DBNodes marked = gui.context.marked;
       marked.union(il);
       gui.notify.mark(marked, this);
       // double click
     } else if(e.getClickCount() == 2) {
       // context change also self implied, thus right click set to true
       rightClick = true;
-      final Nodes marked = new Nodes(gui.context.data());
+      final DBNodes marked = new DBNodes(gui.context.data());
       marked.union(il);
       gui.notify.context(marked, false, null);
       // simple mouse click
     } else {
-      final Nodes marked = new Nodes(il, gui.context.data());
+      final DBNodes marked = new DBNodes(gui.context.data(), il);
       gui.notify.mark(marked, this);
     }
     nextContext = gui.context.marked;

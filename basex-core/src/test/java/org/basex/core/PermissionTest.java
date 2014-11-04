@@ -6,11 +6,12 @@ import static org.junit.Assert.*;
 import java.io.*;
 
 import org.basex.*;
+import org.basex.api.client.*;
 import org.basex.core.cmd.*;
-import org.basex.core.parse.Commands.*;
-import org.basex.server.*;
+import org.basex.core.parse.Commands.CmdIndex;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class tests user permissions.
@@ -21,8 +22,10 @@ import org.junit.*;
 public final class PermissionTest extends SandboxTest {
   /** Name of the database to be renamed. */
   private static final String RENAMED = Util.className(PermissionTest.class) + 'r';
+  /** Test folder. */
+  private static final String FOLDER = "src/test/resources/";
   /** Test repository. **/
-  private static final String REPO = "src/test/resources/repo/";
+  private static final String REPO = FOLDER + "repo/";
 
   /** Server reference. */
   private static BaseXServer server;
@@ -79,7 +82,7 @@ public final class PermissionTest extends SandboxTest {
       adminSession.execute(new DropDB(NAME));
       adminSession.close();
       // give the server some time to clean up the sessions before next test
-      Performance.sleep(50);
+      Performance.sleep(100);
     } catch(final Exception ex) {
       fail(Util.message(ex));
     }
@@ -245,6 +248,7 @@ public final class PermissionTest extends SandboxTest {
     no(new Grant("read", NAME), testSession);
     no(new Grant("none", NAME), testSession);
     no(new AlterUser(NAME, Token.md5(NAME)), testSession);
+    no(new org.basex.core.cmd.Test(FOLDER + "tests-ok.xqm"), testSession);
   }
 
   /** Tests all commands where admin permission is needed. */
@@ -269,6 +273,7 @@ public final class PermissionTest extends SandboxTest {
     ok(new RepoInstall(REPO + "/pkg3.xar", null), testSession);
     ok(new RepoList(), testSession);
     ok(new RepoDelete("http://www.pkg3.com", null), testSession);
+    ok(new org.basex.core.cmd.Test(FOLDER + "tests-ok.xqm"), testSession);
   }
 
   /** Drops users. */

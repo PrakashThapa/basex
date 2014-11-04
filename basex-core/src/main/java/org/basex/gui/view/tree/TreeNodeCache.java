@@ -32,7 +32,7 @@ final class TreeNodeCache implements TreeConstants {
     for(int i = 0; i < rs; ++i) {
       final int root = roots.get(i);
       alil.get(0).add(root);
-      final int sh = i + 1 == roots.size() ? ts : roots.get(i + 1);
+      final int sh = i + 1 == rs ? ts : roots.get(i + 1);
       for(int p = root + 1; p < sh; ++p) {
         final int k = data.kind(p);
         if(!atts && k == Data.ATTR) continue;
@@ -129,14 +129,6 @@ final class TreeNodeCache implements TreeConstants {
   int searchPreArrayPos(final int lv, final int l, final int r, final int pre) {
     return searchPreIndex(lv, pre, pre, l, r);
   }
-
-  /**
-   * Returns pre by given index.
-   * @param bo border
-   * @param ix index
-   * @return pre int getPrePerIndex(final TreeBorder bo, final int ix) { return
-   *         nodes[bo.level].get(bo.start + ix); }
-   */
 
   /**
    * Searches for pre value or pre range.

@@ -1,11 +1,10 @@
 package org.basex.performance;
 
 import org.basex.*;
+import org.basex.api.client.*;
 import org.basex.core.cmd.*;
-import org.basex.server.*;
-import org.basex.SandboxTest;
 import org.basex.util.*;
-import org.junit.*;
+import org.junit.Test;
 
 /**
  * Testing concurrent XQUF statements on a single database.
@@ -61,9 +60,9 @@ public final class XQUFServerStressTest extends SandboxTest {
     final BaseXServer server = createServer();
     insert(clients, runs);
     delete(clients, runs);
-    final ClientSession s = createClient();
-    s.execute(new DropDB(NAME));
-    s.close();
+    try(final ClientSession cs = createClient()) {
+      cs.execute(new DropDB(NAME));
+    }
     stopServer(server);
   }
 
@@ -74,9 +73,9 @@ public final class XQUFServerStressTest extends SandboxTest {
    * @throws Exception exception
    */
   private static void insert(final int clients, final int runs) throws Exception {
-    final ClientSession s = createClient();
-    s.execute(new CreateDB(NAME, "<doc/>"));
-    s.close();
+    try(final ClientSession cs = createClient()) {
+      cs.execute(new CreateDB(NAME, "<doc/>"));
+    }
     run("insert node <node/> into doc('" + NAME + "')/doc", clients, runs);
   }
 
@@ -87,12 +86,12 @@ public final class XQUFServerStressTest extends SandboxTest {
    * @throws Exception exception
    */
   private static void delete(final int clients, final int runs) throws Exception {
-    final ClientSession s = createClient();
-    s.execute(new CreateDB(NAME, "<doc/>"));
-    final int c = 100 + clients * clients;
-    s.execute(new XQuery("for $i in 1 to " + c +
-        " return insert node <node/> into doc('" + NAME + "')/doc"));
-    s.close();
+    try(final ClientSession cs = createClient()) {
+      cs.execute(new CreateDB(NAME, "<doc/>"));
+      final int c = 100 + clients * clients;
+      cs.execute(new XQuery("for $i in 1 to " + c +
+          " return insert node <node/> into doc('" + NAME + "')/doc"));
+    }
     run("delete nodes (doc('" + NAME + "')/doc/node)[1]", clients, runs);
   }
 
@@ -103,9 +102,7 @@ public final class XQUFServerStressTest extends SandboxTest {
    * @param runs number of runs
    * @throws Exception exception
    */
-  private static void run(final String query, final int clt, final int runs)
-      throws Exception {
-
+  private static void run(final String query, final int clt, final int runs) throws Exception {
     final Client[] cl = new Client[clt];
     for(int i = 0; i < clt; ++i) cl[i] = new Client(query, runs);
     for(final Client c : cl) c.start();

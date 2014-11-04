@@ -23,7 +23,7 @@ final class QueryCompiler {
   private static final int MAP_THRESHOLD = 16;
 
   /** Query context. */
-  private final QueryContext ctx;
+  private final QueryContext qc;
 
   /** Result list. */
   private final ArrayList<Scope[]> result = new ArrayList<>();
@@ -43,11 +43,11 @@ final class QueryCompiler {
 
   /**
    * Constructor.
-   * @param cx query context
+   * @param qc query context
    * @param root root expression
    */
-  private QueryCompiler(final QueryContext cx, final Scope root) {
-    ctx = cx;
+  private QueryCompiler(final QueryContext qc, final Scope root) {
+    this.qc = qc;
     add(root);
   }
 
@@ -96,13 +96,12 @@ final class QueryCompiler {
 
   /**
    * Compiles all necessary parts of this query.
-   * @param ctx query context
+   * @param qc query context
    * @param root root expression
    * @throws QueryException compilation errors
    */
-  public static void compile(final QueryContext ctx, final MainModule root)
-      throws QueryException {
-    if(!root.compiled()) new QueryCompiler(ctx, root).compile();
+  public static void compile(final QueryContext qc, final MainModule root) throws QueryException {
+    if(!root.compiled()) new QueryCompiler(qc, root).compile();
   }
 
   /**
@@ -111,10 +110,10 @@ final class QueryCompiler {
    */
   private void compile() throws QueryException {
     // compile the used scopes only
-    for(final Scope[] comp : components(0)) circCheck(comp).compile(ctx);
+    for(final Scope[] comp : components(0)) circCheck(comp).compile(qc);
 
     // check for circular variable declarations without compiling the unused scopes
-    for(final StaticVar v : ctx.vars) {
+    for(final StaticVar v : qc.vars) {
       if(id(v) == -1) for(final Scope[] comp : components(add(v))) circCheck(comp);
     }
   }
@@ -239,27 +238,16 @@ final class QueryCompiler {
    * @throws QueryException if a variable directly calls itself
    */
   private int[] neighbors(final Scope curr) throws QueryException {
-    final IntList adj = new IntList();
+    final IntList adj = new IntList(0);
     final boolean ok = curr.visit(new ASTVisitor() {
       @Override
-      public boolean staticVar(final StaticVar var) {
-        return var != curr && neighbor(var);
-      }
-
+      public boolean staticVar(final StaticVar var) { return var != curr && neighbor(var); }
       @Override
-      public boolean staticFuncCall(final StaticFuncCall call) {
-        return neighbor(call.func());
-      }
-
+      public boolean staticFuncCall(final StaticFuncCall call) { return neighbor(call.func()); }
       @Override
-      public boolean inlineFunc(final Scope sub) {
-        return sub.visit(this);
-      }
-
+      public boolean inlineFunc(final Scope sub) { return sub.visit(this); }
       @Override
-      public boolean funcItem(final FuncItem func) {
-        return neighbor(func);
-      }
+      public boolean funcItem(final FuncItem func) { return neighbor(func); }
 
       /**
        * Adds a neighbor of the currently inspected scope.
@@ -272,10 +260,11 @@ final class QueryCompiler {
         return true;
       }
     });
+
     if(!ok) {
       final StaticVar var = (StaticVar) curr;
-      throw Err.CIRCREF.get(var.info, "$" + var.name);
+      throw CIRCREF_X.get(var.info, "$" + var.name);
     }
-    return adj.toArray();
+    return adj.finish();
   }
 }

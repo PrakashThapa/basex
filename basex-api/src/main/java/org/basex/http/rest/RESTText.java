@@ -1,7 +1,8 @@
 package org.basex.http.rest;
 
-import org.basex.core.*;
+import org.basex.query.*;
 import org.basex.query.value.item.*;
+import org.basex.util.*;
 
 /**
  * This class assembles texts which are used in the HTTP classes.
@@ -10,17 +11,17 @@ import org.basex.query.value.item.*;
  * @author Christian Gruen
  */
 interface RESTText {
-  /** REST string.  */
-  String REST = "rest";
   /** REST URI. */
-  String RESTURI = Text.URL + '/' + REST;
+  String REST_PREFIX = Token.string(QueryText.REST_PREFIX);
+  /** REST URI. */
+  String REST_URI = new TokenBuilder(Prop.URL).add('/').add(QueryText.REST_PREFIX).toString();
 
   /** Name. */
-  QNm Q_DATABASES = QNm.get(REST, "databases", RESTURI);
+  QNm Q_DATABASES = QNm.get(REST_PREFIX, "databases", REST_URI);
   /** Name. */
-  QNm Q_DATABASE = QNm.get(REST, "databases", RESTURI);
+  QNm Q_DATABASE = QNm.get(REST_PREFIX, "databases", REST_URI);
   /** Name. */
-  QNm Q_RESOURCE = QNm.get(REST, "resource", RESTURI);
+  QNm Q_RESOURCE = QNm.get(REST_PREFIX, "resource", REST_URI);
 
   /** Attribute. */
   String RESOURCES = "resources";

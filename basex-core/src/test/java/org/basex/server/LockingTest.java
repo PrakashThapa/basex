@@ -11,6 +11,7 @@ import org.basex.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.junit.*;
+import org.junit.Test;
 import org.junit.runner.*;
 import org.junit.runners.*;
 import org.junit.runners.Parameterized.Parameters;
@@ -29,9 +30,9 @@ public final class LockingTest extends SandboxTest {
   private static final int REPEAT = 1;
 
   /** Maximum sleep time in ms. */
-  private static final int SLEEP = 200;
+  private static final long SLEEP = 200L;
   /** Additional allowed holding time for client creation overhead, ... in ms. */
-  private static final int SYNC = 100;
+  private static final long SYNC = 100L;
 
   /** Test document. */
   private static final String DOC = "src/test/resources/test.xml";

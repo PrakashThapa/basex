@@ -6,6 +6,7 @@ import static org.basex.util.Token.*;
 import org.basex.core.*;
 import org.basex.io.*;
 import org.basex.query.util.*;
+import org.basex.query.util.collation.*;
 import org.basex.query.util.format.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
@@ -26,14 +27,14 @@ public final class StaticContext {
   /** Mix updates flag. */
   public final boolean mixUpdates;
 
-  /** Default collation (default collection ({@link QueryText#COLLATIONURI}): {@code null}). */
+  /** Default collation (default collection ({@link QueryText#COLLATION_URI}): {@code null}). */
   public Collation collation;
   /** Default element/type namespace. */
   public byte[] elemNS;
   /** Default function namespace. */
-  public byte[] funcNS = FNURI;
-  /** Context item static type. */
-  public SeqType initType;
+  public byte[] funcNS = FN_URI;
+  /** Static type of context value. */
+  public SeqType contextType;
 
   /** Construction mode. */
   public boolean strip;
@@ -48,8 +49,6 @@ public final class StaticContext {
   /** Copy-namespaces mode: (no-)inherit. */
   public boolean inheritNS = true;
 
-  /** XQuery version flag. */
-  private boolean xquery3;
   /** Static Base URI. */
   private Uri baseURI = Uri.EMPTY;
 
@@ -60,7 +59,6 @@ public final class StaticContext {
   public StaticContext(final Context ctx) {
     final MainOptions opts = ctx.options;
     mixUpdates = opts.get(MainOptions.MIXUPDATES);
-    xquery3 = opts.get(MainOptions.XQUERY3);
   }
 
   /**
@@ -82,11 +80,11 @@ public final class StaticContext {
   }
 
   /**
-   * Returns an IO representation of the static base URI, or {@code null}.
+   * Returns an IO representation of the static base URI or {@code null}.
    * @return IO reference
    */
   public IO baseIO() {
-    return baseURI == Uri.EMPTY ? null : IO.get(baseURI.toJava());
+    return baseURI == Uri.EMPTY ? null : IO.get(string(baseURI.string()));
   }
 
   /**
@@ -114,28 +112,16 @@ public final class StaticContext {
    * @param uri uri to be set
    */
   public void baseURI(final String uri) {
+    final IO base = IO.get(uri);
     if(uri.isEmpty()) {
       baseURI = Uri.EMPTY;
+    } else if(base instanceof IOContent) {
+      baseURI = Uri.uri(uri);
+    } else if(baseURI == Uri.EMPTY) {
+      baseURI = Uri.uri(base.url());
     } else {
-      final IO io = IO.get(uri);
-      baseURI = Uri.uri(io instanceof IOFile ? io.url() : uri);
+      baseURI = Uri.uri(baseIO().merge(uri).url());
     }
-  }
-
-  /**
-   * Assigns the XQuery 3.0 flag.
-   * @param xq30 XQuery 3.0 flag
-   */
-  public void xquery3(final boolean xq30) {
-    xquery3 = xq30;
-  }
-
-  /**
-   * Checks if XQuery 3.0 features are allowed.
-   * @return {@code true} if XQuery 3.0 is allowed, {@code false} otherwise
-   */
-  public boolean xquery3() {
-    return xquery3;
   }
 
   @Override

@@ -4,10 +4,11 @@ import java.util.*;
 
 import org.basex.core.*;
 import org.basex.core.cmd.*;
-import org.basex.core.parse.Commands.*;
+import org.basex.core.parse.Commands.CmdIndex;
 import org.basex.query.expr.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class tests if string range queries are correctly evaluated with(out) the index.
@@ -34,8 +35,7 @@ public final class StringRangeTest extends QueryPlanTest {
       // add random value
       final int s = rnd.nextInt(8);
       for(int j = 0; j <= s; j++) r.add('A' + rnd.nextInt(26));
-      tb.add("<x>").add(r.finish()).add("</x>");
-      r.reset();
+      tb.add("<x>").add(r.next()).add("</x>");
     }
     tb.add("</xml>");
     new CreateDB(NAME, tb.toString()).execute(context);

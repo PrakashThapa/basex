@@ -16,10 +16,10 @@ import org.basex.util.*;
 public abstract class ANum extends Item {
   /**
    * Constructor.
-   * @param t type
+   * @param type type
    */
-  ANum(final Type t) {
-    super(t);
+  ANum(final Type type) {
+    super(type);
   }
 
   /* Removing "throws QueryException" */
@@ -68,9 +68,35 @@ public abstract class ANum extends Item {
    */
   protected abstract float flt();
 
+  /**
+   * Returns an absolute value.
+   * @return absolute value
+   */
+  public abstract ANum abs();
+
+  /**
+   * Returns an ceiling value.
+   * @return ceiling value
+   */
+  public abstract ANum ceiling();
+
+  /**
+   * Returns an floor value.
+   * @return floor value
+   */
+  public abstract ANum floor();
+
+  /**
+   * Returns a rounded value.
+   * @param scale scale
+   * @param even half-to-even flag
+   * @return rounded value
+   */
+  public abstract ANum round(final int scale, final boolean even);
+
   @Override
-  public Item test(final QueryContext ctx, final InputInfo ii) throws QueryException {
-    return dbl() == ctx.pos ? this : null;
+  public Item test(final QueryContext qc, final InputInfo ii) throws QueryException {
+    return dbl() == qc.pos ? this : null;
   }
 
   @Override

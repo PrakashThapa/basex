@@ -5,12 +5,13 @@ import static org.junit.Assert.*;
 
 import java.lang.annotation.*;
 
+import org.basex.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
-import org.basex.*;
 import org.basex.query.simple.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 import org.junit.rules.*;
 import org.junit.runners.model.*;
 
@@ -57,16 +58,8 @@ public final class FTIndexQueryTest extends SandboxTest {
       if(q.length == 3) assertQuery((String) q[2]);
   }
 
-  /** Run all tests from {@link XPathMarkFTTest}. */
-  @Test
-  @InputData(XPathMarkFTTest.DOC)
-  public void testXPathMarkFTTest() {
-    for(final Object[] q : XPathMarkFTTest.QUERIES) assertQuery((String) q[2]);
-  }
-
   /** Word distance test. */
   @Test
-  @Ignore("GH-359")
   public void testWordsDistance() {
     assertQuery(
         "//*[text() contains text 'A B' all words distance exactly 0 words]");
@@ -74,7 +67,6 @@ public final class FTIndexQueryTest extends SandboxTest {
 
   /** {@code ft:mark()} test with ft option {@code all words}. */
   @Test
-  @Ignore("GH-337")
   public void testFTMarkAllWords() {
     assertQuery(
         _FT_MARK.args(" //*[text() contains text {'A B'} all words], 'b'"));

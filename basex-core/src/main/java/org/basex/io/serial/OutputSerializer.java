@@ -18,6 +18,7 @@ import org.basex.util.*;
 import org.basex.util.ft.*;
 import org.basex.util.hash.*;
 import org.basex.util.options.*;
+import org.basex.util.options.Options.YesNoOmit;
 
 /**
  * This class serializes data to an output stream.
@@ -51,10 +52,10 @@ public abstract class OutputSerializer extends Serializer {
   /** New line. */
   protected final byte[] nl;
   /** Output stream. */
-  final PrintOutput out;
+  protected final PrintOutput out;
 
   /** Item flag (used for formatting). */
-  private boolean item;
+  private boolean atomic;
   /** Charset encoder. */
   private CharsetEncoder encoder;
   /** Encoding buffer. */
@@ -99,7 +100,7 @@ public abstract class OutputSerializer extends Serializer {
   protected OutputSerializer(final OutputStream os, final SerializerOptions sopts,
       final String... versions) throws IOException {
 
-    final SerializerOptions opts = sopts == null ? OPTIONS : sopts;
+    final SerializerOptions opts = sopts == null ? SerializerOptions.get(true) : sopts;
     final String ver = supported(VERSION, opts, versions);
     final String htmlver = supported(HTML_VERSION, opts, V40, V401, V50);
     html5 = htmlver.equals(V50) || ver.equals(V50);
@@ -114,7 +115,7 @@ public abstract class OutputSerializer extends Serializer {
     try {
       encoding = Charset.forName(enc);
     } catch(final Exception ex) {
-      throw SERENCODING.getIO(enc);
+      throw SERENCODING_X.getIO(enc);
     }
     utf8 = enc == UTF8;
     if(!utf8) {
@@ -142,7 +143,7 @@ public abstract class OutputSerializer extends Serializer {
     indent  = opts.yes(INDENT) && format;
 
     webdav = "webdav".equals(maps);
-    if(!webdav && !maps.isEmpty()) throw SERMAP.getIO(maps);
+    if(!webdav && !maps.isEmpty()) throw SERMAP_X.getIO(maps);
 
     if(docsys.isEmpty()) docsys = null;
     if(docpub.isEmpty()) docpub = null;
@@ -165,8 +166,8 @@ public abstract class OutputSerializer extends Serializer {
 
     final String supp = opts.get(SUPPRESS_INDENTATION);
     if(!supp.isEmpty()) {
-      for(final String c : supp.split("\\s+")) {
-        if(!c.isEmpty()) suppress.add(c);
+      for(final byte[] c : split(normalize(token(supp)), ' ')) {
+        if(c.length != 0) suppress.add(c);
       }
     }
 
@@ -175,9 +176,11 @@ public abstract class OutputSerializer extends Serializer {
     final boolean xml = this instanceof XMLSerializer || this instanceof XHTMLSerializer;
     if(xml || html) {
       final String cdse = opts.get(CDATA_SECTION_ELEMENTS);
-      for(final String c : cdse.split("\\s+")) {
-        if(c.isEmpty()) continue;
-        if(!html || c.contains(":") && (!html5 || !c.contains("html:"))) cdata.add(c);
+      if(!cdse.isEmpty()) {
+        for(final byte[] c :  split(normalize(token(cdse)), ' ')) {
+          if(c.length == 0) continue;
+          if(!html || contains(c, ':') && (!html5 || !string(c).contains("html:"))) cdata.add(c);
+        }
       }
 
       if(undecl && ver.equals(V10)) throw SERUNDECL.getIO();
@@ -203,7 +206,7 @@ public abstract class OutputSerializer extends Serializer {
 
     // open results element
     if(wrap) {
-      startElement(concat(wPre, COLON, T_RESULTS));
+      openElement(concat(wPre, COLON, T_RESULTS));
       namespace(wPre, token(opts.get(WRAP_URI)));
     }
   }
@@ -211,7 +214,7 @@ public abstract class OutputSerializer extends Serializer {
   @Override
   public final void reset() {
     sep = false;
-    item = false;
+    atomic = false;
     isep = false;
   }
 
@@ -244,7 +247,7 @@ public abstract class OutputSerializer extends Serializer {
         isep = true;
       }
     }
-    if(wrap) startElement(wPre.length == 0 ? T_RESULT : concat(wPre, COLON, T_RESULT));
+    if(wrap) openElement(wPre.length == 0 ? T_RESULT : concat(wPre, COLON, T_RESULT));
   }
 
   @Override
@@ -253,13 +256,13 @@ public abstract class OutputSerializer extends Serializer {
   }
 
   @Override
-  protected void attribute(final byte[] n, final byte[] v) throws IOException {
+  protected void attribute(final byte[] name, final byte[] value) throws IOException {
     print(' ');
-    print(n);
+    print(name);
     print(ATT1);
-    final int vl = v.length;
-    for(int k = 0; k < vl; k += cl(v, k)) {
-      final int ch = cp(v, k);
+    final int vl = value.length;
+    for(int k = 0; k < vl; k += cl(value, k)) {
+      final int ch = cp(value, k);
       if(!format) {
         printChar(ch);
       } else if(ch == '"') {
@@ -274,67 +277,64 @@ public abstract class OutputSerializer extends Serializer {
   }
 
   @Override
-  protected void finishText(final byte[] b) throws IOException {
-    final int bl = b.length;
-    if(cdata.isEmpty() || tags.isEmpty() || !cdata.contains(tags.peek())) {
-      for(int k = 0; k < bl; k += cl(b, k)) encode(cp(b, k));
-    } else {
-      print(CDATA_O);
-      int c = 0;
-      for(int k = 0; k < b.length; k += cl(b, k)) {
-        final int ch = cp(b, k);
-        if(ch == ']') {
-          ++c;
-        } else {
-          if(c > 1 && ch == '>') {
-            print(CDATA_C);
-            print(CDATA_O);
+  protected void text(final byte[] value, final FTPos ftp) throws IOException {
+    if(ftp == null) {
+      final int bl = value.length;
+      if(cdata.isEmpty() || elems.isEmpty() || !cdata.contains(elems.peek())) {
+        for(int k = 0; k < bl; k += cl(value, k)) encode(cp(value, k));
+      } else {
+        print(CDATA_O);
+        int c = 0;
+        for(int k = 0; k < value.length; k += cl(value, k)) {
+          final int ch = cp(value, k);
+          if(ch == ']') {
+            ++c;
+          } else {
+            if(c > 1 && ch == '>') {
+              print(CDATA_C);
+              print(CDATA_O);
+            }
+            c = 0;
           }
-          c = 0;
+          printChar(ch);
         }
-        printChar(ch);
+        print(CDATA_C);
       }
-      print(CDATA_C);
+    } else {
+      final FTLexer lex = new FTLexer().sc().init(value);
+      while(lex.hasNext()) {
+        final FTSpan span = lex.next();
+        if(!span.special && ftp.contains(span.pos)) print((char) TokenBuilder.MARK);
+        final byte[] t = span.text;
+        for(int k = 0; k < t.length; k += cl(t, k)) encode(cp(t, k));
+      }
     }
     sep = false;
   }
 
   @Override
-  protected void finishText(final byte[] b, final FTPos ftp) throws IOException {
-    final FTLexer lex = new FTLexer().sc().init(b);
-    while(lex.hasNext()) {
-      final FTSpan span = lex.next();
-      if(!span.special && ftp.contains(span.pos)) print((char) TokenBuilder.MARK);
-      final byte[] t = span.text;
-      for(int k = 0; k < t.length; k += cl(t, k)) encode(cp(t, k));
-    }
-    sep = false;
-  }
-
-  @Override
-  protected void finishComment(final byte[] n) throws IOException {
+  protected void comment(final byte[] value) throws IOException {
     if(sep) indent();
     print(COMM_O);
-    print(n);
+    print(value);
     print(COMM_C);
     sep = true;
   }
 
   @Override
-  protected void finishPi(final byte[] n, final byte[] v) throws IOException {
+  protected void pi(final byte[] name, final byte[] value) throws IOException {
     if(sep) indent();
     print(PI_O);
-    print(n);
+    print(name);
     print(' ');
-    print(v);
+    print(value);
     print(PI_C);
     sep = true;
   }
 
   @Override
   protected void atomic(final Item it, final boolean iter) throws IOException {
-    if(sep && item) print(' ');
-
+    if(sep && atomic) print(' ');
     try {
       if(it instanceof StrStream) {
         try(final InputStream ni = ((StrStream) it).input(null)) {
@@ -353,20 +353,20 @@ public abstract class OutputSerializer extends Serializer {
       throw new QueryIOException(ex);
     }
     sep = true;
-    item = true;
+    atomic = true;
   }
 
   @Override
-  protected void openDoc(final byte[] n) throws IOException {
+  protected void openDoc(final byte[] name) throws IOException {
     sep = false;
   }
 
   @Override
-  protected void startOpen(final byte[] t) throws IOException {
-    doctype(t);
+  protected void startOpen(final byte[] name) throws IOException {
+    doctype(name);
     if(sep) indent();
     print(ELEM_O);
-    print(t);
+    print(name);
     sep = true;
   }
 
@@ -384,7 +384,7 @@ public abstract class OutputSerializer extends Serializer {
   protected void finishClose() throws IOException {
     if(sep) indent();
     print(ELEM_OS);
-    print(tag);
+    print(elem);
     print(ELEM_C);
     sep = true;
   }
@@ -415,16 +415,16 @@ public abstract class OutputSerializer extends Serializer {
 
   /**
    * Prints the document type declaration.
-   * @param dt document type, or {@code null} for html type
+   * @param type document type or {@code null} for html type
    * @return true if doctype was added
    * @throws IOException I/O exception
    */
-  boolean doctype(final byte[] dt) throws IOException {
-    if(level != 0 || docsys == null && docpub == null) return false;
+  boolean doctype(final byte[] type) throws IOException {
+    if(lvl != 0 || docsys == null && docpub == null) return false;
     if(sep) indent();
     print(DOCTYPE);
-    if(dt == null) print(HTML);
-    else print(dt);
+    if(type == null) print(HTML);
+    else print(type);
     if(docpub != null) print(' ' + PUBLIC + " \"" + docpub + '"');
     else print(' ' + SYSTEM);
     if(docsys != null) print(" \"" + docsys + '"');
@@ -438,15 +438,15 @@ public abstract class OutputSerializer extends Serializer {
    * @throws IOException I/O exception
    */
   protected void indent() throws IOException {
-    if(item) {
-      item = false;
+    if(atomic) {
+      atomic = false;
     } else if(indent) {
-      if(!suppress.isEmpty() && !tags.isEmpty()) {
-        for(final byte[] t : tags) if(suppress.contains(t)) return;
+      if(!suppress.isEmpty() && !elems.isEmpty()) {
+        for(final byte[] t : elems) if(suppress.contains(t)) return;
       }
       print(nl);
-      final int ls = level * indents;
-      for(int l = 0; l < ls; ++l) print(tab);
+      final int ls = lvl * indents;
+      for(int l = 0; l < ls; l++) print(tab);
     }
   }
 
@@ -482,7 +482,7 @@ public abstract class OutputSerializer extends Serializer {
   protected void print(final int ch) throws IOException {
     // comparison by reference
     if(utf8) {
-      out.utf8(ch);
+      out.print(ch);
     } else {
       encbuffer.reset();
       encoder.reset();
@@ -507,15 +507,15 @@ public abstract class OutputSerializer extends Serializer {
 
   /**
    * Writes a string in the current encoding.
-   * @param s string to be printed
+   * @param string string to be printed
    * @throws IOException I/O exception
    */
-  protected final void print(final String s) throws IOException {
+  protected final void print(final String string) throws IOException {
     // comparison by reference
     if(utf8) {
-      for(final byte b : token(s)) out.write(b);
+      for(final byte b : token(string)) out.write(b);
     } else {
-      out.write(s.getBytes(encoding));
+      out.write(string.getBytes(encoding));
     }
   }
 
@@ -530,7 +530,7 @@ public abstract class OutputSerializer extends Serializer {
     if(ct != 1) return false;
     ct++;
     if(empty) finishOpen();
-    level++;
+    lvl++;
     startOpen(META);
     attribute(HTTPEQUIV, token(MimeTypes.CONTENT_TYPE));
     attribute(CONTENT, new TokenBuilder(media.isEmpty() ? MimeTypes.TEXT_HTML :
@@ -541,7 +541,7 @@ public abstract class OutputSerializer extends Serializer {
       print(' ');
       print(ELEM_SC);
     }
-    level--;
+    lvl--;
     if(empty) finishClose();
     return true;
   }
@@ -562,6 +562,6 @@ public abstract class OutputSerializer extends Serializer {
     final String val = opts.get(option);
     if(val.isEmpty()) return allowed.length > 0 ? allowed[0] : val;
     for(final String a : allowed) if(a.equals(val)) return val;
-    throw SERNOTSUPP.getIO(Options.allowed(option, (Object[]) allowed));
+    throw SERNOTSUPP_X.getIO(Options.allowed(option, (Object[]) allowed));
   }
 }

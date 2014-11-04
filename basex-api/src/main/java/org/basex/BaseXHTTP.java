@@ -27,7 +27,7 @@ import org.eclipse.jetty.xml.*;
  * @author Christian Gruen
  * @author Dirk Kirsten
  */
-public final class BaseXHTTP {
+public final class BaseXHTTP extends Main {
   /** Database context. */
   private final Context context;
   /** HTTP server. */
@@ -59,7 +59,8 @@ public final class BaseXHTTP {
    * @throws Exception exception
    */
   public BaseXHTTP(final String... args) throws Exception {
-    parseArguments(args);
+    super(args);
+    parseArgs();
 
     // context must be initialized after parsing of arguments
     context = HTTPContext.init();
@@ -71,7 +72,7 @@ public final class BaseXHTTP {
     jetty = (Server) new XmlConfiguration(initJetty(webapp).inputStream()).configure();
     jetty.setHandler(wac);
 
-    // set the first http port (can also be https) to the port provided by command line
+    // set the first http port (can also be https) to the port provided on command line
     if(httpPort != 0) {
       for(final Connector c : jetty.getConnectors()) {
         if(c instanceof SelectChannelConnector) {
@@ -81,7 +82,7 @@ public final class BaseXHTTP {
       }
     }
 
-    // stop server
+    // info strings
     final String startX = HTTP + ' ' + SRV_STARTED_PORT_X;
     final String stopX = HTTP + ' ' + SRV_STOPPED_PORT_X;
 
@@ -116,20 +117,28 @@ public final class BaseXHTTP {
     }
 
     // start web server
-    jetty.start();
-    for(final Connector c : jetty.getConnectors()) {
-      Util.outln(startX, c.getPort());
+    try {
+      jetty.start();
+    } catch(final BindException ex) {
+      throw new IOException(HTTP + ' ' + SRV_RUNNING, ex);
     }
+    // throw cached exception that did not break the servlet architecture
+    final IOException ex = HTTPContext.exception();
+    if(ex != null) throw HTTPContext.exception();
 
-    // initialize web.xml settings, assign system properties and run database server
-    // if not done so already. this must be called after starting jetty
+    // show start message
+    for(final Connector c : jetty.getConnectors()) Util.outln(startX, c.getPort());
+
+    // initialize web.xml settings, assign system properties and run database server.
+    // the call of this function may already have been triggered during the start of jetty
     HTTPContext.init(wac.getServletContext());
 
     // start daemon for stopping web server
     final int stop = gopts.get(GlobalOptions.STOPPORT);
     if(stop >= 0) new StopServer(gopts.get(GlobalOptions.SERVERHOST), stop).start();
 
-    // show info when HTTP server is aborted
+    // show info when HTTP server is aborted. needs to be called in constructor:
+    // otherwise, it may only be called if the JVM process is already shut down
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
@@ -248,15 +257,11 @@ public final class BaseXHTTP {
     return trg;
   }
 
-  /**
-   * Parses the command-line arguments, specified by the user.
-   * @param args command-line arguments
-   * @throws IOException I/O exception
-   */
-  private void parseArguments(final String... args) throws IOException {
+  @Override
+  protected void parseArgs() throws IOException {
     /* command-line properties will be stored in system properties;
      * this way, they will not be overwritten by the settings specified in web.xml. */
-    final Args arg = new Args(args, this, S_HTTPINFO, Util.info(S_CONSOLE, HTTP));
+    final MainParser arg = new MainParser(this);
     boolean serve = true;
     while(arg.more()) {
       if(arg.dash()) {
@@ -415,5 +420,15 @@ public final class BaseXHTTP {
         Util.errln(ex);
       }
     }
+  }
+
+  @Override
+  public String header() {
+    return Util.info(S_CONSOLE, HTTP);
+  }
+
+  @Override
+  public String usage() {
+    return S_HTTPINFO;
   }
 }

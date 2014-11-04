@@ -5,14 +5,15 @@ import static org.junit.Assert.*;
 
 import java.io.*;
 
+import org.basex.*;
+import org.basex.api.client.*;
 import org.basex.core.cmd.*;
-import org.basex.core.parse.Commands.*;
+import org.basex.core.parse.Commands.CmdIndex;
 import org.basex.data.*;
 import org.basex.io.*;
-import org.basex.server.*;
-import org.basex.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class tests the database commands.
@@ -24,9 +25,9 @@ public class CommandTest extends SandboxTest {
   /** Test file name. */
   private static final String FN = "input.xml";
   /** Test folder. */
-  private static final String FLDR = "src/test/resources";
+  private static final String FOLDER = "src/test/resources/";
   /** Test file. */
-  private static final String FILE = FLDR + '/' + FN;
+  private static final String FILE = FOLDER + FN;
   /** Test name. */
   static final String NAME2 = NAME + '2';
   /** Socket reference. */
@@ -34,7 +35,7 @@ public class CommandTest extends SandboxTest {
 
   /** Starts the server.
    * @throws IOException I/O exception
-  */
+   */
   @BeforeClass
   public static void start() throws IOException {
     session = new LocalSession(context);
@@ -565,6 +566,14 @@ public class CommandTest extends SandboxTest {
     no(new XQuery("1+"));
   }
 
+  /** Command test. */
+  @Test
+  public final void test() {
+    no(new org.basex.core.cmd.Test("sfsdssdf"));
+    no(new org.basex.core.cmd.Test(FOLDER + "tests.xqm"));
+    ok(new org.basex.core.cmd.Test(FOLDER + "tests-ok.xqm"));
+  }
+
   /**
    * Assumes that the specified flag is successful.
    * @param flag flag
@@ -578,7 +587,7 @@ public class CommandTest extends SandboxTest {
    * @param nodes context nodes
    * @param size expected size
    */
-  private static void ok(final Nodes nodes, final int size) {
+  private static void ok(final DBNodes nodes, final int size) {
     if(nodes != null) assertEquals(size, nodes.size());
   }
 

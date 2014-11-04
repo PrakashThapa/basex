@@ -160,7 +160,7 @@ public final class TreeView extends View implements TreeConstants {
     super.paintComponent(g);
     gui.painting = true;
 
-    final Nodes nodes = gui.context.current();
+    final DBNodes nodes = gui.context.current();
     roots = nodes.pres;
     if(roots.length == 0) return;
 
@@ -456,8 +456,8 @@ public final class TreeView extends View implements TreeConstants {
         s = s.substring(0, (s.length() - 2) / 2) + "..";
       }
     }
-    final int yy = (int) (y + (nodeHeight + fontHeight - 4) / 2d);
-    g.drawString(s, (int) (rm - tw / 2d + BORDER_PADDING), yy);
+    final double yy = y + (nodeHeight + fontHeight * .5) / 2;
+    g.drawString(s, (int) (rm - tw / 2d + BORDER_PADDING), (int) yy);
   }
 
   /**
@@ -526,7 +526,7 @@ public final class TreeView extends View implements TreeConstants {
         }
       }
     }
-    gui.notify.mark(new Nodes(list.toArray(), gui.context.data()), this);
+    gui.notify.mark(new DBNodes(gui.context.data(), list.finish()), this);
   }
 
   /**
@@ -1002,18 +1002,18 @@ public final class TreeView extends View implements TreeConstants {
       final int th = sub.subtreeHeight(i);
       if(th > lvs) lvs = th;
     }
-    nodeHeight = MAX_NODE_HEIGHT;
-    int lD;
-    while((lD = (int) ((h - lvs * nodeHeight) / (double) (lvs - 1))) <
-        (nodeHeight <= BEST_NODE_HEIGHT ? MIN_LEVEL_DISTANCE
-        : BEST_LEVEL_DISTANCE)
-        && nodeHeight >= MIN_NODE_HEIGHT)
-      nodeHeight--;
-    levelDistance = lD < MIN_LEVEL_DISTANCE ? MIN_LEVEL_DISTANCE
-        : lD > MAX_LEVEL_DISTANCE ? MAX_LEVEL_DISTANCE : lD;
-    final int ih = (int) ((h - (levelDistance * (lvs - 1) + lvs * nodeHeight))
-        / 2d);
-    topMargin = ih < TOP_MARGIN ? TOP_MARGIN : ih;
+    int nh = (int) (fontSize * 1.4);
+    final int dist = nh <= BEST_NODE_HEIGHT ? MIN_LEVEL_DISTANCE : BEST_LEVEL_DISTANCE;
+    while(true) {
+      final double ld = (h - lvs * nh) / (lvs - 1d);
+      if(ld >= dist || nh < MIN_NODE_HEIGHT) {
+        levelDistance = Math.max(MIN_LEVEL_DISTANCE, Math.min(MAX_LEVEL_DISTANCE, (int) ld));
+        break;
+      }
+      nh--;
+    }
+    nodeHeight = nh;
+    topMargin = Math.max(TOP_MARGIN, (h - (levelDistance * (lvs - 1) + lvs * nh)) / 2);
   }
 
   /**
@@ -1111,7 +1111,7 @@ public final class TreeView extends View implements TreeConstants {
       if(flv >= sub.subtreeHeight(frn)) return;
 
       if(tr.bigRect(sub, frn, flv)) {
-        final Nodes ns = new Nodes(gui.context.data());
+        final DBNodes ns = new DBNodes(gui.context.data());
         int sum = getHitBigRectNodesNum(frn, flv, frect);
         final int fix = sub.preIndex(frn, flv, fpre);
         if(fix + sum + 1 == sub.levelSize(frn, flv)) ++sum;
@@ -1140,8 +1140,8 @@ public final class TreeView extends View implements TreeConstants {
   @Override
   public void mouseWheelMoved(final MouseWheelEvent e) {
     if(gui.updating || gui.context.focused == -1) return;
-    if(e.getWheelRotation() <= 0) gui.notify.context(new Nodes(
-        gui.context.focused, gui.context.data()), false, null);
+    if(e.getWheelRotation() <= 0) gui.notify.context(new DBNodes(
+        gui.context.data(), gui.context.focused), false, null);
     else gui.notify.hist(false);
   }
 

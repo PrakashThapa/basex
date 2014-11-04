@@ -43,11 +43,12 @@ public final class GUIOptions extends Options {
   /** Default GUI Font. */
   public static final StringOption FONT = new StringOption("FONT", Font.SANS_SERIF);
   /** Default GUI Monospace Font. */
-  public static final StringOption MONOFONT = new StringOption("MONOFONT", Font.MONOSPACED);
+  public static final StringOption MONOFONT = new StringOption("MONOFONT",
+      Prop.WIN ? "Consolas" : Font.MONOSPACED);
   /** Font TYPE = plain, bold, italics). */
   public static final NumberOption FONTTYPE = new NumberOption("FONTTYPE", 0);
   /** Font size. */
-  public static final NumberOption FONTSIZE = new NumberOption("FONTSIZE", 13);
+  public static final NumberOption FONTSIZE = new NumberOption("FONTSIZE", GUIConstants.FONTSIZE);
 
   /** Red GUI color factor. */
   public static final NumberOption COLORRED = new NumberOption("COLORRED", 15);
@@ -146,6 +147,8 @@ public final class GUIOptions extends Options {
   public static final BooleanOption SAVERUN = new BooleanOption("SAVERUN", false);
   /** Automatically add characters. */
   public static final BooleanOption AUTO = new BooleanOption("AUTO", true);
+  /** Default file filter. */
+  public static final StringOption FILES = new StringOption("FILES", "*.xml, *.xq*");
 
   /** Current input mode in global text field (Search, XQuery, Command). */
   public static final NumberOption SEARCHMODE = new NumberOption("SEARCHMODE", 0);

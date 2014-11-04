@@ -3,13 +3,15 @@ package org.basex;
 import static org.basex.core.Text.*;
 
 import java.io.*;
+import java.util.*;
 
 import org.basex.core.*;
 import org.basex.core.cmd.*;
+import org.basex.core.cmd.Set;
+import org.basex.core.parse.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
 import org.basex.io.serial.*;
-import org.basex.server.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
 
@@ -20,13 +22,15 @@ import org.basex.util.list.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
-public class BaseX extends Main {
+public class BaseX extends CLI {
+  /** Default prompt. */
+  private static final String PROMPT = "> ";
   /** Commands to be executed. */
   private IntList ops;
   /** Command arguments. */
   private StringList vals;
-  /** Flag for writing options to disk. */
-  private boolean writeOptions;
+  /** Console mode. May be set to {@code false} during execution. */
+  private boolean console;
 
   /**
    * Main method, launching the standalone mode.
@@ -131,6 +135,10 @@ public class BaseX extends Main {
           final String[] kv = val.split("=", 2);
           sopts.assign(kv[0], kv.length > 1  ? kv[1] : "");
           execute(new Set(MainOptions.SERIALIZER, sopts), false);
+        } else if(c == 't') {
+          // evaluate query
+          execute(new Test(val), verbose);
+          console = false;
         } else if(c == 'u') {
           // (de)activate write-back for updates
           execute(new Set(MainOptions.WRITEBACK, null), false);
@@ -144,9 +152,6 @@ public class BaseX extends Main {
         } else if(c == 'w') {
           // toggle chopping of whitespaces
           execute(new Set(MainOptions.CHOP, null), false);
-        } else if(c == 'W') {
-          // hidden option: toggle writing of options before exit
-          writeOptions ^= true;
         } else if(c == 'x') {
           // show/hide xml query plan
           execute(new Set(MainOptions.XMLPLAN, null), false);
@@ -160,56 +165,79 @@ public class BaseX extends Main {
         }
         verbose = qi || qp || v;
       }
-
-      if(console) {
-        verbose = true;
-        // enter interactive mode
-        Util.outln(S_CONSOLE + TRY_MORE_X, sa() ? S_STANDALONE : S_CLIENT);
-        console();
-      }
-
-      if(writeOptions) context.globalopts.write();
+      if(console) console();
     } finally {
       quit();
     }
   }
 
   /**
-   * Tests if this client is stand-alone.
-   * @return stand-alone flag
+   * Launches the console mode, which reads and executes user input.
    */
-  protected boolean sa() {
+  private void console() {
+    Util.outln(S_CONSOLE + TRY_MORE_X, local() ? S_STANDALONE : S_CLIENT);
+    verbose = true;
+
+    // create console reader
+    final ConsoleReader cr = ConsoleReader.get();
+    // loop until console is set to false (may happen in server mode)
+    while(console) {
+      // get next line
+      final String in = cr.readLine(PROMPT);
+      // end of input: break loop
+      if(in == null) break;
+      // skip empty lines
+      if(in.isEmpty()) continue;
+      try {
+        if(!execute(new CommandParser(in, context).pwReader(cr.pwReader()))) {
+          // show goodbye message if method returns false
+          Util.outln(BYE[new Random().nextInt(4)]);
+          return;
+        }
+      } catch(final IOException ex) {
+        // output error messages
+        Util.errln(ex);
+      }
+    }
+  }
+
+  /**
+   * Quits the console mode.
+   * @throws IOException I/O exception
+   */
+  private void quit() throws IOException {
+    if(out == System.out || out == System.err) out.flush();
+    else out.close();
+  }
+
+  /**
+   * Tests if this is a local client.
+   * @return local mode
+   */
+  boolean local() {
     return true;
   }
 
   @Override
-  protected Session session() throws IOException {
-    if(session == null) session = new LocalSession(context, out);
-    session.setOutputStream(out);
-    return session;
-  }
-
-  @Override
-  protected final void parseArguments(final String... args) throws IOException {
+  protected final void parseArgs() throws IOException {
     ops = new IntList();
     vals = new StringList();
 
-    final Args arg = new Args(args, this, sa() ? S_LOCALINFO : S_CLIENTINFO,
-        Util.info(S_CONSOLE, sa() ? S_STANDALONE : S_CLIENT));
+    final MainParser arg = new MainParser(this);
     while(arg.more()) {
       final char c;
       String v = null;
       if(arg.dash()) {
         c = arg.next();
         if(c == 'b' || c == 'c' || c == 'C' || c == 'i' || c == 'o' || c == 'q' ||
-           c == 'r' || c == 's') {
+            c == 'r' || c == 's' || c == 't' && local()) {
           // options followed by a string
           v = arg.string();
-        } else if(c == 'd' || c == 'D' && sa() || c == 'L' || c == 'u' || c == 'R' || c == 'v' ||
-           c == 'V' || c == 'w' || c == 'W' || c == 'x' || c == 'X' || c == 'z') {
+        } else if(c == 'd' || c == 'D' && local() || c == 'L' || c == 'u' && local() || c == 'R' ||
+            c == 'v' || c == 'V' || c == 'w' || c == 'x' || c == 'X' || c == 'z') {
           // options to be toggled
           v = "";
-        } else if(!sa()) {
+        } else if(!local()) {
           // client options: need to be set before other options
           if(c == 'n') {
             // set server name
@@ -239,5 +267,15 @@ public class BaseX extends Main {
         vals.add(v);
       }
     }
+  }
+
+  @Override
+  public String header() {
+    return Util.info(S_CONSOLE, local() ? S_STANDALONE : S_CLIENT);
+  }
+
+  @Override
+  public String usage() {
+    return local() ? S_LOCALINFO : S_CLIENTINFO;
   }
 }

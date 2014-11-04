@@ -28,22 +28,19 @@ import org.basex.util.list.*;
  * @author Christian Gruen
  */
 public abstract class Serializer {
-  /** Default serialization parameters. */
-  public static final SerializerOptions OPTIONS = new SerializerOptions();
-
   /** Stack with names of opened elements. */
-  protected final TokenList tags = new TokenList();
+  protected final TokenList elems = new TokenList();
   /** Current level. */
-  protected int level;
+  protected int lvl;
   /** Current element name. */
-  protected byte[] tag;
+  protected byte[] elem;
   /** Undeclare prefixes. */
   boolean undecl;
   /** Indentation flag. */
   protected boolean indent;
 
   /** Stack with currently available namespaces. */
-  private final Atts nspaces = new Atts(XML, XMLURI).add(EMPTY, EMPTY);
+  private final Atts nspaces = new Atts(XML, XML_URI).add(EMPTY, EMPTY);
   /** Stack with namespace size pointers. */
   private final IntList nstack = new IntList();
 
@@ -57,13 +54,13 @@ public abstract class Serializer {
    * @throws IOException I/O exception
    */
   public static XMLSerializer get(final OutputStream os) throws IOException {
-    return new XMLSerializer(os, OPTIONS);
+    return new XMLSerializer(os, SerializerOptions.get(true));
   }
 
   /**
    * Returns a specific serializer.
    * @param os output stream reference
-   * @param sopts serialization parameters (can be {@code null})
+   * @param sopts serialization parameters (may be {@code null})
    * @return serializer
    * @throws IOException I/O exception
    */
@@ -129,14 +126,14 @@ public abstract class Serializer {
     if(item instanceof ANode) {
       final Type type = item.type;
       if(!atts) {
-        if(type == NodeType.ATT) throw SERATTR.getIO(item);
-        if(type == NodeType.NSP) throw SERNS.getIO(item);
+        if(type == NodeType.ATT) throw SERATTR_X.getIO(item);
+        if(type == NodeType.NSP) throw SERNS_X.getIO(item);
       }
       serialize((ANode) item);
     } else if(item instanceof FItem) {
-      throw SERFUNC.getIO(item.type());
+      throw SERFUNC_X.getIO(item.seqType());
     } else {
-      finishElement();
+      prepare();
       atomic(item, iter);
     }
     closeResult();
@@ -169,11 +166,11 @@ public abstract class Serializer {
    * @param name element name
    * @throws IOException I/O exception
    */
-  final void startElement(final byte[] name) throws IOException {
-    finishElement();
+  final void openElement(final byte[] name) throws IOException {
+    prepare();
     nstack.push(nspaces.size());
     opening = true;
-    tag = name;
+    elem = name;
     startOpen(name);
   }
 
@@ -187,47 +184,36 @@ public abstract class Serializer {
       finishEmpty();
       opening = false;
     } else {
-      tag = tags.pop();
-      level--;
+      elem = elems.pop();
+      lvl--;
       finishClose();
     }
   }
 
   /**
-   * Serializes a text.
-   * @param value value
-   * @param ftp full-text positions, used for visualization highlighting
-   * @throws IOException I/O exception
-   */
-  @SuppressWarnings("unused")
-  void finishText(final byte[] value, final FTPos ftp) throws IOException {
-    text(value);
-  }
-  /**
    * Gets the namespace URI currently bound by the given prefix.
-   * @param pref namespace prefix
+   * @param prefix namespace prefix
    * @return URI if found, {@code null} otherwise
    */
-  final byte[] nsUri(final byte[] pref) {
+  final byte[] nsUri(final byte[] prefix) {
     for(int n = nspaces.size() - 1; n >= 0; n--) {
-      if(eq(nspaces.name(n), pref)) return nspaces.value(n);
+      if(eq(nspaces.name(n), prefix)) return nspaces.value(n);
     }
     return null;
   }
 
-
   /**
    * Serializes a namespace if it has not been serialized by an ancestor yet.
-   * @param pref prefix
-   * @param uri URI
+   * @param prefix prefix
+   * @param uri namespace URI
    * @throws IOException I/O exception
    */
-  protected void namespace(final byte[] pref, final byte[] uri) throws IOException {
-    if(!undecl && pref.length != 0 && uri.length == 0) return;
-    final byte[] u = nsUri(pref);
+  protected void namespace(final byte[] prefix, final byte[] uri) throws IOException {
+    if(!undecl && prefix.length != 0 && uri.length == 0) return;
+    final byte[] u = nsUri(prefix);
     if(u == null || !eq(u, uri)) {
-      attribute(pref.length == 0 ? XMLNS : concat(XMLNSC, pref), uri);
-      nspaces.add(pref, uri);
+      attribute(prefix.length == 0 ? XMLNS : concat(XMLNSC, prefix), uri);
+      nspaces.add(prefix, uri);
     }
   }
 
@@ -270,7 +256,7 @@ public abstract class Serializer {
 
   /**
    * Starts an element.
-   * @param name tag name
+   * @param name element name
    * @throws IOException I/O exception
    */
   protected abstract void startOpen(final byte[] name) throws IOException;
@@ -296,16 +282,17 @@ public abstract class Serializer {
   /**
    * Serializes a text.
    * @param value value
+   * @param ftp full-text positions, used for visualization highlighting
    * @throws IOException I/O exception
    */
-  protected abstract void finishText(final byte[] value) throws IOException;
+  protected abstract void text(final byte[] value, final FTPos ftp) throws IOException;
 
   /**
    * Serializes a comment.
    * @param value value
    * @throws IOException I/O exception
    */
-  protected abstract void finishComment(final byte[] value) throws IOException;
+  protected abstract void comment(final byte[] value) throws IOException;
 
   /**
    * Serializes a processing instruction.
@@ -313,7 +300,7 @@ public abstract class Serializer {
    * @param value value
    * @throws IOException I/O exception
    */
-  protected abstract void finishPi(final byte[] name, final byte[] value) throws IOException;
+  protected abstract void pi(final byte[] name, final byte[] value) throws IOException;
 
   /**
    * Serializes an atomic value.
@@ -330,17 +317,17 @@ public abstract class Serializer {
    * @param node node to be serialized
    * @throws IOException I/O exception
    */
-  private void serialize(final ANode node) throws IOException {
+  protected void serialize(final ANode node) throws IOException {
     if(node instanceof DBNode) {
       serialize((DBNode) node);
     } else {
       final Type type = node.type;
       if(type == NodeType.COM) {
-        comment(node.string());
+        prepareComment(node.string());
       } else if(type == NodeType.TXT) {
-        text(node.string());
+        prepareText(node.string(), null);
       } else if(type == NodeType.PI) {
-        pi(node.name(), node.string());
+        preparePi(node.name(), node.string());
       } else if(type == NodeType.ATT) {
         attribute(node.name(), node.string());
       } else if(type == NodeType.NSP) {
@@ -352,7 +339,7 @@ public abstract class Serializer {
       } else {
         // serialize elements (code will never be called for attributes)
         final QNm name = node.qname();
-        startElement(name.string());
+        openElement(name.string());
 
         // serialize declared namespaces
         final Atts nsp = node.namespaces();
@@ -369,7 +356,7 @@ public abstract class Serializer {
           final byte[] n = nd.name();
           final byte[] v = nd.string();
           attribute(n, v);
-          if(eq(n, XML_SPACE)) indent &= eq(v, DataText.DEFAULT);
+          if(eq(n, XML_SPACE) && indent) indent = eq(v, DataText.DEFAULT);
         }
         // serialize children
         ai = node.children();
@@ -386,11 +373,11 @@ public abstract class Serializer {
    * @throws IOException I/O exception
    */
   private void serialize(final DBNode node) throws IOException {
-    final FTPosData ft = node instanceof FTPosNode ? ((FTPosNode) node).ft : null;
+    final FTPosData ft = node instanceof FTPosNode ? ((FTPosNode) node).ftpos : null;
     final Data data = node.data;
     int p = node.pre;
     int k = data.kind(p);
-    if(k == Data.ATTR) throw SERATTR.getIO(node);
+    if(k == Data.ATTR) throw SERATTR_X.getIO(node);
 
     boolean doc = false;
     final TokenSet nsp = data.nspaces.size() == 0 ? null : new TokenSet();
@@ -415,18 +402,16 @@ public abstract class Serializer {
         openDoc(data.text(p++, true));
         doc = true;
       } else if(k == Data.TEXT) {
-        final FTPos ftd = ft != null ? ft.get(data, p) : null;
-        if(ftd != null) text(data.text(p++, true), ftd);
-        else text(data.text(p++, true));
+        prepareText(data.text(p++, true), ft != null ? ft.get(data, p) : null);
       } else if(k == Data.COMM) {
-        comment(data.text(p++, true));
+        prepareComment(data.text(p++, true));
       } else {
         if(k == Data.PI) {
-          pi(data.name(p, Data.PI), data.atom(p++));
+          preparePi(data.name(p, Data.PI), data.atom(p++));
         } else {
           // add element node
           final byte[] name = data.name(p, k);
-          startElement(name);
+          openElement(name);
 
           // add namespace definitions
           if(nsp != null) {
@@ -445,7 +430,7 @@ public abstract class Serializer {
                 if(nsp.add(pref)) namespace(pref, ns.value(n));
               }
               // check ancestors only on top level
-              if(level != 0) break;
+              if(lvl != 0) break;
 
               pp = data.parent(pp, data.kind(pp));
             } while(pp >= 0 && data.kind(pp) == Data.ELEM);
@@ -458,7 +443,7 @@ public abstract class Serializer {
             final byte[] n = data.name(p, Data.ATTR);
             final byte[] v = data.text(p, false);
             attribute(n, v);
-            if(eq(n, XML_SPACE)) indent &= eq(v, DataText.DEFAULT);
+            if(eq(n, XML_SPACE) && indent) indent = eq(v, DataText.DEFAULT);
           }
           pars.push(r);
         }
@@ -475,34 +460,24 @@ public abstract class Serializer {
   }
 
   /**
-   * Serializes a text.
-   * @param v text bytes
-   * @param ftp full-text positions, used for visualization highlighting
-   * @throws IOException I/O exception
-   */
-  private void text(final byte[] v, final FTPos ftp) throws IOException {
-    finishElement();
-    finishText(v, ftp);
-  }
-
-  /**
    * Serializes a comment.
    * @param value value
    * @throws IOException I/O exception
    */
-  private void comment(final byte[] value) throws IOException {
-    finishElement();
-    finishComment(value);
+  private void prepareComment(final byte[] value) throws IOException {
+    prepare();
+    comment(value);
   }
 
   /**
    * Serializes a text.
    * @param value text bytes
+   * @param ftp full-text positions, used for visualization highlighting
    * @throws IOException I/O exception
    */
-  private void text(final byte[] value) throws IOException {
-    finishElement();
-    finishText(value);
+  private void prepareText(final byte[] value, final FTPos ftp) throws IOException {
+    prepare();
+    text(value, ftp);
   }
 
   /**
@@ -511,20 +486,20 @@ public abstract class Serializer {
    * @param value value
    * @throws IOException I/O exception
    */
-  private void pi(final byte[] name, final byte[] value) throws IOException {
-    finishElement();
-    finishPi(name, value);
+  private void preparePi(final byte[] name, final byte[] value) throws IOException {
+    prepare();
+    pi(name, value);
   }
 
   /**
    * Finishes an opening element node if necessary.
    * @throws IOException I/O exception
    */
-  private void finishElement() throws IOException {
+  private void prepare() throws IOException {
     if(!opening) return;
     opening = false;
     finishOpen();
-    tags.push(tag);
-    level++;
+    elems.push(elem);
+    lvl++;
   }
 }

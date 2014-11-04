@@ -11,7 +11,7 @@ import org.basex.core.cmd.Set;
 import org.basex.io.*;
 import org.basex.query.*;
 import org.basex.query.func.*;
-import org.basex.query.util.Compare.Mode;
+import org.basex.query.func.fn.Compare.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.tests.bxapi.*;
@@ -48,8 +48,6 @@ public abstract class QT3TestSet {
   public void buildUp() throws BaseXException {
     ctx = new Context();
     new Set(MainOptions.CHOP, false).execute(ctx);
-    new Set(MainOptions.INTPARSE, false).execute(ctx);
-    new Set(MainOptions.XQUERY3, true).execute(ctx);
     result = null;
   }
 
@@ -59,11 +57,6 @@ public abstract class QT3TestSet {
     ctx.close();
     ctx = null;
     result = null;
-  }
-
-  /** Sets the XQuery version to 1.0. */
-  protected void xquery10() {
-    ctx.options.set(MainOptions.XQUERY3, false);
   }
 
   /**
@@ -203,7 +196,7 @@ public abstract class QT3TestSet {
     if(result.value != null) return fail(Util.info("Error: '%'", code));
     if(code.equals("*")) return true;
 
-    String name = code, uri = string(QueryText.ERRORURI);
+    String name = code, uri = string(QueryText.ERROR_URI);
     final Matcher m = BIND.matcher(code);
     if(m.find()) {
       uri = m.group(1);
@@ -241,7 +234,7 @@ public abstract class QT3TestSet {
       tb.add(it.getString());
       c++;
     }
-    return result(exp.equals(norm ? string(norm(tb.finish())) : tb.toString()), exp);
+    return result(exp.equals(norm ? string(normalize(tb.finish())) : tb.toString()), exp);
   }
 
   /**
@@ -293,7 +286,8 @@ public abstract class QT3TestSet {
     final XdmValue value = result.value;
     if(value == null) return fail(Util.info("Matches: '%'", pat));
     final XQuery match = new XQuery("fn:matches($in, $pat, $flags)", ctx);
-    match.bind("in", value.toString()).bind("pat", pat).bind("flags", flags);
+    match.bind("in", value).bind("pat", XdmItem.get(Str.get(pat)));
+    match.bind("flags", XdmItem.get(Str.get(flags)));
     return result(match.next().getBoolean(), Util.info("Matches: '%'", pat));
   }
 

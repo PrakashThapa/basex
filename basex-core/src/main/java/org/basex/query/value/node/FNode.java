@@ -1,14 +1,14 @@
 package org.basex.query.value.node;
 
 import org.basex.query.iter.*;
-import org.basex.query.util.*;
+import org.basex.query.util.list.*;
 import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
 
 /**
- * Main memory based node fragments.
+ * Main-memory node fragment.
  *
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
@@ -16,16 +16,16 @@ import org.basex.util.*;
 public abstract class FNode extends ANode {
   /**
    * Constructor.
-   * @param t data type
+   * @param type item type
    */
-  FNode(final NodeType t) {
-    super(t);
+  FNode(final NodeType type) {
+    super(type);
   }
 
   @Override
   public byte[] string() {
-    if(val == null) val = Token.EMPTY;
-    return val;
+    if(value == null) value = Token.EMPTY;
+    return value;
   }
 
   @Override
@@ -54,7 +54,7 @@ public abstract class FNode extends ANode {
 
   @Override
   public final ANode parent() {
-    return par;
+    return parent;
   }
 
   @Override
@@ -97,7 +97,7 @@ public abstract class FNode extends ANode {
 
   @Override
   public final FNode parent(final ANode p) {
-    par = p;
+    parent = p;
     return this;
   }
 
@@ -133,8 +133,6 @@ public abstract class FNode extends ANode {
       @Override
       public long size() { return iter.size(); }
       @Override
-      public boolean reset() { c = 0; return true; }
-      @Override
       public Value value() { return iter.value(); }
     };
   }
@@ -145,14 +143,14 @@ public abstract class FNode extends ANode {
    * @return node iterator
    */
   final byte[] string(final ANodeList iter) {
-    if(val == null) {
+    if(value == null) {
       final TokenBuilder tb = new TokenBuilder();
       for(final ANode nc : iter) {
         if(nc.type == NodeType.ELM || nc.type == NodeType.TXT) tb.add(nc.string());
       }
-      val = tb.finish();
+      value = tb.finish();
     }
-    return val;
+    return value;
   }
 
   /**
@@ -195,7 +193,7 @@ public abstract class FNode extends ANode {
 
       @Override
       public ANode next() {
-        return (more ^= true) ? par : null;
+        return (more ^= true) ? parent : null;
       }
     };
   }

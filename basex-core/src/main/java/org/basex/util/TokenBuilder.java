@@ -73,10 +73,10 @@ public final class TokenBuilder {
 
   /**
    * Sets the number of bytes. Note that no bound check is performed by this method.
-   * @param s number of bytes
+   * @param sz number of bytes
    */
-  public void size(final int s) {
-    size = s;
+  public void size(final int sz) {
+    size = sz;
   }
 
   /**
@@ -175,11 +175,7 @@ public final class TokenBuilder {
     final int s = size;
     final int cl = chars.length;
     final int l = cp <= 0x7F ? 1 : cp <= 0x7FF ? 2 : cp <= 0xFFF ? 3 : 4;
-
-    if(s + l > cl) {
-      final int ns = Math.max(s + l, (int) (cl * Array.RESIZE));
-      chars = Arrays.copyOf(chars, ns);
-    }
+    if(s + l > cl) chars = Arrays.copyOf(chars, Math.max(s + l, (int) (cl * Array.RESIZE)));
     Array.move(chars, pos, l, size - pos);
     size = pos;
     add(cp);
@@ -239,8 +235,12 @@ public final class TokenBuilder {
    * @return self reference
    */
   public TokenBuilder addByte(final byte value) {
-    if(size == chars.length) chars = Arrays.copyOf(chars, Array.newSize(size));
-    chars[size++] = value;
+    byte[] chrs = chars;
+    int s = size;
+    if(s == chrs.length) chrs = Arrays.copyOf(chrs, Array.newSize(s));
+    chrs[s++] = value;
+    chars = chrs;
+    size = s;
     return this;
   }
 
@@ -279,14 +279,12 @@ public final class TokenBuilder {
    * @return self reference
    */
   public TokenBuilder add(final byte[] value, final int start, final int end) {
-    final int l = end - start;
-    final int cl = chars.length;
-    if(size + l > cl) {
-      final int ns = Math.max(size + l, (int) (cl * Array.RESIZE));
-      chars = Arrays.copyOf(chars, ns);
-    }
-    System.arraycopy(value, start, chars, size, l);
-    size += l;
+    byte[] chrs = chars;
+    final int cl = chrs.length, l = end - start, s = size, ns = s + l;
+    if(ns > cl) chrs = Arrays.copyOf(chrs, Array.newSize(ns));
+    System.arraycopy(value, start, chrs, s, l);
+    chars = chrs;
+    size = ns;
     return this;
   }
 
@@ -316,12 +314,12 @@ public final class TokenBuilder {
   /**
    * Adds the string representation of an object:
    * <ul>
-   * <li> objects of type {@link Throwable} are converted to a string representation
-   *      via {@link Util#message}.</li>
-   * <li> objects of type {@link Class} are converted via {@link Util#className(Class)}.</li>
-   * <li> {@code null} references are replaced by the string {@code "null"}.</li>
-   * <li> byte arrays are directly inserted as tokens.</li>
-   * <li> for all other typed, {@link Object#toString} is called.</li>
+   *   <li> objects of type {@link Throwable} are converted to a string representation
+   *        via {@link Util#message}.</li>
+   *   <li> objects of type {@link Class} are converted via {@link Util#className(Class)}.</li>
+   *   <li> {@code null} references are replaced by the string {@code "null"}.</li>
+   *   <li> byte arrays are directly inserted as tokens.</li>
+   *   <li> for all other typed, {@link Object#toString} is called.</li>
    * </ul>
    * The specified string may contain {@code "%"} characters as place holders.
    * All place holders will be replaced by the specified extensions. If a digit is
@@ -370,29 +368,47 @@ public final class TokenBuilder {
    * @return self reference
    */
   public TokenBuilder trim() {
-    while(size > 0 && ws(chars[size - 1])) --size;
-    int s = -1;
-    while(++s < size && ws(chars[s]));
-    if(s != 0 && s != size) Array.move(chars, s, -s, size - s);
-    size -= s;
+    final byte[] chrs = chars;
+    int s = size;
+    while(s > 0 && ws(chrs[s - 1])) --s;
+    int c = -1;
+    while(++c < s && ws(chrs[c]));
+    if(c != 0 && c != s) Array.move(chrs, c, -c, s - c);
+    size = s - c;
     return this;
   }
 
   /**
    * Returns the token as byte array.
-   * @return character array
+   * @return token
    */
-  public byte[] finish() {
-    return Arrays.copyOf(chars, size);
+  public byte[] toArray() {
+    final int s = size;
+    return s == 0 ? EMPTY : Arrays.copyOf(chars, s);
   }
 
   /**
-   * Returns the original byte array if its size matches the token size, or returns a copy
-   * as {@link #finish()} does.
-   * @return character array
+   * Returns the token as byte array and resets the token buffer.
+   * The call of this function is identical to calling {@link #toArray} and {@link #reset}.
+   * @return token
    */
-  public byte[] array() {
-    return size == chars.length ? chars : finish();
+  public byte[] next() {
+    final int s = size;
+    if(s == 0) return EMPTY;
+    size = 0;
+    return Arrays.copyOf(chars, s);
+  }
+
+  /**
+   * Returns the token as byte array, and invalidates the internal array.
+   * Warning: the function must only be called if the builder is discarded afterwards.
+   * @return token
+   */
+  public byte[] finish() {
+    final byte[] chrs = chars;
+    chars = null;
+    final int s = size;
+    return s == 0 ? EMPTY : s == chrs.length ? chrs : Arrays.copyOf(chrs, s);
   }
 
   @Override

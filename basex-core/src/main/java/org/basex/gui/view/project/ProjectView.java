@@ -33,7 +33,7 @@ public final class ProjectView extends BaseXPanel {
   /** Editor view. */
   final EditorView editor;
   /** Filter field. */
-  final ProjectFilter filter;
+  private final ProjectFilter filter;
   /** Filter list. */
   final ProjectList list;
   /** Root path. */
@@ -70,7 +70,7 @@ public final class ProjectView extends BaseXPanel {
 
     final BaseXBack back = new BaseXBack().layout(new BorderLayout(2, 2));
     back.setBorder(new CompoundBorder(new MatteBorder(0, 0, 1, 0, GUIConstants.GRAY),
-        new EmptyBorder(3, 1, 3, 2)));
+        BaseXLayout.border(3, 1, 3, 2)));
 
     path = new BaseXTextField(gui);
     path.setText(root.file.path());
@@ -92,9 +92,9 @@ public final class ProjectView extends BaseXPanel {
 
     // add scroll bars
     final JScrollPane lscroll = new JScrollPane(list);
-    lscroll.setBorder(new EmptyBorder(0, 0, 0, 0));
+    lscroll.setBorder(BaseXLayout.border(0, 0, 0, 0));
     final JScrollPane tscroll = new JScrollPane(tree);
-    tscroll.setBorder(new EmptyBorder(0, 0, 0, 0));
+    tscroll.setBorder(BaseXLayout.border(0, 0, 0, 0));
 
     split = new BaseXSplit(false);
     split.mode(Fill.NONE);
@@ -123,11 +123,26 @@ public final class ProjectView extends BaseXPanel {
   /**
    * Refreshes the specified file node.
    * @param file file to be opened
-   * @param tr refresh tree
+   * @param rename file has been renamed
    */
-  public void refresh(final IOFile file, final boolean tr) {
-    if(tr) refresh(file);
+  public void save(final IOFile file, final boolean rename) {
+    refresh(file);
+    if(rename) reset();
+    refresh();
+  }
+
+  /**
+   * Refreshes the filter view.
+   */
+  public void refresh() {
     filter.refresh(true);
+  }
+
+  /**
+   * Resets the filter cache.
+   */
+  public void reset() {
+    filter.reset();
   }
 
   /**
@@ -141,7 +156,7 @@ public final class ProjectView extends BaseXPanel {
   }
 
   /**
-   * Refreshes the specified file node, or its parent.
+   * Refreshes the visualization of the specified file, or its parent, in the tree.
    * @param file file to be refreshed
    */
   private void refresh(final IOFile file) {
@@ -157,7 +172,7 @@ public final class ProjectView extends BaseXPanel {
   /**
    * Returns the node for the specified file.
    * @param file file to be found
-   * @return node, or {@code null}
+   * @return node or {@code null}
    */
   private ProjectNode find(final IOFile file) {
     final IOFile fl = file.normalize();
@@ -169,6 +184,13 @@ public final class ProjectView extends BaseXPanel {
       }
     }
     return null;
+  }
+
+  /**
+   * Called when GUI design has changed.
+   */
+  public void refreshLayout() {
+    filter.refreshLayout();
   }
 
   /**
@@ -194,7 +216,7 @@ public final class ProjectView extends BaseXPanel {
    * Renames a file or directory in the tree.
    * @param node source node
    * @param name new name of file or directory
-   * @return new file reference, or {@code null} if operation failed
+   * @return new file reference or {@code null} if operation failed
    */
   IOFile rename(final ProjectNode node, final String name) {
     // check if chosen file name is valid
@@ -227,8 +249,8 @@ public final class ProjectView extends BaseXPanel {
     final IOFile dir3 = dir2.resolve(gopts.get(GlobalOptions.RESTXQPATH));
     final StringList sl = new StringList();
     for(final IOFile f : new IOFile[] { dir1, dir2, dir3}) {
-      final String p = f.normalize().parent().path();
-      if(!sl.contains(p)) sl.add(p);
+      final IOFile p = f.normalize().parent();
+      if(p != null && !sl.contains(p.path())) sl.add(p.path());
     }
     return sl.sort().unique().get(0);
   }

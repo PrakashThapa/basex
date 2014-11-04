@@ -26,7 +26,7 @@ public final class ModuleLoader {
   /** Default class loader. */
   private static final ClassLoader LOADER = Thread.currentThread().getContextClassLoader();
   /** Cached URLs to be added to the class loader. */
-  private final ArrayList<URL> urls = new ArrayList<>();
+  private final ArrayList<URL> urls = new ArrayList<>(0);
   /** Current class loader. */
   private ClassLoader loader = LOADER;
   /** Java modules. */
@@ -110,7 +110,7 @@ public final class ModuleLoader {
   /**
    * Returns a reference to the specified class.
    * @param name fully classified class name
-   * @return found class, or {@code null}
+   * @return found class or {@code null}
    * @throws Throwable any exception or error: {@link ClassNotFoundException},
    *   {@link LinkageError} or {@link ExceptionInInitializerError}.
    */
@@ -128,7 +128,7 @@ public final class ModuleLoader {
   /**
    * Returns an instance of the specified Java module class.
    * @param clz class to be found
-   * @return instance, or {@code null}
+   * @return instance or {@code null}
    */
   public Object findImport(final String clz) {
     // check if class was imported as Java module
@@ -147,15 +147,14 @@ public final class ModuleLoader {
    * URI transformation
    * (http://www.zorba-xquery.com/html/documentation/2.2.0/zorba/uriresolvers):</p>
    * <ul>
-   * <li>In the URI authority, the order of all substrings separated by dots is reversed.
-   *     </li>
+   * <li>In the URI authority, the order of all substrings separated by dots is reversed.</li>
    * <li>Dots in the authority and the path are replaced by slashes.
    *     If no path exists, a single slash is appended.</li>
    * <li>If the resulting string ends with a slash, "index" is appended.</li>
    * <li>{@code null} is returned if the URI has an invalid syntax.</li>
    * </ul>
    * @param uri namespace uri
-   * @return path, or {@code null}
+   * @return path or {@code null}
    */
   public static String uri2path(final String uri) {
     try {
@@ -173,6 +172,7 @@ public final class ModuleLoader {
       // add remaining path
       String path = u.getPath();
       if(path == null) return null;
+
       path = path.replace('.', '/');
       // add slash or path
       tb.add(path.isEmpty() ? "/" : path);
@@ -210,17 +210,17 @@ public final class ModuleLoader {
     try {
       clz = findClass(cp);
     } catch(final ClassNotFoundException ex) {
-      throw WHICHCLASS.get(ii, ex.getMessage());
+      throw WHICHCLASS_X.get(ii, ex.getMessage());
       // expected exception
     } catch(final Throwable th) {
-      throw MODINITERR.get(ii, th);
+      throw MODINITERR_X.get(ii, th);
     }
 
-    final boolean qm = clz.getSuperclass() == QueryModule.class;
     final Object jm = Reflect.get(clz);
-    if(jm == null) throw INSTERR.get(ii, cp);
+    if(jm == null) throw INSTERR_X.get(ii, cp);
 
     // add all public methods of the class (ignore methods from super classes)
+    final boolean qm = QueryModule.class.isAssignableFrom(clz);
     final ArrayList<Method> list = new ArrayList<>();
     for(final Method m : clz.getMethods()) {
       // if class is inherited from {@link QueryModule}, no super methods are accepted
@@ -249,14 +249,14 @@ public final class ModuleLoader {
 
     // find package in package dictionary
     final byte[] pDir = context.repo.pkgDict().get(name);
-    if(pDir == null) throw BXRE_NOTINST.get(ii, name);
+    if(pDir == null) throw BXRE_NOTINST_X.get(ii, name);
     final IOFile pkgDir = context.repo.path(string(pDir));
 
     // parse package descriptor
     final IO pkgDesc = new IOFile(pkgDir, PkgText.DESCRIPTOR);
     if(!pkgDesc.exists()) Util.debug(PkgText.MISSDESC, string(name));
 
-    final Package pkg = new PkgParser(context.repo, ii).parse(pkgDesc);
+    final Package pkg = new PkgParser(ii).parse(pkgDesc);
     // check if package contains a jar descriptor
     final IOFile jarDesc = new IOFile(pkgDir, PkgText.JARDESC);
     // add jars to classpath
@@ -269,7 +269,7 @@ public final class ModuleLoader {
       if(d.pkg != null) {
         // we consider only package dependencies here
         final byte[] depPkg = new PkgValidator(context.repo, ii).depPkg(d);
-        if(depPkg == null) throw BXRE_NOTINST.get(ii, string(d.pkg));
+        if(depPkg == null) throw BXRE_NOTINST_X.get(ii, string(d.pkg));
         if(toLoad.contains(depPkg)) throw CIRCMODULE.get(ii);
         addRepo(depPkg, toLoad, loaded, ii, qp);
       }
@@ -294,10 +294,8 @@ public final class ModuleLoader {
       final InputInfo ii) throws QueryException {
 
     // add new URLs
-    final JarDesc desc = new JarParser(context, ii).parse(jarDesc);
-    for(final byte[] u : desc.jars) {
-      addURL(new IOFile(new IOFile(pkgDir, modDir), string(u)));
-    }
+    final JarDesc desc = new JarParser(ii).parse(jarDesc);
+    for(final byte[] u : desc.jars) addURL(new IOFile(new IOFile(pkgDir, modDir), string(u)));
   }
 
   /**

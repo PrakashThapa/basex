@@ -3,7 +3,7 @@ package org.basex.gui.dialog;
 import static org.basex.core.Text.*;
 
 import javax.swing.*;
-import javax.swing.UIManager.*;
+import javax.swing.UIManager.LookAndFeelInfo;
 
 import org.basex.gui.*;
 import org.basex.gui.layout.*;
@@ -53,12 +53,12 @@ final class DialogVisualPrefs extends BaseXBack {
     mapOffsets = new BaseXCombo(d, GUIOptions.MAPOFFSETS, gopts, MAP_CHOICES);
     mapWeight = new BaseXSlider(0, 100, GUIOptions.MAPWEIGHT, gopts, d);
     mapAtts = new BaseXCheckBox(SHOW_ATTS, GUIOptions.MAPATTS, gopts, d);
-    mapAlgo.setSize(200, 100);
+    mapAlgo.setSize((int) (GUIConstants.SCALE * 200), (int) (GUIConstants.SCALE * 100));
     BaseXLayout.setWidth(mapWeight, 150);
 
     final StringList lafs = new StringList("(default)");
     for(final LookAndFeelInfo lafi : UIManager.getInstalledLookAndFeels()) lafs.add(lafi.getName());
-    lookfeel = new BaseXCombo(d, lafs.toArray());
+    lookfeel = new BaseXCombo(d, lafs.finish());
     final String laf = gopts.get(GUIOptions.LOOKANDFEEL);
     if(laf.isEmpty()) {
       lookfeel.setSelectedIndex(0);

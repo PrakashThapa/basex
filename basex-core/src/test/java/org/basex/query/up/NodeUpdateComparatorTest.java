@@ -8,10 +8,11 @@ import java.util.List;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.data.*;
-import org.basex.query.up.primitives.*;
 import org.basex.query.*;
+import org.basex.query.up.primitives.*;
 import org.basex.util.*;
 import org.junit.*;
+import org.junit.Test;
 import org.junit.rules.*;
 
 /**
@@ -199,13 +200,14 @@ public class NodeUpdateComparatorTest extends AdvancedQueryTest {
   /**
    * Simple tests for the {@link NodeUpdate} comparator.
    *
-   * Compares two primitives A and B based on the triple (LOCATION, SHIFTED,
-   * SUBTREE, TYPE);
-   * - LOCATION is the pre value where the update affects the table
-   * - SHIFTED states if the primitives location has been updated to support
-   *   InsertInto, InsertAfter statements
-   * - SUBTREE states if one update takes place in the subtree of the other's target node
-   * - TYPE relates to the {@link UpdateType} hierarchy
+   * Compares two primitives A and B based on the triple (LOCATION, SHIFTED, SUBTREE, TYPE):
+   * <ul>
+   *   <li> LOCATION is the pre value where the update affects the table
+   *   <li> SHIFTED states if the primitives location has been updated to support
+   *        InsertInto, InsertAfter statements
+   *   <li> SUBTREE states if one update takes place in the subtree of the other's target node
+   *   <li> TYPE relates to the {@link UpdateType} hierarchy
+   * </ul>
    */
   @Test
   public void comparatorTest() {
@@ -512,7 +514,6 @@ public class NodeUpdateComparatorTest extends AdvancedQueryTest {
     final NodeUpdateComparator c = new NodeUpdateComparator();
     Collections.sort(l, c);
     Collections.sort(l2, c);
-
 
     final int s = order.length;
     // check if primitives are ordered as expected

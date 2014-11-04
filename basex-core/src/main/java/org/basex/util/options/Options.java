@@ -25,6 +25,29 @@ import org.basex.util.list.*;
  * @author Christian Gruen
  */
 public class Options implements Iterable<Option<?>> {
+  /** Yes/No enumeration. */
+  public enum YesNo {
+    /** Yes. */ YES,
+    /** No.  */ NO;
+
+    @Override
+    public String toString() {
+      return super.toString().toLowerCase(Locale.ENGLISH);
+    }
+  }
+
+  /** Yes/No/Omit enumeration. */
+  public enum YesNoOmit {
+    /** Yes.  */ YES,
+    /** No.   */ NO,
+    /** Omit. */ OMIT;
+
+    @Override
+    public String toString() {
+      return super.toString().toLowerCase(Locale.ENGLISH);
+    }
+  }
+
   /** Comment in configuration file. */
   private static final String PROPUSER = "# Local Options";
 
@@ -34,9 +57,9 @@ public class Options implements Iterable<Option<?>> {
   private final TreeMap<String, Object> values = new TreeMap<>();
   /** Free option definitions. */
   private final HashMap<String, String> free = new HashMap<>();
+
   /** Options, cached from an input file. */
   private final StringBuilder user = new StringBuilder();
-
   /** Options file. */
   private IOFile file;
 
@@ -44,7 +67,7 @@ public class Options implements Iterable<Option<?>> {
    * Default constructor.
    */
   public Options() {
-    this(null);
+    this((IOFile) null);
   }
 
   /**
@@ -54,6 +77,21 @@ public class Options implements Iterable<Option<?>> {
   protected Options(final IOFile opts) {
     init();
     if(opts != null) read(opts);
+  }
+
+  /**
+   * Constructor with options file.
+   * @param opts options file
+   */
+  protected Options(final Options opts) {
+    for(final Entry<String, Option<?>> e : opts.options.entrySet())
+      options.put(e.getKey(), e.getValue());
+    for(final Entry<String, Object> e : opts.values.entrySet())
+      values.put(e.getKey(), e.getValue());
+    for(final Entry<String, String> e : opts.free.entrySet())
+      free.put(e.getKey(), e.getValue());
+    user.append(opts.user);
+    file = opts.file;
   }
 
   /**
@@ -100,7 +138,7 @@ public class Options implements Iterable<Option<?>> {
       }
       tmp.add(NL).add(PROPUSER).add(NL);
       tmp.add(user.toString());
-      final byte[] content = tmp.array();
+      final byte[] content = tmp.finish();
 
       // only write file if contents have changed
       if(!file.exists() || !eq(content, file.read())) file.write(content);
@@ -175,42 +213,32 @@ public class Options implements Iterable<Option<?>> {
   }
 
   /**
-   * Returns the requested string array.
+   * Returns the original instance of the requested string array.
    * @param option option to be found
    * @return value
    */
   public final synchronized String[] get(final StringsOption option) {
-    final String[] v = (String[]) get((Option<?>) option);
-    return v == null ? null : v.clone();
+    return (String[]) get((Option<?>) option);
   }
 
   /**
-   * Returns the requested integer array.
+   * Returns the original instance of the requested integer array.
    * @param option option to be found
    * @return value
    */
   public final synchronized int[] get(final NumbersOption option) {
-    final int[] v = (int[]) get((Option<?>) option);
-    return v == null ? null : v.clone();
+    return (int[]) get((Option<?>) option);
   }
 
   /**
-   * Returns the requested options.
+   * Returns the original instance of the requested options.
    * @param option option to be found
    * @param <O> options
    * @return value
    */
   @SuppressWarnings("unchecked")
   public final synchronized <O extends Options> O get(final OptionsOption<O> option) {
-    final O o = (O) get((Option<?>) option);
-    if(o == null) return null;
-    try {
-      final O n = ((Class<O>) o.getClass()).newInstance();
-      n.parse(o.toString());
-      return n;
-    } catch(final Exception ex) {
-      throw Util.notExpected(ex);
-    }
+    return (O) get((Option<?>) option);
   }
 
   /**
@@ -313,7 +341,7 @@ public class Options implements Iterable<Option<?>> {
     if(options.isEmpty()) {
       free.put(name, val);
     } else {
-      assign(name, val, -1);
+      assign(name, val, -1, true);
     }
   }
 
@@ -362,8 +390,7 @@ public class Options implements Iterable<Option<?>> {
       final String v = System.getProperty(key);
       try {
         final String k = key.substring(DBPREFIX.length()).toUpperCase(Locale.ENGLISH);
-        assign(k, v);
-        Util.debug(k + Text.COLS + v);
+        if(assign(k, v, -1, false)) Util.debug(k + Text.COLS + v);
       } catch(final BaseXException ignore) { /* may belong to another Options instance */ }
     }
   }
@@ -541,7 +568,7 @@ public class Options implements Iterable<Option<?>> {
             setSystem(name, val);
           } else {
             try {
-              assign(name, val, num);
+              assign(name, val, num, true);
               read.add(name);
             } catch(final BaseXException ex) {
               errs.add(ex.getMessage());
@@ -578,15 +605,20 @@ public class Options implements Iterable<Option<?>> {
    * @param name name of option
    * @param val value of option
    * @param num number (optional)
+   * @param error raise error if option is unknown
    * @throws BaseXException database exception
+   * @return success flag
    */
-  private synchronized void assign(final String name, final String val, final int num)
-      throws BaseXException {
+  private synchronized boolean assign(final String name, final String val, final int num,
+      final boolean error) throws BaseXException {
 
     final Option<?> option = options.get(name);
     if(option == null) {
-      throw new BaseXException(error(name));
-    } else if(option instanceof BooleanOption) {
+      if(error) throw new BaseXException(error(name));
+      return false;
+    }
+
+    if(option instanceof BooleanOption) {
       final boolean v;
       if(val == null || val.isEmpty()) {
         final Boolean b = get((BooleanOption) option);
@@ -620,8 +652,7 @@ public class Options implements Iterable<Option<?>> {
         if(ii == null) ii = new int[0];
         final IntList il = new IntList(ii.length + 1);
         for(final int i : ii) il.add(i);
-        il.add(v);
-        put(option, il.toArray());
+        put(option, il.add(v).finish());
       } else {
         if(num < 0 || num >= ii.length) throw new BaseXException(Text.OPT_OFFSET, option.name());
         ii[num] = v;
@@ -632,8 +663,7 @@ public class Options implements Iterable<Option<?>> {
         if(ss == null) ss = new String[0];
         final StringList sl = new StringList(ss.length + 1);
         for(final String s : ss) sl.add(s);
-        sl.add(val);
-        put(option, sl.toArray());
+        put(option, sl.add(val).finish());
       } else if(num == 0) {
         final int v = toInt(val);
         if(v == MIN_VALUE) throw new BaseXException(Text.OPT_NUMBER, option.name());
@@ -643,10 +673,11 @@ public class Options implements Iterable<Option<?>> {
         ss[num - 1] = val;
       }
     }
+    return true;
   }
 
   /**
-   * Returns an option name similar to the specified string, or {@code null}.
+   * Returns an option name similar to the specified string or {@code null}.
    * @param name name to be found
    * @return similar name
    */

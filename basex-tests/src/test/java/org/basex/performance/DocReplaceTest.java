@@ -1,10 +1,10 @@
 package org.basex.performance;
 
+import org.basex.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.io.*;
-import org.basex.*;
-import org.junit.*;
+import org.junit.Test;
 
 /**
  * This class replaces document nodes in a database.
