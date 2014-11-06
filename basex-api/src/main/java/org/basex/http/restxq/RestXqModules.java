@@ -70,31 +70,11 @@ public final class RestXqModules {
     Collections.sort(list);
 
     // return best matching function
-    RestXqFunction best = list.get(0);
+    final RestXqFunction best = list.get(0);
     if(list.size() == 1 || best.compareTo(list.get(1)) != 0) return best;
 
-    // Check accepted mime types
-    final HTTPAccept[] accepts = http.accepts();
-
-    double qf = 0;
-    for(final RestXqFunction rxf : list) {
-      if(best.compareTo(rxf) != 0) break;
-      for(final String p : rxf.produces) {
-        for(final HTTPAccept accept : accepts) {
-          final double nqf = accept.qf;
-          if(MimeTypes.matches(p, accept.type) && nqf > 0) {
-            if(qf < nqf) {
-              qf = nqf;
-              best = rxf;
-            } else if(qf == nqf) {
-              qf = -1;
-              break;
-            }
-          }
-        }
-      }
-    }
-    if(qf > 0) return best;
+    final RestXqFunction bestQf = bestQf(list, http);
+    if(bestQf != null) return bestQf;
 
     // show error if more than one path with the same specifity exists
     final TokenBuilder tb = new TokenBuilder();
@@ -105,6 +85,39 @@ public final class RestXqModules {
     throw best.path == null ?
       best.error(ERROR_CONFLICT, error, tb) :
       best.error(PATH_CONFLICT, best.path, tb);
+  }
+
+  /**
+   * Returns the function that has a mime type the quality factor of which matches the HTTP request
+   * best.
+   * @param list list of functions
+   * @param http http context
+   * @return best function, or {@code null} if more than one function exists
+   */
+  private RestXqFunction bestQf(final ArrayList<RestXqFunction> list, final HTTPContext http) {
+    // mime types accepted by the client
+    final HTTPAccept[] accepts = http.accepts();
+
+    double bestQf = 0;
+    RestXqFunction best = list.get(0);
+    for(final RestXqFunction rxf : list) {
+      // skip remaining functions with a weaker specifity
+      if(best.compareTo(rxf) != 0) break;
+      for(final String p : rxf.produces) {
+        for(final HTTPAccept accept : accepts) {
+          final double qf = accept.qf;
+          if(MimeTypes.matches(p, accept.type)) {
+            // multiple functions with the same quality factor
+            if(bestQf == qf) return null;
+            if(bestQf < qf) {
+              bestQf = qf;
+              best = rxf;
+            }
+          }
+        }
+      }
+    }
+    return best;
   }
 
   /**
