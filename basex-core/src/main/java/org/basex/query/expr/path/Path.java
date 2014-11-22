@@ -135,10 +135,7 @@ public abstract class Path extends ParseExpr {
         // axis step: if input is a document, its type is temporarily generalized
         final boolean as = e instanceof Step;
         if(as && s == 0 && doc) cv.type = NodeType.NOD;
-
-        e = e.compile(qc, scp);
-        if(e.isEmpty()) return optPre(qc);
-        steps[s] = e;
+        steps[s] = e.compile(qc, scp);
 
         // no axis step: invalidate context value
         if(!as) qc.value = null;
@@ -155,6 +152,9 @@ public abstract class Path extends ParseExpr {
   public final Expr optimize(final QueryContext qc, final VarScope scp) throws QueryException {
     final Value v = initial(qc);
     if(v != null && v.isEmpty() || emptyPath(v)) return optPre(qc);
+
+    // rewrite path with empty steps
+    for(final Expr step : steps) if(step.isEmpty()) return optPre(qc);
 
     // merge descendant steps
     Expr e = mergeSteps(qc);

@@ -1,8 +1,11 @@
 package org.basex.query.expr;
 
+import static org.basex.query.QueryText.*;
+
 import org.basex.query.*;
 import org.basex.query.iter.*;
 import org.basex.query.value.item.*;
+import org.basex.query.value.node.*;
 import org.basex.query.var.*;
 import org.basex.util.*;
 import org.basex.util.hash.*;
@@ -14,23 +17,24 @@ import org.basex.util.hash.*;
  * @author Christian Gruen
  */
 final class IterPosFilter extends Filter {
-  /** Offset flag. */
-  private final boolean off;
+  /** Index flag. */
+  private final boolean index;
 
   /**
    * Constructor.
    * @param info input info
-   * @param off offset flag
+   * @param index index access
    * @param root root expression
    * @param preds predicates
    */
-  IterPosFilter(final InputInfo info, final boolean off, final Expr root, final Expr... preds) {
+  IterPosFilter(final InputInfo info, final boolean index, final Expr root, final Expr... preds) {
     super(info, root, preds);
-    this.off = off;
+    this.index = index;
   }
 
   @Override
   public Iter iter(final QueryContext qc) {
+    final boolean scoring = qc.scoring;
     return new Iter() {
       boolean skip, direct;
       Iter iter;
@@ -42,12 +46,12 @@ final class IterPosFilter extends Filter {
 
         // first call - initialize iterator
         if(iter == null) {
-          if(off) {
-            // evaluate offset and create position expression
+          if(index) {
+            // evaluate index position
             final Item it = preds[0].ebv(qc, info);
             final long l = it.itr(info);
-            final Expr e = Pos.get(l, l, info);
-            // don't accept fractional numbers
+            final Expr e = Pos.get(l, info);
+            // do not accept fractional numbers, only accept positive positions
             if(l != it.dbl(info) || !(e instanceof Pos)) return null;
             pos = (Pos) e;
           }
@@ -85,7 +89,7 @@ final class IterPosFilter extends Filter {
               qc.checkStop();
               qc.size = 0;
               qc.pos = cpos++;
-              if(preds(item, qc)) break;
+              if(preds(item, qc, scoring)) break;
               // remember last node
               lnode = item;
               qc.pos = cp;
@@ -109,7 +113,14 @@ final class IterPosFilter extends Filter {
 
   @Override
   public IterPosFilter copy(final QueryContext qc, final VarScope scp, final IntObjMap<Var> vs) {
-    return copy(new IterPosFilter(info, off, root.copy(qc, scp, vs),
+    return copy(new IterPosFilter(info, index, root.copy(qc, scp, vs),
         Arr.copyAll(qc, scp, vs, preds)));
+  }
+
+  @Override
+  public void plan(final FElem plan) {
+    final FElem el = planElem(OFFSET, index);
+    addPlan(plan, el, root);
+    super.plan(el);
   }
 }

@@ -38,7 +38,12 @@ import org.basex.util.options.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
  */
-public final class GUI extends AGUI {
+public final class GUI extends JFrame {
+  /** Database Context. */
+  public final Context context;
+  /** GUI options. */
+  public final GUIOptions gopts;
+
   /** View Manager. */
   public final ViewNotifier notify;
 
@@ -120,7 +125,12 @@ public final class GUI extends AGUI {
    * @param opts gui options
    */
   public GUI(final Context ctx, final GUIOptions opts) {
-    super(ctx, opts);
+    this.context = ctx;
+    this.gopts = opts;
+
+    setIconImage(BaseXImages.get("icon"));
+    setTitle();
+
     GUIMacOSX.enableOSXFullscreen(this);
 
     // set window size
@@ -292,6 +302,48 @@ public final class GUI extends AGUI {
     super.dispose();
     gopts.write();
     context.close();
+  }
+
+  /**
+   * Sets the window title.
+   */
+  public void setTitle() {
+    final TokenBuilder tb = new TokenBuilder();
+    final EditorArea ea = editor == null ? null : editor.getEditor();
+    if(ea != null) {
+      if(ea.opened()) {
+        tb.add(ea.file().path());
+      } else {
+        tb.add(ea.file().name());
+      }
+      if(ea.modified()) tb.add('*');
+    }
+    final Data data = context.data();
+    if(data != null) {
+      if(!tb.isEmpty()) tb.add(' ');
+      tb.add("[").add(data.meta.name).add("]");
+    }
+    if(!tb.isEmpty()) tb.add(" - ");
+    tb.add(Prop.TITLE);
+    setTitle(tb.toString());
+  }
+
+  /**
+   * Sets a cursor.
+   * @param c cursor to be set
+   */
+  public void cursor(final Cursor c) {
+    cursor(c, false);
+  }
+
+  /**
+   * Sets a cursor, forcing a new look if necessary.
+   * @param c cursor to be set
+   * @param force new cursor
+   */
+  public void cursor(final Cursor c, final boolean force) {
+    final Cursor cc = getCursor();
+    if(cc != c && (cc != CURSORWAIT || force)) setCursor(c);
   }
 
   /**
@@ -690,6 +742,7 @@ public final class GUI extends AGUI {
     if(disk.compareTo(used) < 0) {
       // update version option to latest used version
       gopts.set(GUIOptions.UPDATEVERSION, used.toString());
+      gopts.write();
     } else {
       try {
         final String page = Token.string(new IOUrl(Prop.VERSION_URL).read());
@@ -703,6 +756,7 @@ public final class GUI extends AGUI {
             } else {
               // don't show update dialog anymore if it has been rejected once
               gopts.set(GUIOptions.UPDATEVERSION, latest.toString());
+              gopts.write();
             }
           }
         }

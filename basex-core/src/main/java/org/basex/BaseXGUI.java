@@ -81,7 +81,8 @@ public final class BaseXGUI extends Main {
         final GUI gui = new GUI(context, gopts);
         if(osxGUI != null) osxGUI.init(gui);
 
-        // open specified document or database
+        // open specified file
+        final ArrayList<IOFile> xqfiles = new ArrayList<>();
         for(final String file : files.finish()) {
           if(file.matches("^.*\\" + IO.BASEXSUFFIX + "[^.]*$")) continue;
 
@@ -92,9 +93,10 @@ public final class BaseXGUI extends Main {
             gopts.set(GUIOptions.DBNAME, io.dbname());
             DialogProgress.execute(gui, new Check(file));
           } else {
-            gui.editor.open(io);
+            xqfiles.add(io);
           }
         }
+        gui.editor.init(xqfiles);
       }
     });
 

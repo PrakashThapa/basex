@@ -46,13 +46,15 @@ abstract class Num extends StandardFunc {
     if(rs == null) return null;
 
     // check if first item is comparable
-    cmp.eval(rs, rs, coll, info);
+    cmp.eval(rs, rs, coll, sc, info);
 
     // strings
     if(rs instanceof AStr) {
       for(Item it; (it = iter.next()) != null;) {
         if(!(it instanceof AStr)) throw EXPTYPE_X_X_X.get(info, rs.type, it.type, it);
-        if(cmp.eval(rs, it, coll, info)) rs = it;
+        final Type rt = rs.type, ri = it.type;
+        if(cmp.eval(rs, it, coll, sc, info)) rs = it;
+        if(rt != ri && rs.type == URI) rs = STR.cast(rs, qc, sc, info);
       }
       return rs;
     }
@@ -60,7 +62,7 @@ abstract class Num extends StandardFunc {
     if(rs instanceof ADate || rs instanceof Dur || rs instanceof Bin || rs.type == BLN) {
       for(Item it; (it = iter.next()) != null;) {
         if(rs.type != it.type) throw EXPTYPE_X_X_X.get(info, rs.type, it.type, it);
-        if(cmp.eval(rs, it, coll, info)) rs = it;
+        if(cmp.eval(rs, it, coll, sc, info)) rs = it;
       }
       return rs;
     }
@@ -68,7 +70,7 @@ abstract class Num extends StandardFunc {
     if(rs.type.isUntyped()) rs = DBL.cast(rs, qc, sc, info);
     for(Item it; (it = iter.next()) != null;) {
       final Type t = numType(rs, it);
-      if(cmp.eval(rs, it, coll, info) || Double.isNaN(it.dbl(info))) rs = it;
+      if(cmp.eval(rs, it, coll, sc, info) || Double.isNaN(it.dbl(info))) rs = it;
       if(rs.type != t) rs = (Item) t.cast(rs, qc, sc, info);
     }
     return rs;
@@ -89,6 +91,22 @@ abstract class Num extends StandardFunc {
     return tr == ti ? tr :
            tr == DBL || ti == DBL ? DBL :
            tr == FLT || ti == FLT ? FLT :
-           tr == DEC || ti == DEC ? DEC : ITR;
+           tr == DEC || ti == DEC ? DEC :
+           instanceOf(tr, ti, NNI) ? NNI :
+           instanceOf(tr, ti, SHR) ? SHR :
+           instanceOf(tr, ti, INT) ? INT :
+           instanceOf(tr, ti, LNG) ? LNG :
+           instanceOf(tr, ti, NPI) ? NPI : ITR;
+  }
+
+  /**
+   * Checks if the specified types are instances of the same type.
+   * @param tr result type
+   * @param ti new item type
+   * @param type to check
+   * @return result of check
+   */
+  private boolean instanceOf(final Type tr, final Type ti, final Type type) {
+    return tr.instanceOf(type) && ti.instanceOf(type);
   }
 }

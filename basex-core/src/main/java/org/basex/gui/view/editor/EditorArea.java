@@ -25,9 +25,9 @@ public final class EditorArea extends TextPanel {
   /** File label. */
   final BaseXLabel label;
   /** File in tab. */
-  IOFile file;
+  private IOFile file;
   /** Flag for modified content. */
-  boolean modified;
+  private boolean modified;
   /** Last input. */
   byte[] last;
   /** This flag indicates if the input is a command script. */
@@ -40,16 +40,16 @@ public final class EditorArea extends TextPanel {
 
   /**
    * Constructor.
-   * @param v view reference
-   * @param f file reference
+   * @param view view reference
+   * @param file file reference
    */
-  EditorArea(final EditorView v, final IOFile f) {
-    super(true, v.gui);
-    view = v;
-    file = f;
-    label = new BaseXLabel(f.name());
+  EditorArea(final EditorView view, final IOFile file) {
+    super(true, view.gui);
+    this.view = view;
+    this.file = file;
+    label = new BaseXLabel(file.name());
     label.setIcon(BaseXImages.file(new IOFile(IO.XQSUFFIX)));
-    setSyntax(f, false);
+    setSyntax(file, false);
 
     addFocusListener(new FocusAdapter() {
       @Override
@@ -70,11 +70,27 @@ public final class EditorArea extends TextPanel {
   }
 
   /**
-   * Returns {@code true} if the file was opened from disk, or was saved to disk.
+   * Returns {@code true} if the tab content was opened from disk, or was saved to disk.
    * @return result of check
    */
   public boolean opened() {
     return tstamp != 0;
+  }
+
+  /**
+   * Returns {@code true} if the tab content was modified.
+   * @return result of check
+   */
+  public boolean modified() {
+    return modified;
+  }
+
+  /**
+   * Sets the modified flag.
+   * @param mod modified flag
+   */
+  public void modified(final boolean mod) {
+    modified = mod;
   }
 
   /**
@@ -216,6 +232,7 @@ public final class EditorArea extends TextPanel {
       file = io;
       label.setIcon(BaseXImages.file(io));
       setSyntax(io, true);
+      repaint();
     }
     tstamp = file.timeStamp();
     hist.save();

@@ -10,6 +10,7 @@ import org.basex.data.*;
 import org.basex.gui.dialog.*;
 import org.basex.gui.layout.*;
 import org.basex.gui.view.*;
+import org.basex.gui.view.editor.*;
 import org.basex.io.*;
 import org.basex.query.func.*;
 import org.basex.query.value.item.*;
@@ -19,8 +20,7 @@ import org.basex.util.*;
 import org.basex.util.list.*;
 
 /**
- * This enumeration encapsulates all commands that are triggered by
- * GUI operations.
+ * This enumeration encapsulates all commands that are triggered by GUI operations.
  *
  * @author BaseX Team 2005-14, BSD License
  * @author Christian Gruen
@@ -152,7 +152,8 @@ public enum GUIMenuCmd implements GUICommand {
 
     @Override
     public boolean enabled(final GUI gui) {
-      return gui.gopts.get(GUIOptions.SHOWEDITOR) && gui.editor.modified();
+      final EditorArea ea = gui.editor == null ? null : gui.editor.getEditor();
+      return gui.gopts.get(GUIOptions.SHOWEDITOR) && ea != null && (ea.modified() || !ea.opened());
     }
   },
 
@@ -792,14 +793,22 @@ public enum GUIMenuCmd implements GUICommand {
       boolean doc = true;
       final Data data = ctx.data();
       for(final int pre : ctx.current().pres) doc &= data.kind(pre) == Data.DOC;
+      final DBNodes nodes;
       if(doc) {
         // if yes, jump to database root
         ctx.invalidate();
-        gui.notify.context(ctx.current(), false, null);
+        nodes = ctx.current();
       } else {
         // otherwise, jump to parent nodes
-        gui.execute(new Cs(".."));
+        final IntList pres = new IntList();
+        for(final int pre : ctx.current().pres) {
+          final int k = data.kind(pre);
+          pres.add(k == Data.DOC ? pre : data.parent(pre, k));
+        }
+        nodes = new DBNodes(data, pres.sort().distinct().finish());
+        ctx.current(nodes);
       }
+      gui.notify.context(nodes, false, null);
     }
 
     @Override
