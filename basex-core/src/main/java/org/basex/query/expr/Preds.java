@@ -19,6 +19,7 @@ import org.basex.query.value.seq.*;
 import org.basex.query.value.type.*;
 import org.basex.query.var.*;
 import org.basex.util.*;
+import org.basex.util.ft.*;
 
 /**
  * Abstract predicate expression, implemented by {@link Filter} and {@link Step}.
@@ -65,10 +66,11 @@ public abstract class Preds extends ParseExpr {
 
   @Override
   public Expr optimize(final QueryContext qc, final VarScope scp) throws QueryException {
-    for(int p = 0; p < preds.length; ++p) {
-      final Expr pr = preds[p];
-      if(pr instanceof CmpG || pr instanceof CmpV) {
-        final Cmp cmp = (Cmp) pr;
+    // number of predicates may change in loop
+    for(int p = 0; p < preds.length; p++) {
+      final Expr pred = preds[p];
+      if(pred instanceof CmpG || pred instanceof CmpV) {
+        final Cmp cmp = (Cmp) pred;
         if(cmp.exprs[0].isFunction(Function.POSITION)) {
           final Expr e2 = cmp.exprs[1];
           final SeqType st2 = e2.seqType();
@@ -77,16 +79,16 @@ public abstract class Preds extends ParseExpr {
           if(e2.isFunction(Function.LAST) || st2.one() && st2.type.isNumber()) {
             if(cmp instanceof CmpG && ((CmpG) cmp).op == OpG.EQ ||
                cmp instanceof CmpV && ((CmpV) cmp).op == OpV.EQ) {
-              qc.compInfo(OPTWRITE, pr);
+              qc.compInfo(OPTWRITE, pred);
               preds[p] = e2;
             }
           }
         }
-      } else if(pr instanceof And) {
-        if(!pr.has(Flag.FCS)) {
+      } else if(pred instanceof And) {
+        if(!pred.has(Flag.FCS)) {
           // replace AND expression with predicates (don't swap position tests)
-          qc.compInfo(OPTPRED, pr);
-          final Expr[] and = ((Arr) pr).exprs;
+          qc.compInfo(OPTPRED, pred);
+          final Expr[] and = ((Arr) pred).exprs;
           final int m = and.length - 1;
           final ExprList el = new ExprList(preds.length + m);
           for(final Expr e : Arrays.asList(preds).subList(0, p)) el.add(e);
@@ -97,22 +99,22 @@ public abstract class Preds extends ParseExpr {
           for(final Expr e : Arrays.asList(preds).subList(p + 1, preds.length)) el.add(e);
           preds = el.finish();
         }
-      } else if(pr instanceof ANum) {
-        final ANum it = (ANum) pr;
+      } else if(pred instanceof ANum) {
+        final ANum it = (ANum) pred;
         final long i = it.itr();
         if(i == it.dbl()) {
           preds[p] = Pos.get(i, info);
         } else {
-          qc.compInfo(OPTREMOVE, this, pr);
+          qc.compInfo(OPTREMOVE, this, pred);
           return Empty.SEQ;
         }
-      } else if(pr.isValue()) {
-        if(pr.ebv(qc, info).bool(info)) {
-          qc.compInfo(OPTREMOVE, this, pr);
+      } else if(pred.isValue()) {
+        if(pred.ebv(qc, info).bool(info)) {
+          qc.compInfo(OPTREMOVE, this, pred);
           preds = Array.delete(preds, p--);
         } else {
           // handle statically known predicates
-          qc.compInfo(OPTREMOVE, this, pr);
+          qc.compInfo(OPTREMOVE, this, pred);
           return Empty.SEQ;
         }
       }
@@ -153,12 +155,14 @@ public abstract class Preds extends ParseExpr {
     // set context value and position
     final Value cv = qc.value;
     try {
+      double s = 0;
       for(final Expr p : preds) {
         qc.value = it;
         final Item i = p.test(qc, info);
         if(i == null) return false;
-        if(scoring) it.score(i.score());
+        if(scoring) s += i.score();
       }
+      if(scoring) it.score(Scoring.avg(s, preds.length));
       return true;
     } finally {
       qc.value = cv;

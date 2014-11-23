@@ -1,10 +1,9 @@
 package org.basex.query.util.pkg;
 
+import static org.basex.query.QueryError.*;
 import static org.basex.query.QueryText.*;
-import static org.basex.query.util.Err.*;
 import static org.basex.util.Token.*;
 
-import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 
@@ -25,28 +24,39 @@ import org.basex.util.hash.*;
 public final class ModuleLoader {
   /** Default class loader. */
   private static final ClassLoader LOADER = Thread.currentThread().getContextClassLoader();
+
+  /** Database context. */
+  private final Context context;
   /** Cached URLs to be added to the class loader. */
   private final ArrayList<URL> urls = new ArrayList<>(0);
   /** Current class loader. */
   private ClassLoader loader = LOADER;
+
   /** Java modules. */
-  private HashMap<Object, ArrayList<Method>> javaModules;
-  /** Database context. */
-  private final Context context;
+  private HashSet<Object> javaModules;
 
   /**
    * Constructor.
-   * @param ctx database context
+   * @param context database context
    */
-  public ModuleLoader(final Context ctx) {
-    context = ctx;
+  public ModuleLoader(final Context context) {
+    this.context = context;
   }
 
   /**
-   * Closes opened jar files.
+   * Closes opened jar files, and calls close method of {@link QueryModule} instances
+   * implementing {@link QueryResource}.
    */
   public void close() {
     if(loader instanceof JarLoader) ((JarLoader) loader).close();
+    if(javaModules != null) {
+      for(final Object jm : javaModules) {
+        for(final Class<?> c : jm.getClass().getInterfaces()) {
+          if(c != QueryResource.class) continue;
+          Reflect.invoke(Reflect.method(QueryResource.class, "close"), jm);
+        }
+      }
+    }
   }
 
   /**
@@ -96,14 +106,30 @@ public final class ModuleLoader {
       }
     }
 
-    // "java:" prefix, or no XQuery package found: try to load Java module
+    // try to load Java module
     uriPath = capitalize(uriPath);
     final String path = context.globalopts.get(GlobalOptions.REPOPATH) + uriPath;
     final IOFile file = new IOFile(path + IO.JARSUFFIX);
     if(file.exists()) addURL(file);
 
     // try to create Java class instance
-    addJava(uriPath, ii);
+    final String cp = camelCase(uriPath.replace('/', '.').substring(1));
+    final Class<?> clz;
+    try {
+      clz = findClass(cp);
+    } catch(final ClassNotFoundException ex) {
+      if(java) throw WHICHCLASS_X.get(ii, ex.getMessage());
+      return false;
+    } catch(final Throwable th) {
+      throw MODINITERR_X.get(ii, th);
+    }
+
+    // add new instance to module cache
+    final Object jm = Reflect.get(clz);
+    if(jm == null) throw INSTERR_X.get(ii, cp);
+
+    if(javaModules == null) javaModules = new HashSet<>();
+    javaModules.add(jm);
     return true;
   }
 
@@ -133,7 +159,7 @@ public final class ModuleLoader {
   public Object findImport(final String clz) {
     // check if class was imported as Java module
     if(javaModules != null) {
-      for(final Object jm : javaModules.keySet()) {
+      for(final Object jm : javaModules) {
         if(jm.getClass().getName().equals(clz)) return jm;
       }
     }
@@ -197,40 +223,6 @@ public final class ModuleLoader {
   }
 
   // PRIVATE METHODS ====================================================================
-
-  /**
-   * Loads a Java class.
-   * @param path file path
-   * @param ii input info
-   * @throws QueryException query exception
-   */
-  private void addJava(final String path, final InputInfo ii) throws QueryException {
-    final String cp = camelCase(path.replace('/', '.').substring(1));
-    final Class<?> clz;
-    try {
-      clz = findClass(cp);
-    } catch(final ClassNotFoundException ex) {
-      throw WHICHCLASS_X.get(ii, ex.getMessage());
-      // expected exception
-    } catch(final Throwable th) {
-      throw MODINITERR_X.get(ii, th);
-    }
-
-    final Object jm = Reflect.get(clz);
-    if(jm == null) throw INSTERR_X.get(ii, cp);
-
-    // add all public methods of the class (ignore methods from super classes)
-    final boolean qm = QueryModule.class.isAssignableFrom(clz);
-    final ArrayList<Method> list = new ArrayList<>();
-    for(final Method m : clz.getMethods()) {
-      // if class is inherited from {@link QueryModule}, no super methods are accepted
-      if(!qm || m.getDeclaringClass() == clz) list.add(m);
-    }
-
-    // add class and its methods to module cache
-    if(javaModules == null) javaModules = new HashMap<>();
-    javaModules.put(jm, list);
-  }
 
   /**
    * Adds a package from the package repository.

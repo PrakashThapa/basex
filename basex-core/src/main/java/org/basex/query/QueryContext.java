@@ -1,7 +1,7 @@
 package org.basex.query;
 
 import static org.basex.core.Text.*;
-import static org.basex.query.util.Err.*;
+import static org.basex.query.QueryError.*;
 import static org.basex.util.Token.*;
 
 import java.util.*;
@@ -259,12 +259,13 @@ public final class QueryContext extends Proc implements AutoCloseable {
    */
   public void compile() throws QueryException {
     // set database options
-    final StringList o = tempOpts;
-    for(int s = 0; s < o.size(); s += 2) {
+    final StringList opts = tempOpts;
+    final int os = opts.size();
+    for(int o = 0; o < os; o += 2) {
       try {
-        context.options.assign(o.get(s).toUpperCase(Locale.ENGLISH), o.get(s + 1));
+        context.options.assign(opts.get(o).toUpperCase(Locale.ENGLISH), opts.get(o + 1));
       } catch(final BaseXException ex) {
-        throw BASX_VALUE_X_X.get(null, o.get(s), o.get(s + 1));
+        throw BASX_VALUE_X_X.get(null, opts.get(o), opts.get(o + 1));
       }
     }
     // set tail call option after assignment database option
@@ -279,9 +280,8 @@ public final class QueryContext extends Proc implements AutoCloseable {
         ctxItem.compile(this);
         value = ctxItem.cache(this).value();
       } catch(final QueryException ex) {
-        if(ex.err() != NOCTX_X) throw ex;
-        // only {@link ParseExpr} instances may cause this error
-        throw CIRCCTX.get(ctxItem.info);
+        // only {@link ParseExpr} instances may lead to a missing context
+        throw ex.error() == NOCTX_X ? CIRCCTX.get(ctxItem.info) : ex;
       }
     } else {
       // cache the initial context nodes

@@ -1,6 +1,6 @@
 package org.basex.query.expr.constr;
 
-import static org.basex.query.util.Err.*;
+import static org.basex.query.QueryError.*;
 
 import org.basex.query.*;
 import org.basex.query.expr.*;
@@ -111,13 +111,12 @@ public final class Constr {
         }
         // check for duplicate attribute names
         final QNm name = node.qname();
-        for(int a = 0; a < atts.size(); ++a) {
-          if(name.eq(atts.get(a).qname())) {
+        for(final ANode att : atts) {
+          if(name.eq(att.qname())) {
             duplAtt = name.string();
             return false;
           }
         }
-
         // add attribute
         atts.add(new FAttr(name, node.string()));
         // add new namespace

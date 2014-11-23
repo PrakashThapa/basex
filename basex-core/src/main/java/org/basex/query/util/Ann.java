@@ -1,7 +1,7 @@
 package org.basex.query.util;
 
+import static org.basex.query.QueryError.*;
 import static org.basex.query.QueryText.*;
-import static org.basex.query.util.Err.*;
 import static org.basex.util.Token.*;
 
 import org.basex.io.serial.*;
@@ -150,7 +150,8 @@ public final class Ann extends ElementList {
    */
   public void check(final boolean var) throws QueryException {
     boolean up = false, vis = false;
-    for(int a = 0; a < size(); a++) {
+    final int as = size();
+    for(int a = 0; a < as; a++) {
       final QNm name = names[a];
       final byte[] local = name.local();
       final byte[] uri = name.uri();

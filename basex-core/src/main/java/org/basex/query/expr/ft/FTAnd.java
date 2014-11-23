@@ -70,7 +70,8 @@ public final class FTAnd extends FTExpr {
       @Override
       public FTNode next() throws QueryException {
         // find item with lowest pre value
-        for(int i = 0; i < it.length; ++i) {
+        final int il = it.length;
+        for(int i = 0; i < il; ++i) {
           if(it[i] == null) {
             if(negated[i]) continue;
             return null;
@@ -94,7 +95,7 @@ public final class FTAnd extends FTExpr {
 
         // merge all matches
         final FTNode item = it[0];
-        for(int i = 1; i < it.length; ++i) {
+        for(int i = 1; i < il; ++i) {
           // [CG] XQFT: item.all = FTMatches.not(it[i].all, 0);
           if(negated[i]) continue;
           and(item, it[i]);
@@ -118,7 +119,7 @@ public final class FTAnd extends FTExpr {
         all.add(new FTMatch(s1.size() + s2.size()).add(s1).add(s2));
       }
     }
-    i1.score(Scoring.merge(i1.score(), i2.score()));
+    i1.score(Scoring.avg(i1.score() + i2.score(), 2));
     i1.all = all;
   }
 

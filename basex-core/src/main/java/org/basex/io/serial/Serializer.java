@@ -1,8 +1,8 @@
 package org.basex.io.serial;
 
 import static org.basex.data.DataText.*;
+import static org.basex.query.QueryError.*;
 import static org.basex.query.QueryText.*;
-import static org.basex.query.util.Err.*;
 import static org.basex.util.Token.*;
 
 import java.io.*;
@@ -402,7 +402,8 @@ public abstract class Serializer {
         openDoc(data.text(p++, true));
         doc = true;
       } else if(k == Data.TEXT) {
-        prepareText(data.text(p++, true), ft != null ? ft.get(data, p) : null);
+        prepareText(data.text(p, true), ft != null ? ft.get(data, p) : null);
+        p++;
       } else if(k == Data.COMM) {
         prepareComment(data.text(p++, true));
       } else {
@@ -425,7 +426,8 @@ public abstract class Serializer {
 
             do {
               final Atts ns = data.ns(pp);
-              for(int n = 0; n < ns.size(); ++n) {
+              final int nl = ns.size();
+              for(int n = 0; n < nl; n++) {
                 final byte[] pref = ns.name(n);
                 if(nsp.add(pref)) namespace(pref, ns.value(n));
               }

@@ -1,7 +1,7 @@
 package org.basex.query.value.type;
 
+import static org.basex.query.QueryError.*;
 import static org.basex.query.QueryText.*;
-import static org.basex.query.util.Err.*;
 import static org.basex.util.Token.*;
 
 import java.math.*;
@@ -83,7 +83,8 @@ public enum AtomType implements Type {
         final InputInfo ii) throws QueryException {
 
       final byte[] str = item.string(ii);
-      for(int s = 0; s < str.length; s++) {
+      final int sl = str.length;
+      for(int s = 0; s < sl; s++) {
         final byte b = str[s];
         if(b == '\t' || b == '\r' || b == '\n') str[s] = ' ';
       }

@@ -1,7 +1,7 @@
 package org.basex.io.serial.json;
 
 import static org.basex.io.parse.json.JsonConstants.*;
-import static org.basex.query.util.Err.*;
+import static org.basex.query.QueryError.*;
 import static org.basex.util.Token.*;
 
 import java.io.*;
@@ -65,7 +65,8 @@ public final class JsonNodeSerializer extends JsonSerializer {
     so.set(SerializerOptions.OMIT_XML_DECLARATION, YesNo.YES);
     ser = Serializer.get(cache, so);
 
-    for(int t = 0; t < typeCache.length; t++) typeCache[t] = new TokenMap();
+    final int tl = typeCache.length;
+    for(int t = 0; t < tl; t++) typeCache[t] = new TokenMap();
     atts = jopts.get(JsonOptions.FORMAT) == JsonFormat.ATTRIBUTES;
     lax = jopts.get(JsonOptions.LAX) || atts;
   }

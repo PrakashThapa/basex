@@ -1,7 +1,7 @@
 package org.basex.query.value.item;
 
+import static org.basex.query.QueryError.*;
 import static org.basex.query.QueryText.*;
-import static org.basex.query.util.Err.*;
 
 import java.util.regex.*;
 
@@ -89,7 +89,8 @@ public final class GDt extends ADate {
    * @return offset
    */
   private static int type(final Type type) {
-    for(int t = 0; t < TYPES.length; ++t) if(TYPES[t] == type) return t;
+    final int tl = TYPES.length;
+    for(int t = 0; t < tl; t++) if(TYPES[t] == type) return t;
     throw Util.notExpected();
   }
 

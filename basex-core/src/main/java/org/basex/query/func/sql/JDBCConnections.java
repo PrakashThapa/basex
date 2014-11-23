@@ -12,7 +12,7 @@ import org.basex.util.hash.*;
  * @author BaseX Team 2005-14, BSD License
  * @author Rositsa Shadura
  */
-public final class JDBCConnections implements DataResources {
+public final class JDBCConnections implements QueryResource {
   /** Last inserted id. */
   private int lastId = -1;
   /** Map with all open connections and prepared statements with unique ids. */
@@ -47,7 +47,8 @@ public final class JDBCConnections implements DataResources {
 
   @Override
   public void close() {
-    for(int i = 0; i < conns.size(); i++) {
+    final int is = conns.size();
+    for(int i = 0; i < is; i++) {
       final int key = conns.key(i);
       final Object obj = conns.get(key);
       if(obj == null) continue;

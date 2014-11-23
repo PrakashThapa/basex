@@ -1,6 +1,6 @@
 package org.basex.query.expr;
 
-import static org.basex.query.util.Err.*;
+import static org.basex.query.QueryError.*;
 
 import org.basex.query.*;
 import org.basex.query.iter.*;
@@ -26,6 +26,18 @@ public final class Lookup extends Arr {
    */
   public Lookup(final InputInfo info, final Expr... expr) {
     super(info, expr);
+  }
+
+  @Override
+  public Expr compile(final QueryContext qc, final VarScope scp) throws QueryException {
+    super.compile(qc, scp);
+    return optimize(qc, scp);
+  }
+
+  @Override
+  public Expr optimize(final QueryContext qc, final VarScope scp) throws QueryException {
+    return exprs.length > 1 && (exprs[1] instanceof Map || exprs[1] instanceof Array) &&
+        exprs[0].isValue() ? optPre(value(qc), qc) : this;
   }
 
   @Override
