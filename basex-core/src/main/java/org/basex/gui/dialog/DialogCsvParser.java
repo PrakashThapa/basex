@@ -46,6 +46,8 @@ final class DialogCsvParser extends DialogParser {
   private final BaseXCheckBox lax;
   /** CSV: Parse quotes. */
   private final BaseXCheckBox quotes;
+  /** CSV: Backslashes. */
+  private final BaseXCheckBox backslashes;
 
   /**
    * Constructor.
@@ -71,7 +73,7 @@ final class DialogCsvParser extends DialogParser {
     sep.add(seps);
 
     final String s = copts.get(CsvOptions.SEPARATOR);
-    if(Token.eq(s, sa)) {
+    if(Strings.eq(s, sa)) {
       seps.setSelectedItem(s);
     } else {
       seps.setSelectedIndex(sa.length);
@@ -93,13 +95,13 @@ final class DialogCsvParser extends DialogParser {
     p.add(format);
     pp.add(p);
 
-    p = new BaseXBack(new TableLayout(3, 1));
+    p = new BaseXBack(new TableLayout(4, 1));
     header = new BaseXCheckBox(FIRST_LINE_HEADER, CsvOptions.HEADER, copts, d);
     p.add(header);
-
     quotes = new BaseXCheckBox(PARSE_QUOTES, CsvOptions.QUOTES, copts, d);
     p.add(quotes);
-
+    backslashes = new BaseXCheckBox(BACKSLASHES, CsvOptions.BACKSLASHES, copts, d);
+    p.add(backslashes);
     lax = new BaseXCheckBox(LAX_NAME_CONVERSION, CsvOptions.LAX, copts, d);
     p.add(lax);
 
@@ -135,11 +137,12 @@ final class DialogCsvParser extends DialogParser {
   @Override
   void update() {
     final String enc = encoding.getSelectedItem();
-    copts.set(CsvParserOptions.ENCODING, enc.equals(Token.UTF8) ? null : enc);
+    copts.set(CsvParserOptions.ENCODING, enc.equals(Strings.UTF8) ? null : enc);
     copts.set(CsvOptions.HEADER, header.isSelected());
     copts.set(CsvOptions.FORMAT, format.getSelectedItem());
     copts.set(CsvOptions.LAX, lax.isSelected());
     copts.set(CsvOptions.QUOTES, quotes.isSelected());
+    copts.set(CsvOptions.BACKSLASHES, backslashes.isSelected());
     String sep;
     if(seps.getSelectedIndex() < CsvSep.values().length) {
       sep = seps.getSelectedItem();

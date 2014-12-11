@@ -11,7 +11,10 @@ import org.basex.core.cmd.*;
 import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.query.*;
+import org.basex.query.func.fn.*;
 import org.basex.query.up.primitives.*;
+import org.basex.query.up.primitives.db.*;
+import org.basex.query.up.primitives.node.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.type.*;
 import org.basex.util.*;
@@ -44,7 +47,7 @@ final class DataUpdates {
   private final IntObjMap<Put> puts = new IntObjMap<>();
 
   /** Write databases back to disk. */
-  private boolean writeback;
+  private final boolean writeback;
   /** Number of updates. */
   private int size;
 
@@ -156,9 +159,10 @@ final class DataUpdates {
 
   /**
    * Applies all updates for this specific database.
+   * @param qc query context
    * @throws QueryException query exception
    */
-  void apply() throws QueryException {
+  void apply(final QueryContext qc) throws QueryException {
     // execute database updates
     auc.execute(true);
     auc = null;
@@ -174,13 +178,32 @@ final class DataUpdates {
     // execute fn:put operations
     for(final Put put : puts.values()) put.apply();
 
-    // optional: write main memory databases of file instances back to disk
-    if(data.inMemory() && !data.meta.original.isEmpty() && writeback) {
+    // [CG] #1035 auto-optimize database
+    final MainOptions opts = qc.context.options;
+    if(data.meta.autoopt) {
       try {
-        Export.export(data, data.meta.original, null);
+        Optimize.optimize(data, opts, null);
       } catch(final IOException ex) {
-        Util.debug(ex);
-        throw UPPUTERR_X.get(null, data.meta.original);
+        throw UPDBOPTERR_X.get(null, ex);
+      }
+    }
+
+    /* optional: export file if...
+     * - WRITEBACK option is turned on
+     * - an original file path exists
+     * - data is a main-memory instance
+     * - this data reference is not opened in the current context
+     */
+    final String original = data.meta.original;
+    if(data.inMemory() && !original.isEmpty() && data != qc.context.data()) {
+      if(writeback) {
+        try {
+          Export.export(data, original, qc.context.options, null);
+        } catch(final IOException ex) {
+          throw UPDBOPTERR_X.get(null, ex);
+        }
+      } else {
+        FnTrace.dump(Token.token(original + ": Updates are not written back."), null, qc);
       }
     }
   }

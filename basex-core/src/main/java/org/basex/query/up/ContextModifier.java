@@ -8,6 +8,8 @@ import java.util.*;
 import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.up.primitives.*;
+import org.basex.query.up.primitives.name.*;
+import org.basex.util.*;
 import org.basex.util.list.*;
 
 /**
@@ -22,6 +24,8 @@ public abstract class ContextModifier {
   private final Map<Data, DataUpdates> dbUpdates = new HashMap<>();
   /** Update primitives, aggregated separately for each database name. */
   private final Map<String, NameUpdates> nameUpdates = new HashMap<>();
+  /** Update primitives, aggregated separately for each user name. */
+  private final Map<String, UserUpdates> userUpdates = new HashMap<>();
   /** Temporary data reference, containing all XML fragments to be inserted. */
   private MemData tmp;
 
@@ -43,7 +47,7 @@ public abstract class ContextModifier {
       // create temporary mem data instance if not available yet
       if(tmp == null) tmp = new MemData(qc.context.options);
       ups.add(dataUp, tmp);
-    } else {
+    } else if(update instanceof NameUpdate) {
       final NameUpdate nameUp = (NameUpdate) update;
       final String name = nameUp.name();
       NameUpdates ups = nameUpdates.get(name);
@@ -52,6 +56,17 @@ public abstract class ContextModifier {
         nameUpdates.put(name, ups);
       }
       ups.add(nameUp);
+    } else if(update instanceof UserUpdate) {
+      final UserUpdate userUp = (UserUpdate) update;
+      final String name = userUp.name();
+      UserUpdates ups = userUpdates.get(name);
+      if(ups == null) {
+        ups = new UserUpdates();
+        userUpdates.put(name, ups);
+      }
+      ups.add(userUp);
+    } else {
+      throw Util.notExpected("Unknown update type: " + update);
     }
   }
 
@@ -86,33 +101,35 @@ public abstract class ContextModifier {
 
   /**
    * Applies all updates.
+   * @param qc query context
    * @throws QueryException query exception
    */
-  final void apply() throws QueryException {
+  final void apply(final QueryContext qc) throws QueryException {
+    for(final UserUpdates up : userUpdates.values()) up.apply();
+    if(!userUpdates.isEmpty()) qc.context.users.write();
+
     // apply initial updates based on database names
     for(final NameUpdates up : nameUpdates.values()) up.apply(true);
-
-    // collect data references to be locked
-    final Set<Data> datas = new HashSet<>();
-    for(final Data data : dbUpdates.keySet()) datas.add(data);
 
     // try to acquire write locks and keep track of the number of acquired locks in order to
     // release them in case of error. write locks prevent other JVMs from accessing currently
     // updated databases, but they cannot provide perfect safety.
-    int i = 0;
+    final Set<Data> datas = new HashSet<>();
     try {
-      for(final Data data : datas) {
-        data.startUpdate();
-        i++;
+      for(final Data data : dbUpdates.keySet()) {
+        data.startUpdate(qc.context.options);
+        datas.add(data);
       }
       // apply node and database update
-      for(final DataUpdates up : dbUpdates.values()) up.apply();
+      for(final DataUpdates up : dbUpdates.values()) {
+        up.apply(qc);
+      }
     } catch(final IOException ex) {
       throw BXDB_LOCK_X.get(null, ex);
     } finally {
       // remove locks: in case of a crash, remove only already acquired write locks
       for(final Data data : datas) {
-        if(i-- > 0) data.finishUpdate();
+        data.finishUpdate(qc.context.options);
       }
     }
 
@@ -126,8 +143,9 @@ public abstract class ContextModifier {
    */
   final int size() {
     int s = 0;
-    for(final DataUpdates c : dbUpdates.values()) s += c.size();
-    for(final NameUpdates c : nameUpdates.values()) s += c.size();
+    for(final DataUpdates up : dbUpdates.values()) s += up.size();
+    for(final NameUpdates up : nameUpdates.values()) s += up.size();
+    for(final UserUpdates up : userUpdates.values()) s += up.size();
     return s;
   }
 }

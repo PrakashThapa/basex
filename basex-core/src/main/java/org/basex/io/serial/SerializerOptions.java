@@ -1,6 +1,7 @@
 package org.basex.io.serial;
 
 import org.basex.build.*;
+import org.basex.core.*;
 import org.basex.util.*;
 import org.basex.util.options.*;
 
@@ -25,7 +26,7 @@ public final class SerializerOptions extends Options {
       new StringOption("doctype-system", "");
   /** Serialization parameter: valid encoding. */
   public static final StringOption ENCODING =
-      new StringOption("encoding", Token.UTF8);
+      new StringOption("encoding", Strings.UTF8);
   /** Serialization parameter: yes/no. */
   public static final EnumOption<YesNo> ESCAPE_URI_ATTRIBUTES =
       new EnumOption<>("escape-uri-attributes", YesNo.NO);
@@ -45,8 +46,8 @@ public final class SerializerOptions extends Options {
   public static final EnumOption<SerialMethod> METHOD =
       new EnumOption<>("method", SerialMethod.XML);
   /** Serialization parameter: NFC/NFD/NFKC/NKFD/fully-normalized/none. */
-  public static final EnumOption<Norm> NORMALIZATION_FORM =
-      new EnumOption<>("normalization-form", Norm.NFC);
+  public static final StringOption NORMALIZATION_FORM =
+      new StringOption("normalization-form", Text.NONE);
   /** Serialization parameter: yes/no. */
   public static final EnumOption<YesNo> OMIT_XML_DECLARATION =
       new EnumOption<>("omit-xml-declaration", YesNo.YES);
@@ -82,9 +83,6 @@ public final class SerializerOptions extends Options {
   public static final EnumOption<Newline> NEWLINE =
       new EnumOption<>("newline",
         "\r".equals(Prop.NL) ? Newline.CR : "\n".equals(Prop.NL) ? Newline.NL : Newline.CRNL);
-  /** Specific serialization parameter: formatting. */
-  public static final EnumOption<YesNo> FORMAT =
-      new EnumOption<>("format", YesNo.YES);
   /** Specific serialization parameter: indent with spaces or tabs. */
   public static final EnumOption<YesNo> TABULATOR =
       new EnumOption<>("tabulator", YesNo.NO);
@@ -107,27 +105,8 @@ public final class SerializerOptions extends Options {
   public static final NumberOption LIMIT =
       new NumberOption("limit", -1);
 
-  /** Normalization form. */
-  public enum Norm {
-    /** NFC.   */ NFC("NFC"),
-    /** None.  */ NONE("none");
-
-    /** String. */
-    private final String string;
-
-    /**
-     * Constructor.
-     * @param string string
-     */
-    Norm(final String string) {
-      this.string = string;
-    }
-
-    @Override
-    public String toString() {
-      return string;
-    }
-  }
+  /** Static Webdav character map. */
+  public static final String WEBDAV = "webdav";
 
   /** Newlines. */
   public enum Newline {

@@ -5,6 +5,7 @@ import static org.basex.core.Text.*;
 import java.io.*;
 
 import org.basex.core.*;
+import org.basex.core.locks.*;
 import org.basex.core.parse.*;
 import org.basex.core.parse.Commands.Cmd;
 import org.basex.core.parse.Commands.CmdShow;
@@ -26,7 +27,7 @@ public final class ShowBackups extends ABackup {
     table.header.add(NAME);
     table.header.add(SIZE);
 
-    final IOFile dbpath = context.globalopts.dbpath();
+    final IOFile dbpath = soptions.dbpath();
     for(final String name : context.databases.backups()) {
       final TokenList tl = new TokenList();
       tl.add(name);

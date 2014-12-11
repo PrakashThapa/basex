@@ -3,7 +3,7 @@ package org.basex.core.cmd;
 import static org.basex.core.Text.*;
 import static org.basex.util.Token.*;
 
-import org.basex.core.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.util.*;
@@ -61,7 +61,7 @@ public final class Rename extends ACreate {
     }
 
     // finish update
-    finishUpdate();
+    if(!finishUpdate()) return false;
 
     // return info message
     return info(RES_RENAMED_X_X, c, perf) && ok;

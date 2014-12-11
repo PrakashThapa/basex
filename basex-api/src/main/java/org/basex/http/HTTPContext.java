@@ -18,9 +18,12 @@ import org.basex.*;
 import org.basex.build.*;
 import org.basex.build.JsonOptions.JsonFormat;
 import org.basex.core.*;
+import org.basex.core.StaticOptions.AuthMethod;
+import org.basex.core.users.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
 import org.basex.io.serial.*;
+import org.basex.server.Log.LogType;
 import org.basex.server.*;
 import org.basex.util.*;
 import org.basex.util.options.*;
@@ -44,14 +47,16 @@ public final class HTTPContext {
   /** Request method. */
   public final HTTPParams params;
 
+  /** Authentication method. */
+  private AuthMethod auth;
   /** Serialization parameters. */
   private SerializerOptions sopts;
   /** Result wrapping. */
   public boolean wrapping;
   /** User name. */
   public String user;
-  /** Password. */
-  public String pass;
+  /** Password (plain text). */
+  public String password;
 
   /** Global static database context. */
   private static Context context;
@@ -70,42 +75,52 @@ public final class HTTPContext {
    * @param req request
    * @param res response
    * @param servlet calling servlet instance
-   * @throws IOException I/O exception
    */
   public HTTPContext(final HttpServletRequest req, final HttpServletResponse res,
-      final BaseXServlet servlet) throws IOException {
+      final BaseXServlet servlet) {
 
     this.req = req;
     this.res = res;
     params = new HTTPParams(this);
-
     method = req.getMethod();
 
     final StringBuilder uri = new StringBuilder(req.getRequestURL());
     final String qs = req.getQueryString();
     if(qs != null) uri.append('?').append(qs);
-    log('[' + method + "] " + uri, null);
+    context.log.write(address(), context.user(), LogType.REQUEST, '[' + method + "] " + uri, null);
 
     // set UTF8 as default encoding (can be overwritten)
-    res.setCharacterEncoding(UTF8);
+    res.setCharacterEncoding(Strings.UTF8);
     path = decode(normalize(req.getPathInfo()));
 
     // adopt servlet-specific credentials or use global ones
-    final GlobalOptions mprop = context().globalopts;
-    user = servlet.user != null ? servlet.user : mprop.get(GlobalOptions.USER);
-    pass = servlet.pass != null ? servlet.pass : mprop.get(GlobalOptions.PASSWORD);
+    final StaticOptions mprop = context().soptions;
+    user = servlet.user != null ? servlet.user : mprop.get(StaticOptions.USER);
+    password = servlet.pass != null ? servlet.pass : mprop.get(StaticOptions.PASSWORD);
+    auth = servlet.auth != null ? servlet.auth : mprop.get(StaticOptions.AUTHMETHOD);
+  }
 
-    // overwrite credentials with session-specific data
-    final String auth = req.getHeader(AUTHORIZATION);
-    if(auth != null) {
-      final String[] values = auth.split(" ");
-      if(values[0].equals(BASIC)) {
-        final String[] cred = org.basex.util.Base64.decode(values[1]).split(":", 2);
-        if(cred.length != 2) throw new LoginException(NOPASSWD);
+  /**
+   * Authorizes a request.
+   * @throws BaseXException database exception
+   */
+  public void authorize() throws BaseXException {
+    final String value = req.getHeader(AUTHORIZATION);
+    if(value != null) {
+      final String meth = Strings.split(value, ' ', 2)[0];
+      final AuthMethod am = StaticOptions.AUTHMETHOD.get(meth);
+      if(am == null) throw new BaseXException(WHICHAUTH, meth);
+
+      // overwrite credentials with client data (basic or digest)
+      if(am == AuthMethod.BASIC) {
+        final String[] cred = Strings.split(org.basex.util.Base64.decode(authDetails()), ':', 2);
+        if(cred.length != 2) throw new BaseXException(INVALIDCREDS);
         user = cred[0];
-        pass = cred[1];
-      } else {
-        throw new LoginException(WHICHAUTH, values[0]);
+        password = cred[1];
+      } else { // digest (other methods will be rejected)
+        final HashMap<String, String> map = digestHeaders();
+        user = map.get(USERNAME);
+        password = map.get(RESPONSE);
       }
     }
   }
@@ -203,7 +218,7 @@ public final class HTTPContext {
       final Matcher m = QF.matcher(produce);
       if(m.find()) {
         acc.type = m.group(1);
-        acc.qf = Token.toDouble(Token.token(m.group(2)));
+        acc.qf = toDouble(token(m.group(2)));
       } else {
         acc.type = produce;
       }
@@ -216,29 +231,38 @@ public final class HTTPContext {
   /**
    * Sets a status and sends an info message.
    * @param code status code
-   * @param message info message
+   * @param info info message (can be {@code null})
    * @param error treat as error (use web server standard output)
    * @throws IOException I/O exception
    */
-  public void status(final int code, final String message, final boolean error) throws IOException {
+  public void status(final int code, final String info, final boolean error) throws IOException {
     try {
-      log(message, code);
+      log(code, info);
       res.resetBuffer();
-      if(code == SC_UNAUTHORIZED) res.setHeader(WWW_AUTHENTICATE, BASIC);
+      if(code == SC_UNAUTHORIZED) {
+        final StringBuilder header = new StringBuilder(auth.toString());
+        if(auth == AuthMethod.DIGEST) {
+          header.append(" " + REALM + "=\"").append(Prop.NAME).append("\",");
+          header.append(QOP + "=\"" + AUTH + ',' + AUTH_INT + "\",");
+          header.append(NONCE + "=\"").append(Strings.md5(Long.toString(System.nanoTime())));
+          header.append('"');
+        }
+        res.setHeader(WWW_AUTHENTICATE, header.toString());
+      }
 
       if(error && code >= SC_BAD_REQUEST) {
-        res.sendError(code, message);
+        res.sendError(code, info);
       } else {
         res.setStatus(code);
-        if(message != null) {
+        if(info != null) {
           res.setContentType(TEXT_PLAIN);
           final ArrayOutput ao = new ArrayOutput();
-          ao.write(token(message));
+          ao.write(token(info));
           res.getOutputStream().write(ao.normalize().finish());
         }
       }
     } catch(final IllegalStateException ex) {
-      log(Util.message(ex), SC_INTERNAL_SERVER_ERROR);
+      log(SC_INTERNAL_SERVER_ERROR, Util.message(ex));
     }
   }
 
@@ -249,22 +273,46 @@ public final class HTTPContext {
    */
   public void credentials(final String u, final String p) {
     user = u;
-    pass = p;
+    password = p;
   }
 
   /**
-   * Authenticate the user and returns a new client {@link Context} instance.
+   * Authenticates the user and returns a new client {@link Context} instance.
    * @return client context
-   * @throws LoginException login exception
+   * @throws IOException I/O exception
    */
-  public Context authenticate() throws LoginException {
+  public Context authenticate() throws IOException {
     final byte[] address = token(req.getRemoteAddr());
     try {
-      if(user == null || user.isEmpty() || pass == null || pass.isEmpty())
-        throw new LoginException(NOPASSWD);
+      if(user == null || user.isEmpty()) throw new LoginException(INVALIDCREDS);
+
       final Context ctx = new Context(context(), null);
-      ctx.user = ctx.users.get(user);
-      if(ctx.user == null || !ctx.user.password.equals(md5(pass))) throw new LoginException();
+      final User us = ctx.users.get(user);
+      if(us == null) throw new LoginException();
+      ctx.user(us);
+
+      if(auth == AuthMethod.BASIC) {
+        if(password == null || !us.matches(password)) throw new LoginException();
+      } else {
+        // digest authentication
+        final HashMap<String, String> map = digestHeaders();
+
+        String ha1 = us.code(Algorithm.DIGEST, Code.HASH);
+        if(Strings.eq(map.get(ALGORITHM), MD5_SESS))
+          ha1 = Strings.md5(ha1 + ':' + map.get(NONCE) + ':' + map.get(CNONCE));
+
+        String h2 = method + ':' + map.get(URI);
+        final String qop = map.get(QOP);
+        if(Strings.eq(qop, AUTH_INT)) h2 += ':' + Strings.md5(params.body().toString());
+        String ha2 = Strings.md5(h2);
+
+        final StringBuilder sresponse = new StringBuilder(ha1).append(':').append(map.get(NONCE));
+        if(Strings.eq(qop, AUTH, AUTH_INT)) {
+          sresponse.append(':' + map.get(NC) + ':' + map.get(CNONCE) + ':' + qop);
+        }
+        sresponse.append(':' + ha2);
+        if(!Strings.md5(sresponse.toString()).equals(password)) throw new LoginException();
+      }
 
       context.blocker.remove(address);
       return ctx;
@@ -273,6 +321,31 @@ public final class HTTPContext {
       for(int d = context.blocker.delay(address); d > 0; d--) Performance.sleep(100);
       throw ex;
     }
+  }
+
+  /**
+   * Parsing header for digest authentication.
+   * @return values values
+   */
+  private HashMap<String, String> digestHeaders() {
+    final HashMap<String, String> values = new HashMap<>();
+    for(final String header : Strings.split(authDetails(), ',')) {
+      final String[] kv = Strings.split(header, '=', 2);
+      final String key = kv[0].trim();
+      if(!key.isEmpty() && kv.length == 2) values.put(key, Strings.delete(kv[1], '"').trim());
+    }
+    return values;
+  }
+
+  /**
+   * Returns authentication details.
+   * @return method
+   */
+  private String authDetails() {
+    String value = req.getHeader(AUTHORIZATION);
+    if(value == null) return "";
+    final String[] parts = req.getHeader(AUTHORIZATION).split(" ", 2);
+    return parts.length == 1 ? "" : parts[1];
   }
 
   /**
@@ -310,14 +383,11 @@ public final class HTTPContext {
 
   /**
    * Writes a log message.
-   * @param info message info
-   * @param type message type (true/false/null: OK, ERROR, REQUEST, Error Code)
+   * @param type log type
+   * @param info info string (can be {@code null})
    */
-  public void log(final String info, final Object type) {
-    // add evaluation time if any type is specified
-    context.log.write(type != null ?
-      new Object[] { address(), context.user.name, type, info, perf } :
-      new Object[] { address(), context.user.name, null, info });
+  public void log(final int type, final String info) {
+    context.log.write(address(), context.user(), type, info, perf);
   }
 
   // STATIC METHODS =====================================================================
@@ -345,7 +415,7 @@ public final class HTTPContext {
     // set web application path as home directory and HTTPPATH
     final String webapp = sc.getRealPath("/");
     Options.setSystem(Prop.PATH, webapp);
-    Options.setSystem(GlobalOptions.WEBPATH, webapp);
+    Options.setSystem(StaticOptions.WEBPATH, webapp);
 
     // bind all parameters that start with "org.basex." to system properties
     final Enumeration<String> en = sc.getInitParameterNames();
@@ -366,12 +436,12 @@ public final class HTTPContext {
     if(context == null) {
       context = new Context(false);
     } else {
-      context.globalopts.setSystem();
+      context.soptions.setSystem();
       context.options.setSystem();
     }
 
     // start server instance
-    if(!context.globalopts.get(GlobalOptions.HTTPLOCAL)) {
+    if(!context.soptions.get(StaticOptions.HTTPLOCAL)) {
       try {
         new BaseXServer(context);
       } catch(final IOException ex) {
@@ -382,11 +452,27 @@ public final class HTTPContext {
   }
 
   /**
+   * Decodes the specified path segments.
+   * @param segments strings to be decoded
+   * @return argument
+   * @throws IllegalArgumentException invalid path segments
+   */
+  public static String decode(final String segments) {
+    try {
+      return URLDecoder.decode(segments, Prop.ENCODING);
+    } catch(final UnsupportedEncodingException ex) {
+      throw new IllegalArgumentException(ex);
+    }
+  }
+
+  // PRIVATE METHODS ====================================================================
+
+  /**
    * Normalizes the path information.
    * @param path path, or {@code null}
    * @return normalized path
    */
-  public static String normalize(final String path) {
+  private static String normalize(final String path) {
     final TokenBuilder tmp = new TokenBuilder();
     if(path != null) {
       final TokenBuilder tb = new TokenBuilder();
@@ -406,22 +492,6 @@ public final class HTTPContext {
     if(tmp.isEmpty()) tmp.add('/');
     return tmp.toString();
   }
-
-  /**
-   * Decodes the specified path segments.
-   * @param segments strings to be decoded
-   * @return argument
-   * @throws IllegalArgumentException invalid path segments
-   */
-  public static String decode(final String segments) {
-    try {
-      return URLDecoder.decode(segments, Prop.ENCODING);
-    } catch(final UnsupportedEncodingException ex) {
-      throw new IllegalArgumentException(ex);
-    }
-  }
-
-  // PRIVATE METHODS ====================================================================
 
   /**
    * Returns a string with the remote user address.

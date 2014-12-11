@@ -6,8 +6,10 @@ import java.io.*;
 
 import org.basex.build.*;
 import org.basex.core.*;
+import org.basex.core.locks.*;
 import org.basex.core.parse.*;
 import org.basex.core.parse.Commands.Cmd;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.index.*;
 import org.basex.io.*;
@@ -41,7 +43,7 @@ public final class OptimizeAll extends ACreate {
   protected boolean run() {
     final Data data = context.data();
     try {
-      optimizeAll(data, context, this);
+      optimizeAll(data, context, options, this);
     } catch(final IOException ex) {
       return error(Util.message(ex));
     } finally {
@@ -87,69 +89,71 @@ public final class OptimizeAll extends ACreate {
    * Optimizes all data structures and closes the database.
    * Recreates the database, drops the old instance and renames the recreated instance.
    * @param data disk data
-   * @param ctx database context
+   * @param context database context
+   * @param options main options
    * @param cmd command reference or {@code null}
    * @throws IOException I/O Exception during index rebuild
    * @throws BaseXException database exception
    */
-  public static void optimizeAll(final Data data, final Context ctx, final OptimizeAll cmd)
-      throws IOException {
+  public static void optimizeAll(final Data data, final Context context,
+      final MainOptions options, final OptimizeAll cmd) throws IOException {
 
     if(data.inMemory()) throw new BaseXException(NO_MAINMEM);
 
-    final DiskData old = (DiskData) data;
-    final MetaData m = old.meta;
-    if(cmd != null) cmd.size = m.size;
+    final DiskData odata = (DiskData) data;
+    final MetaData ometa = odata.meta;
+    final String name = ometa.name;
 
     // check if database is also pinned by other users
-    if(ctx.dbs.pins(m.name) > 1) throw new BaseXException(DB_PINNED_X, m.name);
-
-    // find unique temporary database name
-    final String tname = ctx.globalopts.random(m.name);
+    if(context.dbs.pins(ometa.name) > 1) throw new BaseXException(DB_PINNED_X, name);
 
     // adopt original meta information
-    ctx.options.set(MainOptions.CHOP, m.chop);
+    options.set(MainOptions.CHOP, ometa.chop);
     // adopt original index options
-    ctx.options.set(MainOptions.UPDINDEX, m.updindex);
-    ctx.options.set(MainOptions.MAXCATS,  m.maxcats);
-    ctx.options.set(MainOptions.MAXLEN,   m.maxlen);
+    options.set(MainOptions.UPDINDEX, ometa.updindex);
+    options.set(MainOptions.AUTOOPTIMIZE, ometa.autoopt);
+    options.set(MainOptions.MAXCATS,  ometa.maxcats);
+    options.set(MainOptions.MAXLEN,   ometa.maxlen);
     // adopt original full-text index options
-    ctx.options.set(MainOptions.STEMMING,   m.stemming);
-    ctx.options.set(MainOptions.CASESENS,   m.casesens);
-    ctx.options.set(MainOptions.DIACRITICS, m.diacritics);
-    ctx.options.set(MainOptions.LANGUAGE,   m.language.toString());
-    ctx.options.set(MainOptions.STOPWORDS,  m.stopwords);
+    options.set(MainOptions.STEMMING,   ometa.stemming);
+    options.set(MainOptions.CASESENS,   ometa.casesens);
+    options.set(MainOptions.DIACRITICS, ometa.diacritics);
+    options.set(MainOptions.LANGUAGE,   ometa.language.toString());
+    options.set(MainOptions.STOPWORDS,  ometa.stopwords);
 
     // build database and index structures
-    try(final DiskBuilder builder = new DiskBuilder(tname, new DBParser(old, cmd), ctx)) {
-      final DiskData d = builder.build();
+    if(cmd != null) cmd.size = ometa.size;
+    final StaticOptions sopts = context.soptions;
+    final String tname = sopts.random(name);
+    final DBParser parser = new DBParser(odata, options, cmd);
+    try(final DiskBuilder builder = new DiskBuilder(tname, parser, sopts, options)) {
+      final DiskData dt = builder.build();
       try {
-        if(m.createtext) create(IndexType.TEXT, d, cmd);
-        if(m.createattr) create(IndexType.ATTRIBUTE, d, cmd);
-        if(m.createftxt) create(IndexType.FULLTEXT, d, cmd);
+        if(ometa.createtext) create(IndexType.TEXT, dt, options, cmd);
+        if(ometa.createattr) create(IndexType.ATTRIBUTE, dt, options, cmd);
+        if(ometa.createftxt) create(IndexType.FULLTEXT, dt, options, cmd);
         // adopt original meta data
-        d.meta.createtext = m.createtext;
-        d.meta.createattr = m.createattr;
-        d.meta.createftxt = m.createftxt;
-        d.meta.filesize   = m.filesize;
-        d.meta.users      = m.users;
-        d.meta.dirty      = true;
+        dt.meta.createtext = ometa.createtext;
+        dt.meta.createattr = ometa.createattr;
+        dt.meta.createftxt = ometa.createftxt;
+        dt.meta.filesize   = ometa.filesize;
+        dt.meta.dirty      = true;
 
         // move binary files
         final IOFile bin = data.meta.binaries();
-        if(bin.exists()) bin.rename(d.meta.binaries());
-        final IOFile upd = old.updateFile();
-        if(upd.exists()) upd.copyTo(d.updateFile());
+        if(bin.exists()) bin.rename(dt.meta.binaries());
+        final IOFile upd = odata.meta.updateFile();
+        if(upd.exists()) upd.copyTo(dt.meta.updateFile());
       } finally {
-        d.close();
+        dt.close();
       }
     }
     // return database instance
-    Close.close(data, ctx);
+    Close.close(data, context);
 
     // drop old database and rename temporary to final name
-    if(!DropDB.drop(m.name, ctx)) throw new BaseXException(DB_NOT_DROPPED_X, m.name);
-    if(!AlterDB.alter(tname, m.name, ctx)) throw new BaseXException(DB_NOT_RENAMED_X, tname);
+    if(!DropDB.drop(name, sopts)) throw new BaseXException(DB_NOT_DROPPED_X, name);
+    if(!AlterDB.alter(tname, name, sopts)) throw new BaseXException(DB_NOT_RENAMED_X, tname);
   }
 
   /**
@@ -167,10 +171,11 @@ public final class OptimizeAll extends ACreate {
     /**
      * Constructor.
      * @param data disk data
+     * @param options main options
      * @param cmd calling command (may be {@code null})
      */
-    DBParser(final DiskData data, final OptimizeAll cmd) {
-      super(data.meta.original.isEmpty() ? null : IO.get(data.meta.original), data.meta.options);
+    DBParser(final DiskData data, final MainOptions options, final OptimizeAll cmd) {
+      super(data.meta.original.isEmpty() ? null : IO.get(data.meta.original), options);
       this.data = data;
       this.cmd = cmd;
     }

@@ -1,6 +1,7 @@
 package org.basex.query.func.admin;
 
-import org.basex.core.*;
+import static org.basex.core.users.UserText.*;
+import org.basex.core.locks.*;
 import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.iter.*;
@@ -22,7 +23,7 @@ public final class AdminSessions extends AdminFn {
     final ValueBuilder vb = new ValueBuilder();
     synchronized(qc.context.sessions) {
       for(final ClientListener sp : qc.context.sessions) {
-        final String user = sp.context().user.name;
+        final String user = sp.context().user().name();
         final String addr = sp.address();
         final Data data = sp.context().data();
         final FElem elem = new FElem(SESSION).add(USER, user).add(ADDRESS, addr);

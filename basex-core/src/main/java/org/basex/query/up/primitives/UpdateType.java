@@ -50,11 +50,19 @@ public enum UpdateType {
   /** Optimize database.    */ DBOPTIMIZE,
   /** Flush database.       */ DBFLUSH,
 
+  // User operations
+
+  /** Change user name.     */ USERGRANT,
+  /** Change password.      */ USERPASSWORD,
+  /** Drop user.            */ USERDROP,
+  /** Change user name.     */ USERALTER,
+  /** Create user.          */ USERCREATE,
+
   // Database operations
 
   /** Copy database.        */ DBCOPY,
-  /** Alter database.       */ DBALTER,
   /** Drop database.        */ DBDROP,
+  /** Alter database.       */ DBALTER,
   /** Create database.      */ DBCREATE,
   /** Restore database.     */ DBRESTORE,
   /** Drop backup.          */ BACKUPDROP,

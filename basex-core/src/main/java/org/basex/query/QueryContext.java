@@ -11,6 +11,8 @@ import org.basex.build.*;
 import org.basex.build.JsonOptions.JsonFormat;
 import org.basex.core.*;
 import org.basex.core.MainOptions.MainParser;
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.core.Context;
 import org.basex.data.*;
 import org.basex.io.*;
@@ -287,7 +289,7 @@ public final class QueryContext extends Proc implements AutoCloseable {
       // cache the initial context nodes
       final DBNodes nodes = context.current();
       if(nodes != null) {
-        if(!context.perm(Perm.READ, nodes.data.meta)) throw BASX_PERM_X.get(null, Perm.READ);
+        if(!context.perm(Perm.READ, nodes.data.meta.name)) throw BASX_PERM_X.get(null, Perm.READ);
         value = resources.compile(nodes);
       }
     }
@@ -345,7 +347,7 @@ public final class QueryContext extends Proc implements AutoCloseable {
           copy(output, datas, dbs);
 
           if(context.data() != null) context.invalidate();
-          updates.apply();
+          updates.apply(this);
 
           // append cached outputs
           if(output.size() != 0) {
@@ -799,7 +801,7 @@ public final class QueryContext extends Proc implements AutoCloseable {
       time = new Tim(token(hms + zn), null);
       date = new Dat(token(ymd + zn), null);
       dtm = new Dtm(token(ymd + 'T' + hms + zn), null);
-      zone = new DTDur(toInt(zon.substring(0, 3)), toInt(zon.substring(3)));
+      zone = new DTDur(Strings.toInt(zon.substring(0, 3)), Strings.toInt(zon.substring(3)));
     }
     return this;
   }

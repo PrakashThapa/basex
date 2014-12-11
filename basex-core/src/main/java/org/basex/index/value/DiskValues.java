@@ -72,10 +72,10 @@ public class DiskValues implements Index {
   public void init() { }
 
   @Override
-  public byte[] info() {
+  public byte[] info(final MainOptions options) {
     final TokenBuilder tb = new TokenBuilder();
     tb.add(LI_STRUCTURE).add(SORTED_LIST).add(NL);
-    final IndexStats stats = new IndexStats(data.meta.options.get(MainOptions.MAXSTAT));
+    final IndexStats stats = new IndexStats(options.get(MainOptions.MAXSTAT));
 
     synchronized(monitor) {
       final long l = idxl.length() + idxr.length();
@@ -122,14 +122,14 @@ public class DiskValues implements Index {
 
   /**
    * Add entries to the index.
-   * @param map a set of <key, id-list> pairs
+   * @param map a set of [key, id-list] pairs
    */
   @SuppressWarnings("unused")
   public void add(final TokenObjMap<IntList> map) { }
 
   /**
    * Deletes index entries from the index.
-   * @param map a set of <key, id-list> pairs
+   * @param map a set of [key, id-list] pairs
    */
   @SuppressWarnings("unused")
   public void delete(final TokenObjMap<IntList> map) { }

@@ -1,7 +1,6 @@
 package org.basex.server;
 
 import static org.basex.core.Text.*;
-import static org.basex.util.Token.*;
 
 import java.io.*;
 import java.net.*;
@@ -11,9 +10,11 @@ import org.basex.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.core.parse.*;
+import org.basex.core.users.*;
 import org.basex.io.in.*;
 import org.basex.io.out.*;
 import org.basex.query.*;
+import org.basex.server.Log.LogType;
 import org.basex.util.*;
 import org.basex.util.list.*;
 
@@ -121,12 +122,12 @@ public final class ClientListener extends Thread {
         // parse input and create command instance
         try {
           command = new CommandParser(cmd, context).parseSingle();
-          log(command, null);
+          log(LogType.REQUEST, command.toString(true));
         } catch(final QueryException ex) {
           // log invalid command
           final String msg = ex.getMessage();
-          log(cmd, null);
-          log(msg, false);
+          log(LogType.REQUEST, cmd);
+          log(LogType.ERROR, msg);
           // send 0 to mark end of potential result
           out.write(0);
           // send {INFO}0
@@ -162,7 +163,7 @@ public final class ClientListener extends Thread {
         }
       }
     } catch(final IOException ex) {
-      log(ex, false);
+      log(LogType.ERROR, Util.message(ex));
       command = null;
       quit();
     }
@@ -170,35 +171,36 @@ public final class ClientListener extends Thread {
   }
 
   /**
-   * Initializes a session via cram-md5.
+   * Initializes a session via digest authentication.
    * @return success flag
    */
   private boolean authenticate() {
     try {
-      final String ts = Long.toString(System.nanoTime());
+      final String nonce = Long.toString(System.nanoTime());
       final byte[] address = socket.getInetAddress().getAddress();
 
-      // send {TIMESTAMP}0
+      // send {REALM:TIMESTAMP}0
       out = PrintOutput.get(socket.getOutputStream());
-      out.print(ts);
+      out.print(Prop.NAME + ':' + nonce);
       send(true);
 
       // evaluate login data
       in = new BufferInput(socket.getInputStream());
-      // receive {USER}0{PASSWORD}0
-      final String us = in.readString();
-      final String pw = in.readString();
-      context.user = context.users.get(us);
-      running = context.user != null && md5(context.user.password + ts).equals(pw);
+      // receive {USER}0{DIGEST-HASH}0
+      final String us = in.readString(), hash = in.readString();
+      final User user = context.users.get(us);
+      running = user != null &&
+          Strings.md5(user.code(Algorithm.DIGEST, Code.HASH) + nonce).equals(hash);
 
       // write log information
       if(running) {
+        context.user(user);
         // send {OK}
         send(true);
         context.blocker.remove(address);
         context.sessions.add(this);
       } else {
-        if(!us.isEmpty()) log(ACCESS_DENIED, false);
+        if(!us.isEmpty()) log(LogType.ERROR, ACCESS_DENIED);
         // delay users with wrong passwords
         for(int d = context.blocker.delay(address); d > 0; d--) Performance.sleep(100);
         send(false);
@@ -206,7 +208,7 @@ public final class ClientListener extends Thread {
     } catch(final IOException ex) {
       if(running) {
         Util.stack(ex);
-        log(ex, false);
+        log(LogType.ERROR, Util.message(ex));
         running = false;
       }
     }
@@ -221,9 +223,9 @@ public final class ClientListener extends Thread {
   public synchronized void quitAuth() {
     try {
       socket.close();
-      log(TIMEOUT_EXCEEDED, false);
+      log(LogType.ERROR, TIMEOUT_EXCEEDED);
     } catch(final Throwable ex) {
-      log(ex, false);
+      log(LogType.ERROR, Util.message(ex));
     }
   }
 
@@ -251,7 +253,7 @@ public final class ClientListener extends Thread {
         for(final Sessions s : context.events.values()) s.remove(this);
       }
     } catch(final Throwable ex) {
-      log(ex, false);
+      log(LogType.ERROR, Util.message(ex));
       Util.stack(ex);
     }
   }
@@ -334,7 +336,7 @@ public final class ClientListener extends Thread {
    */
   private void info(final String info, final boolean ok) throws IOException {
     // write feedback to log file
-    log(info, ok);
+    log(ok ? LogType.OK : LogType.ERROR, info);
     // send {MSG}0 and (0|1) as (success|error) flag
     out.print(info);
     out.write(0);
@@ -379,7 +381,7 @@ public final class ClientListener extends Thread {
    * @throws IOException I/O exception
    */
   private void execute(final Command cmd) throws IOException {
-    log(cmd + " [...]", null);
+    log(LogType.REQUEST, cmd + " [...]");
     final DecodingInput di = new DecodingInput(in);
     try {
       cmd.setInput(di);
@@ -400,7 +402,7 @@ public final class ClientListener extends Thread {
 
     // initialize server-based event handling
     if(!events) {
-      out.print(Integer.toString(context.globalopts.get(GlobalOptions.EVENTPORT)));
+      out.print(Integer.toString(context.soptions.get(StaticOptions.EVENTPORT)));
       out.write(0);
       out.print(Long.toString(getId()));
       out.write(0);
@@ -509,14 +511,14 @@ public final class ClientListener extends Thread {
       // send 0 as success flag
       out.write(0);
       // write log file
-      log(new StringBuilder(sc.toString()).append('[').
-          append(arg).append("] ").append(info), true);
+      log(LogType.OK, new StringBuilder(sc.toString()).append('[').
+          append(arg).append("] ").append(info).toString());
 
     } catch(final Throwable ex) {
       // log exception (static or runtime)
       error = Util.message(ex);
-      log(sc + "[" + arg + ']', null);
-      log(error, false);
+      log(LogType.REQUEST, sc + "[" + arg + ']');
+      log(LogType.ERROR, error);
       queries.remove(arg);
     }
     if(error != null) {
@@ -541,15 +543,10 @@ public final class ClientListener extends Thread {
 
   /**
    * Writes a log message.
+   * @param type log type
    * @param info message info
-   * @param type message type (true/false/null: OK, ERROR, REQUEST)
    */
-  private void log(final Object info, final Object type) {
-    // add evaluation time if any type is specified
-    final String user = context.user != null ? context.user.name : "";
-    final Log log = context.log;
-    if(log != null) log.write(type != null ?
-      new Object[] { address(), user, type, info, perf } :
-      new Object[] { address(), user, null, info });
+  private void log(final LogType type, final String info) {
+    context.log.write(address(), context.user(), type, info, perf);
   }
 }

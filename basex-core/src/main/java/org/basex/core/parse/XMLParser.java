@@ -63,8 +63,10 @@ final class XMLParser extends CmdParser {
       return new Add(value(root, PATH), xml(root));
     if(e.equals(ALTER_DB) && check(root, NAME, NEWNAME))
       return new AlterDB(value(root, NAME), value(root, NEWNAME));
-    if(e.equals(ALTER_USER) && check(root, NAME, '#' + PASSWORD + '?'))
-      return new AlterUser(value(root, NAME), password(root));
+    if(e.equals(ALTER_PASSWORD) && check(root, NAME, '#' + PASSWORD + '?'))
+      return new AlterPassword(value(root, NAME), password(root));
+    if(e.equals(ALTER_USER) && check(root, NAME, NEWNAME))
+      return new AlterUser(value(root, NAME), value(root, NEWNAME));
     if(e.equals(CHECK) && check(root, INPUT))
       return new Check(value(root, INPUT));
     if(e.equals(CLOSE) && check(root))
@@ -91,8 +93,8 @@ final class XMLParser extends CmdParser {
       return new DropEvent(value(root, NAME));
     if(e.equals(DROP_INDEX) && check(root, TYPE))
       return new DropIndex(value(root, TYPE));
-    if(e.equals(DROP_USER) && check(root, NAME, DATABASE + '?'))
-      return new DropUser(value(root, NAME), value(root, DATABASE));
+    if(e.equals(DROP_USER) && check(root, NAME, PATTERN + '?'))
+      return new DropUser(value(root, NAME), value(root, PATTERN));
     if(e.equals(EXIT) && check(root))
       return new Exit();
     if(e.equals(EXPORT) && check(root, PATH))
@@ -103,8 +105,8 @@ final class XMLParser extends CmdParser {
       return new Flush();
     if(e.equals(GET) && check(root, OPTION + '?'))
       return new Get(value(root, OPTION));
-    if(e.equals(GRANT) && check(root, NAME, PERMISSION, DATABASE + '?'))
-      return new Grant(value(root, PERMISSION), value(root, NAME), value(root, DATABASE));
+    if(e.equals(GRANT) && check(root, NAME, PERMISSION, PATTERN + '?'))
+      return new Grant(value(root, PERMISSION), value(root, NAME), value(root, PATTERN));
     if(e.equals(HELP) && check(root, '#' + COMMAND + '?'))
       return new Help(value(root));
     if(e.equals(INFO) && check(root))

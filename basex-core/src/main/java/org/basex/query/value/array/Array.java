@@ -72,7 +72,9 @@ public final class Array extends FItem {
   @Override
   public Value invValue(final QueryContext qc, final InputInfo ii, final Value... args)
       throws QueryException {
-    return get(args[0].item(qc, ii), ii);
+    final Item key = args[0].atomItem(qc, ii);
+    if(key == null) throw EMPTYFOUND_X.get(ii, AtomType.ITR);
+    return get(key, ii);
   }
 
   @Override
@@ -83,19 +85,18 @@ public final class Array extends FItem {
 
   /**
    * Gets the value from this array.
-   * @param key key to look for (must be integer)
+   * @param key key to look for (must be an integer)
    * @param ii input info
    * @return bound value if found, the empty sequence {@code ()} otherwise
    * @throws QueryException query exception
    */
   public Value get(final Item key, final InputInfo ii) throws QueryException {
-    if(key == null) throw EMPTYFOUND_X.get(ii, AtomType.ITR);
     if(!key.type.instanceOf(AtomType.ITR) && !key.type.isUntyped())
       throw castError(ii, key, AtomType.ITR);
 
-    final long i = key.itr(ii);
-    if(i > 0 && i <= size) return get((int) i - 1);
-    throw ARRAYPOS_X.get(ii, i);
+    final long pos = key.itr(ii);
+    if(pos > 0 && pos <= size) return get((int) pos - 1);
+    throw (size == 0 ? ARRAYEMPTY : ARRAYBOUNDS_X_X).get(ii, pos, size);
   }
 
   @Override

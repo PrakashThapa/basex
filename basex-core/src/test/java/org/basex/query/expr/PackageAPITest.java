@@ -5,7 +5,6 @@ import static org.basex.util.Token.*;
 import static org.junit.Assert.*;
 
 import org.basex.core.*;
-import org.basex.core.Context;
 import org.basex.core.cmd.*;
 import org.basex.io.*;
 import org.basex.query.*;
@@ -50,8 +49,8 @@ public final class PackageAPITest extends AdvancedQueryTest {
     for(final IOFile f : new IOFile(REPO).children()) {
       if(f.isDir() && f.name().contains(".")) f.delete();
     }
-    context = new Context();
-    context.globalopts.set(GlobalOptions.REPOPATH, REPO);
+    context = newContext();
+    context.soptions.set(StaticOptions.REPOPATH, REPO);
   }
 
   /** Tests repository initialization. */

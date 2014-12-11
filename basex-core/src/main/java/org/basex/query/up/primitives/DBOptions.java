@@ -1,7 +1,6 @@
 package org.basex.query.up.primitives;
 
 import static org.basex.query.QueryError.*;
-import static org.basex.util.Token.*;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -25,15 +24,14 @@ public final class DBOptions {
     MainOptions.CHOP, MainOptions.INTPARSE, MainOptions.STRIPNS, MainOptions.DTD,
     MainOptions.CATFILE };
   /** Indexing options. */
-  static final Option<?>[] INDEXING = { MainOptions.MAXCATS, MainOptions.MAXLEN,
+  public static final Option<?>[] INDEXING = { MainOptions.MAXCATS, MainOptions.MAXLEN,
     MainOptions.INDEXSPLITSIZE, MainOptions.FTINDEXSPLITSIZE, MainOptions.LANGUAGE,
     MainOptions.STOPWORDS, MainOptions.TEXTINDEX, MainOptions.ATTRINDEX, MainOptions.FTINDEX,
-    MainOptions.STEMMING, MainOptions.CASESENS, MainOptions.DIACRITICS, MainOptions.UPDINDEX };
+    MainOptions.STEMMING, MainOptions.CASESENS, MainOptions.DIACRITICS, MainOptions.UPDINDEX,
+    MainOptions.AUTOOPTIMIZE };
 
   /** Runtime options. */
-  private final HashMap<Option<?>, Object> rOptions = new HashMap<>();
-  /** Original options. */
-  private final HashMap<Option<?>, Object> oOptions = new HashMap<>();
+  public final HashMap<Option<?>, Object> map = new HashMap<>();
 
   /**
    * Constructor.
@@ -42,8 +40,8 @@ public final class DBOptions {
    * @param info input info
    * @throws QueryException query exception
    */
-  public DBOptions(final Options options, final List<Option<?>> supported,
-      final InputInfo info) throws QueryException {
+  public DBOptions(final Options options, final List<Option<?>> supported, final InputInfo info)
+      throws QueryException {
     this(options, supported.toArray(new Option<?>[supported.size()]), info);
   }
 
@@ -69,20 +67,20 @@ public final class DBOptions {
 
       final String value = entry.getValue();
       if(option instanceof NumberOption) {
-        final int v = toInt(value);
+        final int v = Strings.toInt(value);
         if(v < 0) throw BASX_VALUE_X_X.get(info, key, value);
-        rOptions.put(option, v);
+        map.put(option, v);
       } else if(option instanceof BooleanOption) {
-        final boolean yes = Util.yes(value);
-        if(!yes && !Util.no(value)) throw BASX_VALUE_X_X.get(info, key, value);
-        rOptions.put(option, yes);
+        final boolean yes = Strings.yes(value);
+        if(!yes && !Strings.no(value)) throw BASX_VALUE_X_X.get(info, key, value);
+        map.put(option, yes);
       } else if(option instanceof EnumOption) {
         final EnumOption<?> eo = (EnumOption<?>) option;
         final Object ev = eo.get(value);
         if(ev == null) throw BASX_VALUE_X_X.get(info, key, value);
-        rOptions.put(option, ev);
+        map.put(option, ev);
       } else {
-        rOptions.put(option, value);
+        map.put(option, value);
       }
     }
   }
@@ -92,8 +90,8 @@ public final class DBOptions {
    * @param option option
    * @param value value
    */
-  void assign(final Option<?> option, final Object value) {
-    if(!rOptions.containsKey(option)) rOptions.put(option, value);
+  public void assign(final Option<?> option, final Object value) {
+    if(!map.containsKey(option)) map.put(option, value);
   }
 
   /**
@@ -101,20 +99,8 @@ public final class DBOptions {
    * @param opts main options
    */
   public void assign(final MainOptions opts) {
-    for(final Map.Entry<Option<?>, Object> entry : rOptions.entrySet()) {
-      final Option<?> option = entry.getKey();
-      oOptions.put(option, opts.get(option));
-      opts.put(option, entry.getValue());
-    }
-  }
-
-  /**
-   * Restores original options.
-   * @param opts main options
-   */
-  public void reset(final MainOptions opts) {
-    for(final Entry<Option<?>, Object> e : oOptions.entrySet()) {
-      opts.put(e.getKey(), e.getValue());
+    for(final Map.Entry<Option<?>, Object> entry : map.entrySet()) {
+      opts.put(entry.getKey(), entry.getValue());
     }
   }
 }

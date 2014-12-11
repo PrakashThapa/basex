@@ -44,7 +44,7 @@ public abstract class SessionTest extends SandboxTest {
   @After
   public final void stopSession() {
     try {
-      if(cleanup) session.execute(new DropDB(NAME));
+      session.execute(new DropDB(NAME));
       session.close();
     } catch(final IOException ex) {
       fail(Util.message(ex));
@@ -102,9 +102,9 @@ public abstract class SessionTest extends SandboxTest {
   @Test
   public final void create() throws IOException {
     session.create(NAME, new ArrayInput(""));
-    assertEqual("", session.query("db:open('" + NAME + "')").execute());
+    assertEqual("", session.query(_DB_OPEN.args(NAME)).execute());
     session.create(NAME, new ArrayInput("<X/>"));
-    assertEqual("<X/>", session.query("db:open('" + NAME + "')").execute());
+    assertEqual("<X/>", session.query(_DB_OPEN.args(NAME)).execute());
   }
 
   /**

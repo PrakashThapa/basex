@@ -56,7 +56,7 @@ public class HTMLSerializer extends OutputSerializer {
       if(ch == '<' || ch == '&' && val[Math.min(v + 1, vl - 1)] == '{') {
         print(ch);
       } else if(ch == '"') {
-        print(E_QU);
+        print(E_QUOT);
       } else if(ch == 0x9 || ch == 0xA) {
         hex(ch);
       } else {
@@ -86,11 +86,11 @@ public class HTMLSerializer extends OutputSerializer {
   }
 
   @Override
-  protected void encode(final int ch) throws IOException {
-    if(script) printChar(ch);
-    else if(ch > 0x7F && ch < 0xA0 && !html5) throw SERILL_X.getIO(Integer.toHexString(ch));
-    else if(ch == 0xA0) print(E_NBSP);
-    else super.encode(ch);
+  protected void encode(final int cp) throws IOException {
+    if(script) printChar(cp);
+    else if(cp > 0x7F && cp < 0xA0 && !html5) throw SERILL_X.getIO(Integer.toHexString(cp));
+    else if(cp == 0xA0) print(E_NBSP);
+    else super.encode(cp);
   }
 
   @Override

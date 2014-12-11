@@ -24,6 +24,8 @@ public final class FTLexer extends FTIterator implements IndexToken {
   private final FTOpt ftopt;
   /** Text to be tokenized. */
   private byte[] text = Token.EMPTY;
+  /** Levenshtein error. */
+  private int lserror;
 
   /** Iterator over result tokens. */
   private FTIterator iter;
@@ -42,31 +44,31 @@ public final class FTLexer extends FTIterator implements IndexToken {
 
   /**
    * Default constructor.
-   * @param opt full-text options
+   * @param ftoptions full-text options
    */
-  public FTLexer(final FTOpt opt) {
-    ftopt = opt;
+  public FTLexer(final FTOpt ftoptions) {
+    this.ftopt = ftoptions;
 
     // check if language option is provided:
-    Language lang = opt != null ? opt.ln : null;
+    Language lang = ftoptions != null ? ftoptions.ln : null;
     if(lang == null) lang = Language.def();
 
     // use default tokenizer if specific tokenizer is not available.
-    Tokenizer tk = Tokenizer.IMPL.getFirst();
+    Tokenizer tk = Tokenizer.IMPL.get(0);
     for(final Tokenizer t : Tokenizer.IMPL) {
       if(t.supports(lang)) {
         tk = t;
         break;
       }
     }
-    tok = tk.get(opt);
+    tok = tk.get(ftoptions);
     iter = tok;
 
     // wrap original iterator
-    if(opt != null && opt.is(FTFlag.ST)) {
-      if(opt.sd == null) {
+    if(ftoptions != null && ftoptions.is(FTFlag.ST)) {
+      if(ftoptions.sd == null) {
         // use default stemmer if specific stemmer is not available.
-        Stemmer st = Stemmer.IMPL.getFirst();
+        Stemmer st = Stemmer.IMPL.get(0);
         for(final Stemmer stem : Stemmer.IMPL) {
           if(stem.supports(lang)) {
             st = stem;
@@ -75,18 +77,17 @@ public final class FTLexer extends FTIterator implements IndexToken {
         }
         iter = st.get(lang, iter);
       } else {
-        iter = new DictionaryStemmer(opt.sd, iter);
+        iter = new DictionaryStemmer(ftoptions.sd, iter);
       }
     }
   }
 
   /**
-   * Sets the special character flag.
-   * Returns not only tokens, but also delimiters.
+   * If called, all tokens will be returned (including non-fulltext tokens).
    * @return self reference
    */
-  public FTLexer sc() {
-    tok.special = true;
+  public FTLexer all() {
+    tok.all = true;
     return this;
   }
 
@@ -95,6 +96,23 @@ public final class FTLexer extends FTIterator implements IndexToken {
    */
   public void init() {
     init(text);
+  }
+
+  /**
+   * Sets the Levenshtein error.
+   * @param ls error
+   */
+  public void lserror(final int ls) {
+    lserror = ls;
+  }
+
+  /**
+   * Returns the Levenshtein error for the specified token.
+   * @param token token
+   * @return error
+   */
+  public int lserror(final byte[] token) {
+    return lserror == 0 ? token.length >> 2 : lserror;
   }
 
   @Override
@@ -167,7 +185,8 @@ public final class FTLexer extends FTIterator implements IndexToken {
   }
 
   /**
-   * Is paragraph? Does not have to be implemented by all tokenizers.
+   * Returns if the current token starts a new paragraph. Needed for visualizations.
+   * Does not have to be implemented by all tokenizers.
    * Returns false if not implemented.
    * @return boolean
    */
@@ -187,8 +206,8 @@ public final class FTLexer extends FTIterator implements IndexToken {
   }
 
   /**
-   * Gets full-text info for the specified token; needed for visualizations.
-   * See {@link Tokenizer#info()} for more info.
+   * Gets full-text info for the specified token.
+   * Needed for visualizations; see {@link Tokenizer#info()} for more info.
    * @return int arrays or empty array if not implemented
    */
   public int[][] info() {

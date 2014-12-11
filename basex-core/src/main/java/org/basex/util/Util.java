@@ -6,7 +6,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import org.basex.server.*;
 import org.basex.util.list.*;
 
 /**
@@ -150,7 +149,6 @@ public final class Util {
   public static String message(final Throwable throwable) {
     debug(throwable);
     if(throwable instanceof BindException) return SRV_RUNNING;
-    if(throwable instanceof LoginException) return ACCESS_DENIED;
     if(throwable instanceof ConnectException) return CONNECTION_ERROR;
     if(throwable instanceof SocketTimeoutException) return TIMEOUT_EXCEEDED;
     if(throwable instanceof SocketException) return CONNECTION_ERROR;
@@ -272,23 +270,5 @@ public final class Util {
     } catch(final IOException ex) {
       throw notExpected(ex);
     }
-  }
-
-  /**
-   * Checks if the specified string is "yes", "true" or "on".
-   * @param string string to be checked
-   * @return result of check
-   */
-  public static boolean yes(final String string) {
-    return Token.eqic(string, YES, TRUE, ON);
-  }
-
-  /**
-   * Checks if the specified string is "no", "false" or "off".
-   * @param string string to be checked
-   * @return result of check
-   */
-  public static boolean no(final String string) {
-    return Token.eqic(string, NO, FALSE, OFF);
   }
 }

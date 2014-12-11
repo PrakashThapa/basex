@@ -31,10 +31,10 @@ import org.basex.util.hash.*;
  *      on the same node.</li>
  * <li> more than one {@link Rename} or {@link UpdateValue} operating
  *      on the same node.</li>
- * <li> sequences like <delete X, insert N at X>: This sequence would be carried out back
+ * <li> sequences like [delete X, insert N at X]: This sequence would be carried out back
  * to front: first the insert, then the delete. This would lead to the inserted node N
- * being deleted by the 'delete X' statement. The correct order for this sequqence would
- * be <insert N at X, delete X>. </li>
+ * being deleted by the 'delete X' statement. The correct order for this sequence would
+ * be [insert N at X, delete X]. </li>
  * <li> and so forth ... see check() function for details. </li>
  * </ul>
  *
@@ -335,8 +335,10 @@ public final class AtomicUpdateCache {
    */
   private int calculateNewDistance(final int pre) {
     final int kind = data.kind(pre);
-    final int distanceBefore = data.dist(pre, kind);
+    int distanceBefore = data.dist(pre, kind);
     final int preBefore = calculatePreValue(pre, true);
+    // document distances are not stored in table but calculated on the fly (always pre+1)
+    if(kind == Data.DOC) distanceBefore = preBefore + 1;
     final int parentBefore = preBefore - distanceBefore;
     final int parentAfter = calculatePreValue(parentBefore, false);
     return pre - parentAfter;

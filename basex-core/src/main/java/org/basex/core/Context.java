@@ -1,7 +1,7 @@
 package org.basex.core;
 
-import static org.basex.core.Text.*;
-
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.io.random.*;
 import org.basex.query.util.pkg.*;
@@ -26,9 +26,9 @@ public final class Context {
   public final ClientBlocker blocker;
   /** Options. */
   public final MainOptions options = new MainOptions();
-  /** Global options. */
-  public final GlobalOptions globalopts;
-  /** Client connections. */
+  /** Static options. */
+  public final StaticOptions soptions;
+  /** Client sessions. */
   public final Sessions sessions;
   /** Event pool. */
   public final Events events;
@@ -41,8 +41,6 @@ public final class Context {
   /** Databases list. */
   public final Databases databases;
 
-  /** User reference. */
-  public User user;
   /** Log. */
   public final Log log;
 
@@ -50,6 +48,8 @@ public final class Context {
   private DBNodes current;
   /** Process locking. */
   private final Locking locks;
+  /** User reference. */
+  private User user;
   /** Data reference. */
   private Data data;
 
@@ -74,18 +74,18 @@ public final class Context {
    * @param file retrieve options from disk
    */
   public Context(final boolean file) {
-    this(new GlobalOptions(file));
+    this(new StaticOptions(file));
   }
 
   /**
    * Constructor, called by clients, and adopting the variables of the main process.
    * The {@link #user} reference must be set after calling this method.
    * @param ctx context of the main process
-   * @param cl client listener
+   * @param listener client listener
    */
-  public Context(final Context ctx, final ClientListener cl) {
-    listener = cl;
-    globalopts = ctx.globalopts;
+  public Context(final Context ctx, final ClientListener listener) {
+    this.listener = listener;
+    soptions = ctx.soptions;
     dbs = ctx.dbs;
     events = ctx.events;
     sessions = ctx.sessions;
@@ -99,21 +99,39 @@ public final class Context {
 
   /**
    * Private constructor.
-   * @param gopts main options
+   * @param soptions static options
    */
-  private Context(final GlobalOptions gopts) {
-    globalopts = gopts;
+  private Context(final StaticOptions soptions) {
+    this.soptions = soptions;
     dbs = new Datas();
     events = new Events();
     sessions = new Sessions();
     blocker = new ClientBlocker();
-    databases = new Databases(this);
-    locks = gopts.get(GlobalOptions.GLOBALLOCK) ? new ProcLocking(this) : new DBLocking(gopts);
-    users = new Users(this);
-    repo = new Repo(this);
-    log = new Log(this);
-    user = users.get(S_ADMIN);
+    databases = new Databases(soptions);
+    locks = soptions.get(StaticOptions.GLOBALLOCK) ? new ProcLocking(soptions) :
+      new DBLocking(soptions);
+    users = new Users(soptions);
+    repo = new Repo(soptions);
+    log = new Log(soptions);
+    user = users.get(UserText.ADMIN);
     listener = null;
+  }
+
+  /**
+   * Returns the user of this context.
+   * @return user
+   */
+  public User user() {
+    return user;
+  }
+
+  /**
+   * Sets the user of this context. This method can only be called once.
+   * @param us user
+   */
+  public void user(final User us) {
+    if(user != null) throw Util.notExpected("User has already been assigned.");
+    user = us;
   }
 
   /**
@@ -213,13 +231,11 @@ public final class Context {
   /**
    * Checks if the current user has the specified permission.
    * @param perm requested permission
-   * @param md optional meta data reference
+   * @param db database (can be {@code null})
    * @return result of check
    */
-  public boolean perm(final Perm perm, final MetaData md) {
-    final User us = md == null || perm == Perm.CREATE || perm == Perm.ADMIN ? null :
-      md.users.get(user.name);
-    return (us == null ? user : us).has(perm);
+  public boolean perm(final Perm perm, final String db) {
+    return user.has(perm, db);
   }
 
   /**
@@ -231,7 +247,7 @@ public final class Context {
     pr.registered(true);
 
     // administrators will not be affected by the timeout
-    if(!user.has(Perm.ADMIN)) pr.startTimeout(globalopts.get(GlobalOptions.TIMEOUT) * 1000L);
+    if(!user.has(Perm.ADMIN)) pr.startTimeout(soptions.get(StaticOptions.TIMEOUT) * 1000L);
 
     // get touched databases
     final LockResult lr = new LockResult();
@@ -263,8 +279,8 @@ public final class Context {
 
     // replace empty string with currently opened database and return array
     for(int d = 0; d < sl.size(); d++) {
-      if(Token.eq(sl.get(d), DBLocking.CTX, DBLocking.COLL)) {
-        if(data == null) sl.deleteAt(d);
+      if(Strings.eq(sl.get(d), DBLocking.CTX, DBLocking.COLL)) {
+        if(data == null) sl.remove(d);
         else sl.set(d, data.meta.name);
       }
     }

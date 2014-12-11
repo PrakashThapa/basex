@@ -52,18 +52,13 @@ public final class DiskData extends Data {
 
   /**
    * Default constructor, called from {@link Open#open}.
-   * @param db name of database
-   * @param ctx database context
+   * @param meta meta data
    * @throws IOException I/O Exception
    */
-  public DiskData(final String db, final Context ctx) throws IOException {
-    meta = new MetaData(db, ctx);
-
-    // don't open databases marked as updating
-    if(updateFile().exists()) throw new BaseXException(Text.DB_UPDATED_X, meta.name);
+  public DiskData(final MetaData meta) throws IOException {
+    super(meta);
 
     try(final DataInput in = new DataInput(meta.dbfile(DATAINF))) {
-      // read meta data and indexes
       meta.read(in);
       while(true) {
         final String k = string(in.readToken());
@@ -91,22 +86,22 @@ public final class DiskData extends Data {
 
   /**
    * Internal database constructor, called from {@link DiskBuilder#build}.
-   * @param md meta data
-   * @param el element names
-   * @param at attribute names
-   * @param ps path summary
+   * @param meta meta data
+   * @param elemNames element names
+   * @param attrNames attribute names
+   * @param paths path summary
    * @param n namespaces
    * @throws IOException I/O Exception
    */
-  public DiskData(final MetaData md, final Names el, final Names at, final PathSummary ps,
-      final Namespaces n) throws IOException {
+  public DiskData(final MetaData meta, final Names elemNames, final Names attrNames,
+      final PathSummary paths, final Namespaces n) throws IOException {
 
-    meta = md;
-    elemNames = el;
-    attrNames = at;
-    paths = ps;
+    super(meta);
+    this.elemNames = elemNames;
+    this.attrNames = attrNames;
+    this.paths = paths;
+    this.nspaces = n;
     paths.data(this);
-    nspaces = n;
     if(meta.updindex) idmap = new IdPreMap(meta.lastid);
     init();
   }
@@ -177,14 +172,16 @@ public final class DiskData extends Data {
   }
 
   @Override
-  public void createIndex(final IndexType type, final Command cmd) throws IOException {
+  public void createIndex(final IndexType type, final MainOptions options, final Command cmd)
+      throws IOException {
+
     // close existing index
     close(type);
     final IndexBuilder ib;
     switch(type) {
-      case TEXT:      ib = new DiskValuesBuilder(this, true); break;
-      case ATTRIBUTE: ib = new DiskValuesBuilder(this, false); break;
-      case FULLTEXT:  ib = new FTBuilder(this); break;
+      case TEXT:      ib = new DiskValuesBuilder(this, options, true); break;
+      case ATTRIBUTE: ib = new DiskValuesBuilder(this, options, false); break;
+      case FULLTEXT:  ib = new FTBuilder(this, options); break;
       default:        throw Util.notExpected();
     }
     if(cmd != null) cmd.proc(ib);
@@ -215,21 +212,21 @@ public final class DiskData extends Data {
   }
 
   @Override
-  public void startUpdate() throws IOException {
+  public void startUpdate(final MainOptions opts) throws IOException {
     if(!table.lock(true)) throw new BaseXException(Text.DB_PINNED_X, meta.name);
-    if(meta.options.get(MainOptions.AUTOFLUSH)) {
-      final IOFile uf = updateFile();
+    if(opts.get(MainOptions.AUTOFLUSH)) {
+      final IOFile uf = meta.updateFile();
       if(uf.exists()) throw new BaseXException(Text.DB_UPDATED_X, meta.name);
       if(!uf.touch()) throw Util.notExpected("%: could not create lock file.", meta.name);
     }
   }
 
   @Override
-  public synchronized void finishUpdate() {
+  public synchronized void finishUpdate(final MainOptions opts) {
     // remove updating file
-    final boolean auto = meta.options.get(MainOptions.AUTOFLUSH);
+    final boolean auto = opts.get(MainOptions.AUTOFLUSH);
     if(auto) {
-      final IOFile uf = updateFile();
+      final IOFile uf = meta.updateFile();
       if(!uf.exists()) throw Util.notExpected("%: lock file does not exist.", meta.name);
       if(!uf.delete()) throw Util.notExpected("%: could not delete lock file.", meta.name);
     }
@@ -255,14 +252,6 @@ public final class DiskData extends Data {
     } catch(final IOException ex) {
       Util.stack(ex);
     }
-  }
-
-  /**
-   * Returns a file that indicates ongoing updates.
-   * @return updating file
-   */
-  public IOFile updateFile() {
-    return meta.dbfile(DATAUPD);
   }
 
   @Override

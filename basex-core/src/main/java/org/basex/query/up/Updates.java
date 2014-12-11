@@ -7,6 +7,7 @@ import org.basex.data.atomic.*;
 import org.basex.query.*;
 import org.basex.query.iter.*;
 import org.basex.query.up.primitives.*;
+import org.basex.query.up.primitives.node.*;
 import org.basex.query.value.node.*;
 import org.basex.util.hash.*;
 import org.basex.util.list.*;
@@ -126,10 +127,11 @@ public final class Updates {
 
   /**
    * Executes all updates.
+   * @param qc query context
    * @throws QueryException query exception
    */
-  public void apply() throws QueryException {
-    if(mod != null) mod.apply();
+  public void apply(final QueryContext qc) throws QueryException {
+    if(mod != null) mod.apply(qc);
   }
 
   /**

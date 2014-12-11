@@ -9,6 +9,7 @@ import org.basex.core.parse.*;
 import org.basex.core.parse.Commands.Cmd;
 import org.basex.core.parse.Commands.CmdCreate;
 import org.basex.core.parse.Commands.CmdIndex;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.index.*;
 import org.basex.util.*;
@@ -57,12 +58,12 @@ public final class CreateIndex extends ACreate {
 
     if(!startUpdate()) return false;
     try {
-      create(type, data, this);
+      create(type, data, options, this);
       return info(INDEX_CREATED_X_X, type, perf);
     } catch(final IOException ex) {
       return error(Util.message(ex));
     } finally {
-      finishUpdate();
+      if(!finishUpdate()) return false;
     }
   }
 

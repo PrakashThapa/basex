@@ -7,6 +7,7 @@ import java.io.*;
 import org.basex.build.*;
 import org.basex.core.*;
 import org.basex.core.parse.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.io.*;
@@ -64,7 +65,7 @@ public final class Add extends ACreate {
         auc.addInsert(data.meta.size, -1, clip);
         auc.execute(false);
 
-        finishUpdate();
+        if(!finishUpdate()) return false;
       }
       return info(RES_ADDED_X, perf);
     } finally {
@@ -91,7 +92,7 @@ public final class Add extends ACreate {
     // check if resource exists
     if(io == null) return error(RES_NOT_FOUND);
     if(!io.exists()) return in != null ? error(RES_NOT_FOUND) :
-        error(RES_NOT_FOUND_X, context.user.has(Perm.CREATE) ? io : args[1]);
+        error(RES_NOT_FOUND_X, context.user().has(Perm.CREATE) ? io : args[1]);
 
     if(!name.endsWith("/") && (io.isDir() || io.isArchive())) name += '/';
 
@@ -111,13 +112,13 @@ public final class Add extends ACreate {
 
     try {
       final Data data = context.data();
-      final Parser parser = new DirParser(io, context, data.meta.path);
+      final Parser parser = new DirParser(io, options, data.meta.path);
       parser.target(target);
 
       // create random database name for disk-based creation
       if(cache(parser)) {
-        clipDB = context.globalopts.random(data.meta.name);
-        build = new DiskBuilder(clipDB, parser, context);
+        clipDB = soptions.random(data.meta.name);
+        build = new DiskBuilder(clipDB, parser, soptions, options);
       } else {
         build = new MemBuilder(name, parser);
       }
@@ -134,7 +135,7 @@ public final class Add extends ACreate {
   void close() {
     // close and drop intermediary database instance
     if(clip != null) clip.data.close();
-    if(clipDB != null) DropDB.drop(clipDB, context);
+    if(clipDB != null) DropDB.drop(clipDB, soptions);
   }
 
   /**
@@ -150,9 +151,9 @@ public final class Add extends ACreate {
 
     // create disk instances for large documents
     // (does not work for input streams and directories)
-    long fl = parser.src.length();
-    if(parser.src instanceof IOFile) {
-      final IOFile f = (IOFile) parser.src;
+    long fl = parser.source.length();
+    if(parser.source instanceof IOFile) {
+      final IOFile f = (IOFile) parser.source;
       if(f.isDir()) {
         for(final String d : f.descendants()) fl += new IOFile(f, d).length();
       }

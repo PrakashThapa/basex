@@ -7,7 +7,9 @@ import java.io.*;
 import java.util.*;
 
 import org.basex.core.*;
+import org.basex.core.locks.*;
 import org.basex.core.parse.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
@@ -104,7 +106,7 @@ public abstract class AQuery extends Command {
         // dump some query info
         out.flush();
         // remove string list if global locking is used and if query is updating
-        if(goptions.get(GlobalOptions.GLOBALLOCK) && qp.updating) {
+        if(soptions.get(StaticOptions.GLOBALLOCK) && qp.updating) {
           info.readLocked = null;
           info.writeLocked = null;
         }
@@ -272,7 +274,7 @@ public abstract class AQuery extends Command {
     // show dot plan
     try {
       if(options.get(MainOptions.DOTPLAN)) {
-        final String path = context.options.get(MainOptions.QUERYPATH);
+        final String path = options.get(MainOptions.QUERYPATH);
         final String dot = path.isEmpty() ? "plan.dot" :
             new IOFile(path).name().replaceAll("\\..*?$", ".dot");
 

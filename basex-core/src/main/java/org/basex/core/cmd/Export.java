@@ -6,6 +6,8 @@ import java.io.*;
 import java.util.*;
 
 import org.basex.core.*;
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
@@ -41,7 +43,7 @@ public final class Export extends Command {
   protected boolean run() {
     try {
       final Data data = context.data();
-      export(data, args[0], this);
+      export(data, args[0], options, this);
       return info(DB_EXPORTED_X, data.meta.name, perf);
     } catch(final IOException ex) {
       return error(Util.message(ex));
@@ -58,12 +60,13 @@ public final class Export extends Command {
    * Files and directories in {@code path} will be possibly overwritten.
    * @param data data reference
    * @param path directory
+   * @param options main options
    * @param export calling instance
    * @throws IOException I/O exception
    */
-  public static void export(final Data data, final String path, final Export export)
-      throws IOException {
-    export(data, path, data.meta.options.get(MainOptions.EXPORTER), export);
+  public static void export(final Data data, final String path, final MainOptions options,
+      final Export export) throws IOException {
+    export(data, path, options.get(MainOptions.EXPORTER), export);
   }
 
   /**

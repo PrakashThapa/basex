@@ -311,9 +311,7 @@ public class JapaneseTokenizer extends Tokenizer {
    * @return result
    */
   private boolean more() {
-    if(special) {
-      return tokens.hasNext();
-    }
+    if(all) return tokens.hasNext();
 
     while(tokens.hasNext()) {
       currToken = tokens.next();
@@ -360,8 +358,9 @@ public class JapaneseTokenizer extends Tokenizer {
   private byte[] getSC() {
     final Morpheme m = tokens.next();
     final String n = m.getSurface();
-    if(m.isMark() || m.isAttachedWord()) sc = true;
-    else {
+    if(m.isMark() || m.isAttachedWord()) {
+      sc = true;
+    } else {
       pos++;
       sc = false;
     }
@@ -370,7 +369,7 @@ public class JapaneseTokenizer extends Tokenizer {
 
   @Override
   public byte[] nextToken() {
-    return special ? getSC() : get();
+    return all ? getSC() : get();
   }
 
   @Override
@@ -598,8 +597,7 @@ public class JapaneseTokenizer extends Tokenizer {
      * @return base form
      */
     public String getBaseForm() {
-      final String[] parts = mFeature.split(",");
-      return parts[6];
+      return Strings.split(mFeature, ',')[6];
     }
 
     /**
@@ -607,8 +605,7 @@ public class JapaneseTokenizer extends Tokenizer {
      * @return parts of speech(coding in Japanese)
      */
     private String getPos() {
-      final String[] parts = mFeature.split(",");
-      return parts[0];
+      return Strings.split(mFeature, ',')[0];
     }
 
     @Override

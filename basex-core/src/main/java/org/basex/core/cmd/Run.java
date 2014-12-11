@@ -5,6 +5,7 @@ import static org.basex.core.Text.*;
 import java.io.*;
 
 import org.basex.core.*;
+import org.basex.core.users.*;
 import org.basex.io.*;
 import org.basex.util.*;
 
@@ -37,7 +38,7 @@ public final class Run extends Execute {
       // check file reference
       file = IO.get(args[0]);
       if(!file.exists() || file.isDir()) {
-        error = Util.info(RES_NOT_FOUND_X, ctx.user.has(Perm.CREATE) ? file : args[0]);
+        error = Util.info(RES_NOT_FOUND_X, ctx.user().has(Perm.CREATE) ? file : args[0]);
       } else {
         try {
           // retrieve file contents

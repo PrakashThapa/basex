@@ -13,8 +13,6 @@ public interface HTTPText {
   String AUTHORIZATION = "Authorization";
   /** HTTP header: Accept. */
   String ACCEPT = "Accept";
-  /** HTTP basic authentication. */
-  String BASIC = "Basic";
 
   /** HTTP String. */
   String HTTP = "HTTP";
@@ -26,9 +24,36 @@ public interface HTTPText {
   String WEBCONF = WEB_INF + "web.xml";
 
   /** Error: no password. */
-  String NOPASSWD = "No username/password specified.";
+  String INVALIDCREDS = "No username/password specified.";
   /** Error: unsupported authorization method. */
   String WHICHAUTH = "Unsupported Authorization method: %.";
   /** Error message. */
   String UNEXPECTED = "Unexpected error: %";
+
+  // Digest keys
+
+  /** User name. */
+  String USERNAME = "username";
+  /** Response. */
+  String RESPONSE = "response";
+  /** Realm. */
+  String REALM = "realm";
+  /** Nonce. */
+  String NONCE = "nonce";
+  /** Client nonce. */
+  String CNONCE = "cnonce";
+  /** Nonce counter. */
+  String NC = "nc";
+  /** Algorithm. */
+  String ALGORITHM = "algorithm";
+  /** QOP. */
+  String MD5_SESS = "md5-sess";
+  /** URI. */
+  String URI = "uri";
+  /** QOP. */
+  String QOP = "qop";
+  /** Auth. */
+  String AUTH = "auth";
+  /** Auth-int. */
+  String AUTH_INT = "auth-int";
 }

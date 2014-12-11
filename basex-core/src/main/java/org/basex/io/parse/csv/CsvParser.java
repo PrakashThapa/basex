@@ -20,6 +20,8 @@ final class CsvParser {
   private final CsvConverter conv;
   /** Header flag. */
   private final boolean header;
+  /** Backslash flag. */
+  private final boolean backslashes;
   /** Column separator (see {@link CsvOptions#SEPARATOR}). */
   private final int separator;
   /** Parse quotes.  */
@@ -44,6 +46,7 @@ final class CsvParser {
     header = opts.get(CsvOptions.HEADER);
     separator = opts.separator();
     quotes = opts.get(CsvOptions.QUOTES);
+    backslashes = opts.get(CsvOptions.BACKSLASHES);
   }
 
   /**
@@ -71,17 +74,24 @@ final class CsvParser {
     while(ch != -1) {
       if(quoted) {
         // quoted state
-        if(ch == '\\') {
-          ch = bs();
-          if(ch == -1) break;
-        } else if(ch == '"') {
-          ch = input.read();
-          if(ch != '"') {
+        if(backslashes) {
+          if(ch == '\\') {
+            ch = bs();
+            if(ch == -1) break;
+          } else if(ch == '"') {
             quoted = false;
             continue;
           }
+        } else {
+          if(ch == '"') {
+            ch = input.read();
+            if(ch != '"') {
+              quoted = false;
+              continue;
+            }
+          }
         }
-        entry.add(XMLToken.valid(ch) ? ch : '?');
+        add(entry, ch);
       } else if(quotes && ch == '"') {
         // parse quote
         quoted = true;
@@ -95,10 +105,12 @@ final class CsvParser {
         first = true;
         data = true;
       } else {
-        if(ch == '\\') ch = bs();
-        if(ch == -1) break;
+        if(backslashes) {
+          if(ch == '\\') ch = bs();
+          if(ch == -1) break;
+        }
         // parse any other character
-        entry.add(XMLToken.valid(ch) ? ch : '?');
+        add(entry, ch);
       }
       ch = input.read();
     }
@@ -108,7 +120,7 @@ final class CsvParser {
   /**
    * Parses a backslash character.
    * @return resulting character
-   * @throws IOException query I/O exception
+   * @throws IOException I/O exception
    */
   private int bs() throws IOException {
     final int ch = input.read();
@@ -116,6 +128,15 @@ final class CsvParser {
     if(ch == 'n') return 0xa;
     if(ch == 't') return 0x9;
     return ch;
+  }
+
+  /**
+   * Adds a character.
+   * @param entry token builder
+   * @param ch character
+   */
+  private void add(final TokenBuilder entry, final int ch) {
+    entry.add(XMLToken.valid(ch) ? ch : '?');
   }
 
   /**

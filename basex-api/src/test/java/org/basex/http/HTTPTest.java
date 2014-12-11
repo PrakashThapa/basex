@@ -1,5 +1,6 @@
 package org.basex.http;
 
+import static org.basex.core.users.UserText.*;
 import static org.basex.http.HTTPMethod.*;
 import static org.basex.util.Token.*;
 import static org.junit.Assert.*;
@@ -10,6 +11,7 @@ import java.util.*;
 
 import org.basex.*;
 import org.basex.core.*;
+import org.basex.core.StaticOptions.*;
 import org.basex.io.*;
 import org.basex.io.in.*;
 import org.basex.io.out.*;
@@ -40,13 +42,12 @@ public abstract class HTTPTest extends SandboxTest {
    * @throws Exception exception
    */
   protected static void init(final String rt, final boolean local) throws Exception {
-    initContext(CONTEXT);
-    assertTrue(new IOFile(CONTEXT.globalopts.get(GlobalOptions.WEBPATH)).md());
+    assertTrue(new IOFile(CONTEXT.soptions.get(StaticOptions.WEBPATH)).md());
     root = rt;
 
     final StringList sl = new StringList();
     if(local) sl.add("-l");
-    sl.add("-p9996", "-e9997", "-h9998", "-s9999", "-z", "-U" + Text.S_ADMIN, "-P" + Text.S_ADMIN);
+    sl.add("-p9996", "-e9997", "-h9998", "-s9999", "-z", "-U" + ADMIN, "-P" + ADMIN);
     System.setOut(NULL);
     try {
       http = new BaseXHTTP(sl.toArray());
@@ -162,8 +163,8 @@ public abstract class HTTPTest extends SandboxTest {
     conn.setRequestMethod(POST.name());
     conn.setRequestProperty(MimeTypes.CONTENT_TYPE, type);
     // basic authentication
-    final String encoded = org.basex.util.Base64.encode(Text.S_ADMIN + ':' + Text.S_ADMIN);
-    conn.setRequestProperty(HTTPText.AUTHORIZATION, HTTPText.BASIC + ' ' + encoded);
+    final String encoded = org.basex.util.Base64.encode(ADMIN + ':' + ADMIN);
+    conn.setRequestProperty(HTTPText.AUTHORIZATION, AuthMethod.BASIC + " " + encoded);
     // send query
     try(final OutputStream out = conn.getOutputStream()) {
       out.write(token(request));

@@ -9,6 +9,8 @@ import java.util.Map.Entry;
 
 import org.basex.core.*;
 import org.basex.core.cmd.*;
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.http.*;
 import org.basex.io.out.*;
 import org.basex.io.serial.*;
@@ -136,7 +138,7 @@ public abstract class RESTCmd extends Command {
   }
 
   /**
-   * Returns a string representation of the used serialization parameters.
+   * Returns serialization parameters.
    * @param http HTTP context
    * @return serialization parameters
    */

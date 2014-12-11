@@ -2,7 +2,7 @@ package org.basex.data;
 
 import static org.basex.core.Text.*;
 import static org.basex.data.DataText.*;
-import static org.basex.util.Token.*;
+import static org.basex.util.Strings.*;
 
 import java.io.*;
 import java.util.concurrent.atomic.*;
@@ -25,13 +25,9 @@ import org.basex.util.ft.*;
 public final class MetaData {
   /** Database path. Set to {@code null} if database is in main memory. */
   public final IOFile path;
-  /** Database options. */
-  public final MainOptions options;
 
   /** Database name. */
   public volatile String name;
-  /** Database users. */
-  public volatile Users users;
 
   /** Encoding of original document. */
   public volatile String encoding = UTF8;
@@ -48,6 +44,8 @@ public final class MetaData {
   public volatile boolean chop;
   /** Flag for activated automatic index update. */
   public volatile boolean updindex;
+  /** Flag for automatic index updating. */
+  public volatile boolean autoopt;
   /** Indicates if a text index exists. */
   public volatile boolean textindex;
   /** Indicates if an attribute index exists. */
@@ -98,7 +96,7 @@ public final class MetaData {
   private volatile int scoring;
 
   /**
-   * Constructor, specifying the database options.
+   * Constructor for a main-memory database instance.
    * @param options database options
    */
   public MetaData(final MainOptions options) {
@@ -106,24 +104,14 @@ public final class MetaData {
   }
 
   /**
-   * Constructor, specifying the database name and context.
-   * @param name name of the database
-   * @param ctx database context
-   */
-  public MetaData(final String name, final Context ctx) {
-    this(name, ctx.options, ctx.globalopts);
-  }
-
-  /**
-   * Constructor, specifying the database name.
+   * Constructor.
    * @param name name of the database
    * @param options database options
-   * @param global global options
+   * @param sopts static options
    */
-  private MetaData(final String name, final MainOptions options, final GlobalOptions global) {
-    this.options = options;
+  public MetaData(final String name, final MainOptions options, final StaticOptions sopts) {
     this.name = name;
-    path = global != null ? global.dbpath(name) : null;
+    path = sopts != null ? sopts.dbpath(name) : null;
     chop = options.get(MainOptions.CHOP);
     createtext = options.get(MainOptions.TEXTINDEX);
     createattr = options.get(MainOptions.ATTRINDEX);
@@ -132,11 +120,11 @@ public final class MetaData {
     stemming = options.get(MainOptions.STEMMING);
     casesens = options.get(MainOptions.CASESENS);
     updindex = options.get(MainOptions.UPDINDEX);
+    autoopt = options.get(MainOptions.AUTOOPTIMIZE);
     maxlen = options.get(MainOptions.MAXLEN);
     maxcats = options.get(MainOptions.MAXCATS);
     stopwords = options.get(MainOptions.STOPWORDS);
     language = Language.get(options);
-    users = new Users(null);
   }
 
   // STATIC METHODS ==========================================================
@@ -236,6 +224,14 @@ public final class MetaData {
   }
 
   /**
+   * Returns a file that indicates ongoing updates.
+   * @return updating file
+   */
+  public IOFile updateFile() {
+    return dbfile(DATAUPD);
+  }
+
+  /**
    * Returns the specified binary file or {@code null} if the resource
    * path cannot be resolved (e.g. if it points to a parent directory).
    * @param pth internal file path
@@ -276,12 +272,13 @@ public final class MetaData {
   public void read(final DataInput in) throws IOException {
     String storage = "", istorage = "";
     while(true) {
-      final String k = string(in.readToken());
+      final String k = Token.string(in.readToken());
       if(k.isEmpty()) break;
       if(k.equals(DBPERM)) {
-        users.read(in);
+        // legacy (Version < 8)
+        for(int u = in.readNum(); u > 0; --u) { in.readToken(); in.readToken(); in.readNum(); }
       } else {
-        final String v = string(in.readToken());
+        final String v = Token.string(in.readToken());
         if(k.equals(DBSTR))           storage    = v;
         else if(k.equals(IDBSTR))     istorage   = v;
         else if(k.equals(DBFNAME))    original   = v;
@@ -299,6 +296,7 @@ public final class MetaData {
         else if(k.equals(DBFTDC))     diacritics = toBool(v);
         else if(k.equals(DBCHOP))     chop       = toBool(v);
         else if(k.equals(DBUPDIDX))   updindex   = toBool(v);
+        else if(k.equals(DBAUTOOPT))  autoopt    = toBool(v);
         else if(k.equals(DBTXTIDX))   textindex  = toBool(v);
         else if(k.equals(DBATVIDX))   attrindex  = toBool(v);
         else if(k.equals(DBFTXIDX))   ftxtindex  = toBool(v);
@@ -341,6 +339,7 @@ public final class MetaData {
     writeInfo(out, DBSIZE,     size);
     writeInfo(out, DBCHOP,     chop);
     writeInfo(out, DBUPDIDX,   updindex);
+    writeInfo(out, DBAUTOOPT,  autoopt);
     writeInfo(out, DBTXTIDX,   textindex);
     writeInfo(out, DBATVIDX,   attrindex);
     writeInfo(out, DBFTXIDX,   ftxtindex);
@@ -356,8 +355,6 @@ public final class MetaData {
     writeInfo(out, DBUPTODATE, uptodate);
     writeInfo(out, DBLASTID,   lastid);
     if(language != null) writeInfo(out, DBFTLN, language.toString());
-    out.writeToken(token(DBPERM));
-    users.write(out);
     out.write(0);
   }
 
@@ -381,7 +378,7 @@ public final class MetaData {
    * @param parser parser
    */
   public void assign(final Parser parser) {
-    final IO file = parser.src;
+    final IO file = parser.source;
     original = file != null ? file.path() : "";
     filesize = file != null ? file.length() : 0;
     time = file != null ? file.timeStamp() : System.currentTimeMillis();
@@ -431,8 +428,8 @@ public final class MetaData {
    */
   private static void writeInfo(final DataOutput out, final String name, final String value)
       throws IOException {
-    out.writeToken(token(name));
-    out.writeToken(token(value));
+    out.writeToken(Token.token(name));
+    out.writeToken(Token.token(value));
   }
 
 }

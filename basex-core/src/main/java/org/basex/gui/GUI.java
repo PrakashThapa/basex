@@ -62,15 +62,16 @@ public final class GUI extends JFrame {
   public boolean painting;
   /** Updating flag; if activated, operations accessing the data are skipped. */
   public boolean updating;
+
   /** Fullscreen flag. */
-  public boolean fullscreen;
+  boolean fullscreen;
+  /** Button panel. */
+  final BaseXBack buttons;
+  /** Navigation/input panel. */
+  final BaseXBack nav;
+
   /** Result panel. */
   private final GUIMenu menu;
-  /** Button panel. */
-  public final BaseXBack buttons;
-  /** Navigation/input panel. */
-  public final BaseXBack nav;
-
   /** Content panel, containing all views. */
   private final ViewContainer views;
   /** History button. */
@@ -103,13 +104,7 @@ public final class GUI extends JFrame {
   private int threadID;
 
   /** Password reader. */
-  private static final PasswordReader READER = new PasswordReader() {
-    @Override
-    public String password() {
-      final DialogPass dp = new DialogPass();
-      return dp.ok() ? Token.md5(dp.pass()) : "";
-    }
-  };
+  private static PasswordReader pwReader;
 
   /** Info listener. */
   private final InfoListener infoListener = new InfoListener() {
@@ -277,14 +272,8 @@ public final class GUI extends JFrame {
     views.updateViews();
     refreshControls();
 
-    // start logo animation as thread
-    SwingUtilities.invokeLater(new Runnable() {
-      @Override
-      public void run() {
-        checkVersion();
-      }
-    });
-
+    // check version
+    checkVersion();
     input.requestFocusInWindow();
   }
 
@@ -358,7 +347,14 @@ public final class GUI extends JFrame {
       try {
         // parse and execute all commands
         final CommandParser cp = new CommandParser(in.substring(exc ? 1 : 0), context);
-        cp.pwReader(READER);
+        if(pwReader == null) pwReader = new PasswordReader() {
+          @Override
+          public String password() {
+            final DialogPass dp = new DialogPass(GUI.this);
+            return dp.ok() ? dp.password() : "";
+          }
+        };
+        cp.pwReader(pwReader);
         execute(false, cp.parse());
       } catch(final QueryException ex) {
         if(!info.visible()) GUIMenuCmd.C_SHOWINFO.execute(this);
@@ -608,7 +604,7 @@ public final class GUI extends JFrame {
    * @param show true if component is visible
    * @param layout component layout
    */
-  public void updateControl(final JComponent comp, final boolean show, final String layout) {
+  void updateControl(final JComponent comp, final boolean show, final String layout) {
     if(comp == status) {
       if(show) top.add(comp, layout);
       else top.remove(comp);
@@ -683,7 +679,7 @@ public final class GUI extends JFrame {
   /**
    * Toggles fullscreen mode.
    */
-  public void fullscreen() {
+  void fullscreen() {
     fullscreen ^= true;
     fullscreen(fullscreen);
   }
@@ -733,36 +729,54 @@ public final class GUI extends JFrame {
   }
 
   /**
-   * Checks for a new version and shows a confirmation dialog.
+   * Starts a new thread that checks for new versions.
    */
   private void checkVersion() {
-    final Version disk = new Version(gopts.get(GUIOptions.UPDATEVERSION));
-    final Version used = new Version(Prop.VERSION.replaceAll(" .*", ""));
+    // ignore snapshots and beta versions
+    if(Strings.contains(Prop.VERSION, ' ')) return;
 
-    if(disk.compareTo(used) < 0) {
-      // update version option to latest used version
-      gopts.set(GUIOptions.UPDATEVERSION, used.toString());
-      gopts.write();
-    } else {
-      try {
-        final String page = Token.string(new IOUrl(Prop.VERSION_URL).read());
-        final Matcher m = Pattern.compile("^(Version )?([\\w\\d.]*?)( .*|$)",
-            Pattern.DOTALL).matcher(page);
-        if(m.matches()) {
-          final Version latest = new Version(m.group(2));
-          if(disk.compareTo(latest) < 0) {
-            if(BaseXDialog.confirm(this, Util.info(H_NEW_VERSION, Prop.NAME, latest))) {
-              BaseXDialog.browse(this, Prop.UPDATE_URL);
-            } else {
-              // don't show update dialog anymore if it has been rejected once
-              gopts.set(GUIOptions.UPDATEVERSION, latest.toString());
-              gopts.write();
+    final Thread t = new Thread() {
+      @Override
+      public void run() {
+        final Version disk = new Version(gopts.get(GUIOptions.UPDATEVERSION));
+        final Version used = new Version(Prop.VERSION);
+
+        if(disk.compareTo(used) < 0) {
+          // update version option to latest used version
+          writeVersion(used);
+        } else {
+          try {
+            final String page = Token.string(new IOUrl(Prop.VERSION_URL).read());
+            final Matcher m = Pattern.compile("^(Version )?([\\w\\d.]*?)( .*|$)",
+                Pattern.DOTALL).matcher(page);
+            if(m.matches()) {
+              final Version latest = new Version(m.group(2));
+              if(disk.compareTo(latest) < 0) {
+                if(BaseXDialog.confirm(GUI.this, Util.info(H_NEW_VERSION, Prop.NAME, latest))) {
+                  // jump to browser
+                  BaseXDialog.browse(GUI.this, Prop.UPDATE_URL);
+                } else {
+                  // don't show update dialog anymore if it has been rejected once
+                  writeVersion(latest);
+                }
+              }
             }
+          } catch(final Exception ex) {
+            // ignore connection failure
           }
         }
-      } catch(final Exception ex) {
-        // ignore connection failure
       }
-    }
+    };
+    t.setDaemon(true);
+    SwingUtilities.invokeLater(t);
+  }
+
+  /**
+   * Writes a version to the options.
+   * @param version version
+   */
+  private void writeVersion(final Version version) {
+    gopts.set(GUIOptions.UPDATEVERSION, version.toString());
+    gopts.write();
   }
 }

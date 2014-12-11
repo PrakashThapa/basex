@@ -5,6 +5,8 @@ import static org.basex.core.Text.*;
 import java.io.*;
 
 import org.basex.core.*;
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.util.*;
 
@@ -42,7 +44,7 @@ public final class Open extends Command {
     if(data == null || !data.meta.name.equals(db)) {
       new Close().run(context);
       try {
-        data = open(db, context);
+        data = open(db, context, options);
         context.openDB(data);
 
         final String path = args[1];
@@ -71,23 +73,30 @@ public final class Open extends Command {
   /**
    * Opens the specified database.
    * @param name name of database
-   * @param ctx database context
+   * @param context database context
+   * @param options main options
    * @return data reference
    * @throws IOException I/O exception
    */
-  public static Data open(final String name, final Context ctx) throws IOException {
-    synchronized(ctx.dbs) {
-      Data data = ctx.dbs.pin(name);
+  public static Data open(final String name, final Context context, final MainOptions options)
+      throws IOException {
+
+    // check permissions
+    if(!context.perm(Perm.READ, name)) throw new BaseXException(PERM_REQUIRED_X, Perm.READ);
+
+    synchronized(context.dbs) {
+      Data data = context.dbs.pin(name);
       if(data == null) {
-        // check if database exists
-        if(!ctx.globalopts.dbexists(name)) throw new BaseXException(dbnf(name));
-        data = new DiskData(name, ctx);
-        ctx.dbs.add(data);
-      }
-      // check permissions
-      if(!ctx.perm(Perm.READ, data.meta)) {
-        Close.close(data, ctx);
-        throw new BaseXException(PERM_REQUIRED_X, Perm.READ);
+        // check if the addressed database exists
+        if(!context.soptions.dbexists(name)) throw new BaseXException(dbnf(name));
+
+        // do not open a database that is currently updated
+        final MetaData meta = new MetaData(name, options, context.soptions);
+        if(meta.updateFile().exists()) throw new BaseXException(Text.DB_UPDATED_X, meta.name);
+
+        // open database
+        data = new DiskData(meta);
+        context.dbs.add(data);
       }
       return data;
     }

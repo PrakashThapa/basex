@@ -10,6 +10,8 @@ import java.math.*;
 import java.util.*;
 
 import org.basex.core.*;
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.io.*;
 import org.basex.io.serial.*;
 import org.basex.query.expr.*;
@@ -245,7 +247,8 @@ public class QueryParser extends InputParser {
    */
   private void init() throws QueryException {
     final IO baseIO = sc.baseIO();
-    file = baseIO == null ? null : qc.context.user.has(Perm.ADMIN) ? baseIO.path() : baseIO.name();
+    file = baseIO == null ? null : qc.context.user().has(Perm.ADMIN) ? baseIO.path() :
+      baseIO.name();
     if(!more()) throw error(QUERYEMPTY);
 
     // checks if the query string contains invalid characters
@@ -302,12 +305,12 @@ public class QueryParser extends InputParser {
     if(version) {
       // parse xquery version
       final String ver = string(stringLiteral());
-      if(!ver.equals(XQ10) && !eq(ver, XQ11, XQ30, XQ31)) throw error(XQUERYVER_X, ver);
+      if(!ver.equals(XQ10) && !Strings.eq(ver, XQ11, XQ30, XQ31)) throw error(XQUERYVER_X, ver);
     }
     // parse xquery encoding (ignored, as input always comes in as string)
     if(wsConsumeWs(ENCODING)) {
       final String enc = string(stringLiteral());
-      if(!supported(enc)) throw error(XQUERYENC2_X, enc);
+      if(!Strings.supported(enc)) throw error(XQUERYENC2_X, enc);
     } else if(!version) {
       pos = i;
       return;
@@ -530,6 +533,8 @@ public class QueryParser extends InputParser {
       if(!decl.add("S " + name)) throw error(OUTDUPL_X, name);
       try {
         qc.serialOpts.assign(name, string(val));
+        if(name.equals(SerializerOptions.USE_CHARACTER_MAPS.name()) &&
+            !eq(val, token(SerializerOptions.WEBDAV))) throw error(OUTMAP_X, val);
       } catch(final BaseXException ex) {
         for(final Option<?> o : qc.serialOpts) if(o.name().equals(name)) throw error(SER_X, ex);
         throw error(OUTINVALID_X, ex);
@@ -764,7 +769,7 @@ public class QueryParser extends InputParser {
     final byte[] u = qc.modParsed.get(p);
     if(u != null) {
       if(!eq(uri, u)) throw error(WRONGMODULE_X_X, uri,
-          qc.context.user.has(Perm.ADMIN) ? io.path() : io.name());
+          qc.context.user().has(Perm.ADMIN) ? io.path() : io.name());
       return;
     }
     qc.modParsed.put(p, uri);
@@ -774,7 +779,7 @@ public class QueryParser extends InputParser {
     try {
       qu = string(io.read());
     } catch(final IOException ex) {
-      throw error(WHICHMODFILE_X, qc.context.user.has(Perm.ADMIN) ? io.path() : io.name());
+      throw error(WHICHMODFILE_X, qc.context.user().has(Perm.ADMIN) ? io.path() : io.name());
     }
 
     qc.modStack.push(p);
@@ -1777,17 +1782,12 @@ public class QueryParser extends InputParser {
         checkAxis(Axis.DESC);
         add(el, Step.get(info(), Axis.DESCORSELF, Test.NOD));
         mark();
-        ex = step();
-        if(ex == null) {
-          // two slashes, but no following step: error
-          if(more()) checkInit();
-          throw error(PATHMISS_X, found());
-        }
+        ex = step(true);
       } else {
         // one slash: absolute child path
         checkAxis(Axis.CHILD);
         mark();
-        ex = step();
+        ex = step(false);
         // no more steps: return root expression
         if(ex == null) return root;
       }
@@ -1796,7 +1796,7 @@ public class QueryParser extends InputParser {
     } else {
       // relative path (no preceding slash)
       mark();
-      final Expr ex = step();
+      final Expr ex = step(false);
       if(ex == null) return null;
       // return expression if no slash follows
       if(curr() != '/' && !(ex instanceof Step)) return ex;
@@ -1826,9 +1826,7 @@ public class QueryParser extends InputParser {
         return;
       }
       mark();
-      final Expr st = step();
-      if(st == null) throw error(PATHMISS_X, found());
-      add(el, st);
+      add(el, step(true));
     }
   }
 
@@ -1863,28 +1861,30 @@ public class QueryParser extends InputParser {
 
   /**
    * Parses the "StepExpr" rule.
+   * @param error show error if nothing is found
    * @return query expression (may be {@code null})
    * @throws QueryException query exception
    */
-  private Expr step() throws QueryException {
+  private Expr step(final boolean error) throws QueryException {
     final Expr e = postfix();
-    return e != null ? e : axisStep();
+    return e != null ? e : axisStep(error);
   }
 
   /**
    * Parses the "AxisStep" rule.
+   * @param error show error if nothing is found
    * @return step (may be {@code null})
    * @throws QueryException query exception
    */
-  private Step axisStep() throws QueryException {
-    Axis ax = null;
+  private Step axisStep(final boolean error) throws QueryException {
+    Axis axis = null;
     Test test = null;
     if(wsConsume(DOT2)) {
-      ax = Axis.PARENT;
+      axis = Axis.PARENT;
       test = Test.NOD;
       checkTest(test, false);
     } else if(consume('@')) {
-      ax = Axis.ATTR;
+      axis = Axis.ATTR;
       test = nodeTest(true, true);
       checkTest(test, true);
       if(test == null) {
@@ -1892,29 +1892,33 @@ public class QueryParser extends InputParser {
         throw error(NOATTNAME);
       }
     } else {
-      for(final Axis a : Axis.VALUES) {
+      for(final Axis ax : Axis.VALUES) {
         final int i = pos;
-        if(!wsConsumeWs(a.name)) continue;
-        alter = NOLOCSTEP;
+        if(!wsConsumeWs(ax.name)) continue;
         if(wsConsumeWs(COLS)) {
           alterPos = pos;
-          ax = a;
-          test = nodeTest(a == Axis.ATTR, true);
-          checkTest(test, a == Axis.ATTR);
+          axis = ax;
+          final boolean attr = ax == Axis.ATTR;
+          test = nodeTest(attr, true);
+          checkTest(test, attr);
+          if(test == null) throw error(AXISMISS_X, axis);
           break;
         }
         pos = i;
       }
-    }
 
-    if(ax == null) {
-      ax = Axis.CHILD;
-      test = nodeTest(false, true);
-      if(test == Test.NSP) throw error(NSNOTALL);
-      if(test != null && test.type == NodeType.ATT) ax = Axis.ATTR;
-      checkTest(test, ax == Axis.ATTR);
+      if(axis == null) {
+        axis = Axis.CHILD;
+        test = nodeTest(false, true);
+        if(test == Test.NSP) throw error(NSNOTALL);
+        if(test != null && test.type == NodeType.ATT) axis = Axis.ATTR;
+        checkTest(test, axis == Axis.ATTR);
+      }
+      if(test == null) {
+        if(error) throw error(STEPMISS_X, found());
+        return null;
+      }
     }
-    if(test == null) return null;
 
     final ExprList el = new ExprList();
     while(wsConsume(SQUARE1)) {
@@ -1923,7 +1927,7 @@ public class QueryParser extends InputParser {
       wsCheck(SQUARE2);
       checkPred(false);
     }
-    return Step.get(info(), ax, test, el.finish());
+    return Step.get(info(), axis, test, el.finish());
   }
 
   /**
@@ -2190,7 +2194,7 @@ public class QueryParser extends InputParser {
       final Expr ex = numericLiteral(true);
       if(!(ex instanceof Int)) return ex;
       final int card = (int) ((ANum) ex).itr();
-      final Expr lit = Functions.getLiteral(name, card, qc, sc, info());
+      final Expr lit = Functions.getLiteral(name, card, qc, sc, info(), false);
       return lit != null ? lit : FuncLit.unknown(name, card, qc, sc, info());
     }
 
@@ -2368,10 +2372,10 @@ public class QueryParser extends InputParser {
     final Expr ret;
     if(holes != null) {
       final int card = args.length + holes.length;
-      final Expr lit = Functions.getLiteral(name, card, qc, sc, ii);
+      final Expr lit = Functions.getLiteral(name, card, qc, sc, ii, false);
       final Expr f = lit != null ? lit : FuncLit.unknown(name, card, qc, sc, ii);
       ret = new PartFunc(sc, ii, f, args, holes);
-      if(lit != null && (lit instanceof FuncItem ? ((FuncItem) f).annotations() :
+      if(lit != null && (lit instanceof XQFunctionExpr ? ((XQFunctionExpr) f).annotations() :
         ((FuncLit) lit).annotations()).contains(Ann.Q_UPDATING)) qc.updating();
     } else {
       final TypedFunc f = Functions.get(name, args, qc, sc, ii);

@@ -43,8 +43,9 @@ public final class BXCollection implements Collection, BXXMLDBText {
     db = (BXDatabase) database;
     ctx = db.ctx;
     try {
-      ctx.openDB(open ? Open.open(name, ctx) :
-        CreateDB.create(name, Parser.emptyParser(ctx.options), ctx));
+      final MainOptions opts = ctx.options;
+      ctx.openDB(open ? Open.open(name, ctx, opts) :
+        CreateDB.create(name, Parser.emptyParser(opts), ctx, opts));
     } catch(final IOException ex) {
       throw new XMLDBException(ErrorCodes.VENDOR_ERROR, ex.getMessage());
     }
@@ -68,7 +69,7 @@ public final class BXCollection implements Collection, BXXMLDBText {
   public Service getService(final String name, final String version) throws XMLDBException {
     check();
     if("1.0".equals(version)) {
-      if(Token.eq(name, BXQueryService.XPATH, BXQueryService.XQUERY))
+      if(Strings.eq(name, BXQueryService.XPATH, BXQueryService.XQUERY))
         return new BXQueryService(this, name, version);
       if(name.equals(BXCollectionManagementService.MANAGEMENT))
         return new BXCollectionManagementService(this);
@@ -145,10 +146,10 @@ public final class BXCollection implements Collection, BXXMLDBText {
         ErrorCodes.NO_SUCH_RESOURCE, ERR_UNKNOWN + data.meta.name);
 
     try {
-      data.startUpdate();
+      data.startUpdate(ctx.options);
       data.delete(getResource(del.getId()).pre);
       ctx.invalidate();
-      data.finishUpdate();
+      data.finishUpdate(ctx.options);
     } catch(final IOException ex) {
       Util.debug(ex);
       throw new XMLDBException(ErrorCodes.VENDOR_ERROR, ERR_LOCK);
@@ -188,10 +189,10 @@ public final class BXCollection implements Collection, BXXMLDBText {
 
     final Data data = ctx.data();
     try {
-      data.startUpdate();
+      data.startUpdate(ctx.options);
       data.insert(data.meta.size, -1, new DataClip(md));
       ctx.invalidate();
-      data.finishUpdate();
+      data.finishUpdate(ctx.options);
     } catch(final IOException ex) {
       Util.debug(ex);
       throw new XMLDBException(ErrorCodes.VENDOR_ERROR, ERR_LOCK);

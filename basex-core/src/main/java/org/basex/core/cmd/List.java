@@ -6,6 +6,8 @@ import static org.basex.util.Token.*;
 import java.io.*;
 
 import org.basex.core.*;
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.index.resource.*;
 import org.basex.io.*;
@@ -64,7 +66,7 @@ public final class List extends Command {
     final Table table = new Table();
     table.description = DATABASES_X;
 
-    final boolean create = context.user.has(Perm.CREATE);
+    final boolean create = context.user().has(Perm.CREATE);
     table.header.add(NAME);
     table.header.add(RESOURCES);
     table.header.add(SIZE);
@@ -74,18 +76,18 @@ public final class List extends Command {
       String file = null;
       long size = 0;
       int docs = 0;
-      final MetaData meta = new MetaData(name, context);
+      final MetaData meta = new MetaData(name, options, soptions);
       try {
         meta.read();
         size = meta.dbsize();
         docs = meta.ndocs.intValue();
-        if(context.perm(Perm.READ, meta)) file = meta.original;
+        if(context.perm(Perm.READ, name)) file = meta.original;
       } catch(final IOException ex) {
         file = ERROR;
       }
 
       // count number of raw files
-      final IOFile dir = new IOFile(goptions.dbpath(name), IO.RAW);
+      final IOFile dir = new IOFile(soptions.dbpath(name), IO.RAW);
       final int bin = dir.descendants().size();
 
       // create entry
@@ -121,7 +123,7 @@ public final class List extends Command {
 
     try {
       // add xml documents
-      final Data data = Open.open(db, context);
+      final Data data = Open.open(db, context, options);
       final Resources res = data.resources;
       final IntList il = res.docs(path);
       final int ds = il.size();
@@ -155,12 +157,12 @@ public final class List extends Command {
 
   /**
    * Returns a list of all databases.
-   * @param ctx database context
+   * @param sopts static options
    * @return list of databases
    */
-  public static StringList list(final Context ctx) {
+  public static StringList list(final StaticOptions sopts) {
     final StringList db = new StringList();
-    for(final IOFile f : ctx.globalopts.dbpath().children()) {
+    for(final IOFile f : sopts.dbpath().children()) {
       final String name = f.name();
       if(f.isDir() && !name.startsWith(".")) db.add(name);
     }

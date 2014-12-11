@@ -5,6 +5,8 @@ import static org.basex.core.Text.*;
 import java.io.*;
 
 import org.basex.core.*;
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.io.*;
 import org.basex.io.serial.*;
 import org.basex.query.func.unit.*;
@@ -29,7 +31,7 @@ public final class Test extends Command {
   protected boolean run() {
     final IOFile root = new IOFile(args[0]);
     if(!root.exists()) return error(RES_NOT_FOUND_X,
-        context.user.has(Perm.CREATE) ? root : args[0]);
+        context.user().has(Perm.CREATE) ? root : args[0]);
 
     try {
       final XMLSerializer ser = Serializer.get(out);

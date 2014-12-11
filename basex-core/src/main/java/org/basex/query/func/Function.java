@@ -40,6 +40,7 @@ import org.basex.query.func.repo.*;
 import org.basex.query.func.sql.*;
 import org.basex.query.func.stream.*;
 import org.basex.query.func.unit.*;
+import org.basex.query.func.user.*;
 import org.basex.query.func.validate.*;
 import org.basex.query.func.xquery.*;
 import org.basex.query.func.xslt.*;
@@ -51,7 +52,7 @@ import org.basex.util.*;
 
 /**
  * Definitions of all built-in XQuery functions.
- * New namespace mappings for function prefixes and URIs must be added to the static intializer of
+ * New namespace mappings for function prefixes and URIs must be added to the static initializer of
  * the {@code NSGlobal} class.
  *
  * @author BaseX Team 2005-14, BSD License
@@ -534,11 +535,11 @@ public enum Function {
   /* Admin Module. */
 
   /** XQuery function. */
-  _ADMIN_USERS(AdminUsers.class, "users([database])", arg(STR), ELM_ZM, flag(NDT), ADMIN_URI),
-  /** XQuery function. */
   _ADMIN_SESSIONS(AdminSessions.class, "sessions()", arg(), ELM_ZM, flag(NDT), ADMIN_URI),
   /** XQuery function. */
   _ADMIN_LOGS(AdminLogs.class, "logs([date[,merge]])", arg(STR, BLN), ELM_ZM, flag(NDT), ADMIN_URI),
+  /** XQuery function. */
+  _ADMIN_WRITE_LOG(AdminWriteLog.class, "write-log(string)", arg(STR), EMP, flag(NDT), ADMIN_URI),
 
   /* Archive Module. */
 
@@ -786,7 +787,7 @@ public enum Function {
   _DB_OPTIMIZE(DbOptimize.class, "optimize(database[,all[,options]])",
       arg(STR, BLN, ITEM), EMP, flag(UPD, NDT), DB_URI),
   /** XQuery function. */
-  _DB_RETRIEVE(DbRetrieve.class, "retrieve(database,path)", arg(STR, STR), B64, DB_URI),
+  _DB_RETRIEVE(DbRetrieve.class, "retrieve(database,path)", arg(STR, STR), B64, flag(NDT), DB_URI),
   /** XQuery function. */
   _DB_STORE(DbStore.class, "store(database,path,input)", arg(STR, STR, ITEM), EMP, flag(UPD, NDT),
       DB_URI),
@@ -795,7 +796,7 @@ public enum Function {
   /** XQuery function. */
   _DB_IS_RAW(DbIsRaw.class, "is-raw(database,path)", arg(STR, STR), BLN, DB_URI),
   /** XQuery function. */
-  _DB_EXISTS(DbExists.class, "exists(database[,path])", arg(STR, STR), BLN, DB_URI),
+  _DB_EXISTS(DbExists.class, "exists(database[,path])", arg(STR, STR), BLN, flag(NDT), DB_URI),
   /** XQuery function. */
   _DB_CONTENT_TYPE(DbContentType.class, "content-type(database,path)", arg(STR, STR), STR, DB_URI),
   /** XQuery function. */
@@ -1129,6 +1130,28 @@ public enum Function {
   /** XQuery function. */
   _UNIT_FAIL(UnitFail.class, "fail([failure])", arg(ITEM), ITEM_ZM, flag(NDT), UNIT_URI),
 
+  /* User Module. */
+
+  /** XQuery function. */
+  _USER_EXISTS(UserExists.class, "exists(name)", arg(STR), BLN, flag(NDT), USER_URI),
+  /** XQuery function. */
+  _USER_LIST(UserList.class, "list()", arg(), ELM_ZM, flag(NDT), USER_URI),
+  /** XQuery function. */
+  _USER_LIST_DETAILS(UserListDetails.class, "list-details()", arg(), ELM_ZM, flag(NDT), USER_URI),
+  /** XQuery function. */
+  _USER_CREATE(UserCreate.class, "create(name,password[,permission])",
+      arg(STR, STR, STR), EMP, flag(UPD), USER_URI),
+  /** XQuery function. */
+  _USER_GRANT(UserGrant.class, "grant(name,permission[,pattern])",
+      arg(STR, STR, STR), EMP, flag(UPD), USER_URI),
+  /** XQuery function. */
+  _USER_DROP(UserDrop.class, "drop(name[,pattern])", arg(STR, STR), EMP, flag(UPD), USER_URI),
+  /** XQuery function. */
+  _USER_ALTER(UserAlter.class, "alter(name,newname)", arg(STR, STR), EMP, flag(UPD), USER_URI),
+  /** XQuery function. */
+  _USER_PASSWORD(UserPassword.class, "password(name,password)",
+      arg(STR, STR), EMP, flag(UPD), USER_URI),
+
   /* Validate Module. */
 
   /** XQuery function. */
@@ -1343,7 +1366,7 @@ public enum Function {
    * @param ann annotations
    * @return function type
    */
-  final FuncType type(final int arity, final Ann ann) {
+  public final FuncType type(final int arity, final Ann ann) {
     final SeqType[] arg = new SeqType[arity];
     if(arity != 0 && max == Integer.MAX_VALUE) {
       System.arraycopy(args, 0, arg, 0, args.length);
@@ -1380,7 +1403,7 @@ public enum Function {
   final String[] names() {
     final String names = desc.replaceFirst(".*?\\(", "").replace(",...",
         "").replaceAll("[\\[\\]\\)\\s]", "");
-    return names.isEmpty() ? new String[0] : names.split(",");
+    return names.isEmpty() ? new String[0] : Strings.split(names, ',');
   }
 
   /**

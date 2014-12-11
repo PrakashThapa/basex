@@ -2,6 +2,7 @@ package org.basex.core;
 
 import static org.basex.core.Lang.*;
 
+import org.basex.core.parse.Commands.CmdAlter;
 import org.basex.core.parse.Commands.CmdCreate;
 import org.basex.core.parse.Commands.CmdDrop;
 import org.basex.core.parse.Commands.CmdIndex;
@@ -55,7 +56,7 @@ public interface Text {
   /** Start information. */
   String  S_LOCALINFO =
     " [-bcdiLoqrRsuvVwxXz] [input]" + NL +
-    "  [input]     Execute input file or expression" + NL +
+    "  [input]     XQuery or command file, or query string" + NL +
     "  -b<pars>    Bind external query variables" + NL +
     "  -c<input>   Execute commands from file or string" + NL +
     "  -d          Activate debugging mode" + NL +
@@ -79,7 +80,7 @@ public interface Text {
   /** Client start information. */
   String S_CLIENTINFO =
     " [-bcdiLnopPqrRsUvVwxz] [input]" + NL +
-    "  [input]     Execute input file or expression" + NL +
+    "  [input]     XQuery or command file, or query string" + NL +
     "  -b<pars>    Bind external query variables" + NL +
     "  -c<input>   Execute commands from file or string" + NL +
     "  -d          Activate debugging mode" + NL +
@@ -144,10 +145,6 @@ public interface Text {
 
   /** Localhost. */
   String S_LOCALHOST = "localhost";
-  /** User name. */
-  String[] S_USERINFO = { "Username", "Read", "Write", "Create", "Admin" };
-  /** Default admin user and password. */
-  String S_ADMIN = "admin";
 
   /** Command keyword. */
   String S_ALL = "ALL";
@@ -353,7 +350,7 @@ public interface Text {
     LI + CmdDrop.INDEX + " [" + CmdIndex.TEXT + '|' +
       CmdIndex.ATTRIBUTE + '|' + CmdIndex.FULLTEXT + "]:" + NL +
       "  " + lang("c_drop22") + NL +
-    LI + CmdDrop.USER + " [" + S_NAME + "] (" + ON + " [database]): " + NL +
+    LI + CmdDrop.USER + " [" + S_NAME + "] (" + ON + " [pattern]): " + NL +
       "  " + lang("c_drop23")
   };
   /** Command help. */
@@ -420,20 +417,22 @@ public interface Text {
   /** Command help. */
   String[] HELPGRANT = {
     "[" + CmdPerm.NONE + '|' + CmdPerm.READ + '|' + CmdPerm.WRITE + '|' +
-    CmdPerm.CREATE + '|' + CmdPerm.ADMIN + "] (" + ON + " [database]) " + S_TO +
+    CmdPerm.CREATE + '|' + CmdPerm.ADMIN + "] (" + ON + " [pattern]) " + S_TO +
     " [user]",
     lang("c_grant1"),
     lang("c_grant2")
   };
   /** Command help. */
   String[] HELPALTER = {
-    "[" + CmdCreate.DATABASE + '|' + CmdCreate.USER + "] [...]",
+    "[" + CmdAlter.DATABASE + '|' + CmdAlter.PASSWORD + '|' + CmdAlter.USER + "] [...]",
     lang("c_alter1"),
     lang("c_alter2") + NL  +
-    LI + CmdCreate.DATABASE + " [" + S_NAME + "] [newname]" + NL +
+    LI + CmdAlter.DATABASE + " [" + S_NAME + "] [newname]" + NL +
     "  " + lang("c_alterdb") + NL +
-    LI + CmdCreate.USER  + " [" + S_NAME + "] ([" + S_PW + "]):" + NL +
-    "  " + lang("c_alterpw")
+    LI + CmdAlter.PASSWORD + " [" + S_NAME + "] [" + S_PW + "]" + NL +
+    "  " + lang("c_alterpw") + NL +
+    LI + CmdAlter.USER  + " [" + S_NAME + "] ([newname]):" + NL +
+    "  " + lang("c_alteruser")
   };
   /** Command help. */
   String[] HELPINSPECT = {
@@ -561,8 +560,6 @@ public interface Text {
   String NO_TOKENIZER_X = lang("no_tokenizer_%");
   /** No stemmer found. */
   String NO_STEMMER_X = lang("no_stemmer_%");
-  /** Points to a directory. */
-  String NO_DIR_ALLOWED_X = lang("no_dir_allowed_%");
 
   // DATABASE COMMANDS ========================================================
 
@@ -713,12 +710,12 @@ public interface Text {
   String USER_CREATED_X = lang("user_created_%");
   /** Password changed. */
   String PW_CHANGED_X = lang("pw_changed_%");
+  /** User altered. */
+  String USER_RENAMED_X_X = lang("user_renamed_%_%");
   /** User unknown. */
   String USER_EXISTS_X = lang("user_exists_%");
-  /** Password is no valid MD5 hash. */
-  String PW_NOT_VALID = lang("pw_not_valid");
   /** Admin user. */
-  String ADMIN_STATIC_X = lang("admin_static_%");
+  String ADMIN_STATIC = lang("admin_static");
   /** Killed sessions. */
   String SESSIONS_KILLED_X = lang("sessions_killed_%");
   /** User kills itself. */
@@ -1024,13 +1021,7 @@ public interface Text {
   /** Button text for creating things. */
   String CREATE = lang("create");
   /** Button for starting the server. */
-  String START = lang("start");
-  /** Button for starting the server. */
   String STOP = lang("stop");
-  /** Button for connecting. */
-  String CONNECT = lang("connect");
-  /** Button for disconnecting. */
-  String DISCONNECT = lang("disconnect");
   /** Button for deleting all. */
   String DELETE_ALL = lang("delete_all");
   /** Button for adding. */
@@ -1139,6 +1130,8 @@ public interface Text {
   String UNESCAPE_CHARS = lang("unescape_chars");
   /** Liberal parsing. */
   String LIBERAL_PARSING = lang("liberal_parsing");
+  /** Backslash. */
+  String BACKSLASHES = lang("backslashes");
 
   /** General info. */
   String GENERAL = lang("general");
@@ -1157,8 +1150,6 @@ public interface Text {
   /** Dialog asking if a new database should be be created. */
   String NEW_DB_QUESTION = lang("no_db_found") + NL + lang("new_db_question");
 
-  /** Users. */
-  String USERS = lang("users");
   /** Users. */
   String USERS_X = lang("users_%");
   /** Confirmation . */
@@ -1376,47 +1367,6 @@ public interface Text {
   String H_HTML_PARSER = lang("h_html_parser");
   /** No HTML Parser. */
   String H_NO_HTML_PARSER = lang("h_no_html_parser");
-
-  // SERVER TEXTS =============================================================
-
-  /** Server. */
-  String S_LOCALSERVER = lang("s_localserver");
-  /** Users. */
-  String S_CONNECT = lang("s_connect");
-  /** Host. */
-  String S_HOST = lang("s_host");
-  /** PORT. */
-  String S_PORT = lang("s_port");
-  /** Local. */
-  String S_LOCALPORT = lang("s_localport");
-  /** Create user. */
-  String S_CREATEU = lang("s_createu");
-  /** Global permissions. */
-  String S_GLOBPERM = lang("s_globperm") + COLS;
-  /** Local permissions. */
-  String S_LOCPERM = lang("s_locperm") + COLS;
-  /** Question for dropping user. */
-  String S_DRQUESTION = lang("s_drquestion") + NL + ARE_YOU_SURE;
-  /** Question for revoking right from logged in user. */
-  String S_DBREVOKE = lang("s_dbrevoke") + NL + ARE_YOU_SURE;
-  /** Login. */
-  String S_ADLOGIN = lang("s_adlogin");
-  /** Connected. */
-  String S_CONNECTED = lang("s_connected");
-  /** Disconnected. */
-  String S_DISCONNECTED = lang("s_disconnected");
-  /** Server information. */
-  String S_INFO1 = lang("s_info1");
-  /** Server information. */
-  String S_INFO2 = lang("s_info2");
-  /** Sessions. */
-  String S_SESSIONS = lang("s_sessions");
-  /** Logs. */
-  String S_LOCALLOGS = lang("s_locallogs");
-  /** Button text for altering password. */
-  String S_ALTER = lang("s_alter") + DOTS;
-  /** Command info. */
-  String S_SERVER_ADMIN = lang("s_server_admin");
 
   /** Dummy string to check if all language strings have been assigned. */
   String DUMMY = lang(null);

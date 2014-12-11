@@ -10,6 +10,7 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 
 import org.basex.core.*;
+import org.basex.core.StaticOptions.*;
 import org.basex.http.restxq.*;
 import org.basex.query.*;
 import org.basex.server.*;
@@ -26,6 +27,8 @@ public abstract class BaseXServlet extends HttpServlet {
   String user;
   /** Servlet-specific password. */
   String pass;
+  /** Servlet-specific authentication method. */
+  AuthMethod auth;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -37,10 +40,12 @@ public abstract class BaseXServlet extends HttpServlet {
         String key = en.nextElement().toLowerCase(Locale.ENGLISH);
         final String val = config.getInitParameter(key);
         if(key.startsWith(Prop.DBPREFIX)) key = key.substring(Prop.DBPREFIX.length());
-        if(key.equalsIgnoreCase(GlobalOptions.USER.name())) {
+        if(key.equalsIgnoreCase(StaticOptions.USER.name())) {
           user = val;
-        } else if(key.equalsIgnoreCase(GlobalOptions.PASSWORD.name())) {
+        } else if(key.equalsIgnoreCase(StaticOptions.PASSWORD.name())) {
           pass = val;
+        } else if(key.equalsIgnoreCase(StaticOptions.AUTHMETHOD.name())) {
+          auth = AuthMethod.valueOf(val);
         }
       }
     } catch(final IOException ex) {
@@ -55,8 +60,9 @@ public abstract class BaseXServlet extends HttpServlet {
     final HTTPContext http = new HTTPContext(req, res, this);
     final boolean restxq = this instanceof RestXqServlet;
     try {
+      http.authorize();
       run(http);
-      http.log("", SC_OK);
+      http.log(SC_OK, "");
     } catch(final HTTPException ex) {
       http.status(ex.getStatus(), Util.message(ex), restxq);
     } catch(final LoginException ex) {

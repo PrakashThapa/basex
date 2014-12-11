@@ -8,6 +8,7 @@ import java.util.*;
 import org.basex.build.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.query.iter.*;
@@ -131,7 +132,8 @@ public final class QueryResources {
     }
     try {
       // open and add new data reference
-      return addData(Open.open(name, qc.context));
+      final Context ctx = qc.context;
+      return addData(Open.open(name, ctx, ctx.options));
     } catch(final IOException ex) {
       throw BXDB_OPEN_X.get(info, ex);
     }
@@ -213,7 +215,7 @@ public final class QueryResources {
       final int cs = colls.size();
       for(int c = 0; c < cs; c++) {
         final String name = collNames.get(c);
-        if(Prop.CASE ? Token.eq(name, names) : Token.eqic(name, names)) return colls.get(c);
+        if(Prop.CASE ? Strings.eq(name, names) : Strings.eqic(name, names)) return colls.get(c);
       }
     }
 
@@ -352,7 +354,8 @@ public final class QueryResources {
     if(input.db != null) {
       try {
         // try to open database
-        return addData(Open.open(input.db, qc.context));
+        final Context ctx = qc.context;
+        return addData(Open.open(input.db, ctx, ctx.options));
       } catch(final IOException ex) { Util.debug(ex); }
     }
     return null;
@@ -374,7 +377,7 @@ public final class QueryResources {
     final Context context = qc.context;
 
     // do not check input if no read permissions are given
-    if(!qc.context.user.has(Perm.READ))
+    if(!context.user().has(Perm.READ))
       throw BXXQ_PERM_X.get(info, Util.info(Text.PERM_REQUIRED_X, Perm.READ));
 
     // check if input is an existing file
@@ -382,10 +385,11 @@ public final class QueryResources {
     if(single && source.isDir()) WHICHRES_X.get(info, baseIO);
 
     // overwrite parsing options with default values
-    final MainOptions mo = new MainOptions(context.options);
     try {
-      final boolean fc = mo.get(MainOptions.FORCECREATE);
-      return addData(CreateDB.create(source.dbname(), new DirParser(source, mo), context, !fc));
+      final boolean mem = !context.options.get(MainOptions.FORCECREATE);
+      final MainOptions opts = new MainOptions(context.options);
+      return addData(CreateDB.create(source.dbname(),
+          new DirParser(source, opts), context, opts, mem));
     } catch(final IOException ex) {
       throw IOERR_X.get(info, ex);
     } finally {

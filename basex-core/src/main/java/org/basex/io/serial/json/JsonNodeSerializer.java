@@ -83,6 +83,7 @@ public final class JsonNodeSerializer extends JsonSerializer {
     } else {
       ser.serialize(node);
       ser.close();
+      ser.reset();
       string(cache.toArray());
       cache.reset();
     }
@@ -172,7 +173,7 @@ public final class JsonNodeSerializer extends JsonSerializer {
     final byte[] type = types.get(lvl - 1);
     if(eq(type, STRING)) {
       print('"');
-      for(final byte ch : value) encode(ch);
+      for(final byte ch : norm(value)) encode(ch);
       print('"');
     } else if(eq(type, BOOLEAN)) {
       if(!eq(value, TRUE, FALSE))

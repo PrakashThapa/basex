@@ -10,6 +10,7 @@ import java.nio.file.*;
 import java.util.*;
 
 import org.basex.core.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.io.out.*;
@@ -235,7 +236,7 @@ public abstract class StandardFunc extends Arr {
     if(i >= exprs.length) return null;
     final String enc = string(toToken(exprs[i], qc));
     try {
-      if(Charset.isSupported(enc)) return normEncoding(enc);
+      if(Charset.isSupported(enc)) return Strings.normEncoding(enc);
     } catch(final IllegalArgumentException ignored) {
       /* character set is invalid or unknown (e.g. empty string) */
     }
@@ -328,7 +329,7 @@ public abstract class StandardFunc extends Arr {
    * @throws QueryException query exception
    */
   private void checkPerm(final QueryContext qc, final Perm p) throws QueryException {
-    if(!qc.context.user.has(p)) throw BASX_PERM_X.get(info, p);
+    if(!qc.context.user().has(p)) throw BASX_PERM_X.get(info, p);
   }
 
   /**

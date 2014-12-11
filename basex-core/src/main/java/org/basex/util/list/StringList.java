@@ -104,7 +104,7 @@ public class StringList extends ElementList implements Iterable<String> {
    * @return result of check
    */
   public final boolean contains(final String element) {
-    for(int i = 0; i < size; ++i) if(list[i].equals(element)) return true;
+    for(int i = 0; i < size; i++) if(Strings.eq(list[i], element)) return true;
     return false;
   }
 
@@ -131,7 +131,7 @@ public class StringList extends ElementList implements Iterable<String> {
    * @param index index of the element to delete
    * @return deleted element
    */
-  public final String deleteAt(final int index) {
+  public final String remove(final int index) {
     final String l = list[index];
     Array.move(list, index + 1, -1, --size - index);
     return l;

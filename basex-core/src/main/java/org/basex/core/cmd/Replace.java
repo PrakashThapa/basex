@@ -4,7 +4,7 @@ import static org.basex.core.Text.*;
 
 import java.io.*;
 
-import org.basex.core.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.data.atomic.*;
 import org.basex.io.*;
@@ -93,7 +93,7 @@ public final class Replace extends ACreate {
 
       return info(RES_REPLACED_X_X, ds + bs, perf);
     } finally {
-      finishUpdate();
+      if(!finishUpdate()) return false;
     }
   }
 }

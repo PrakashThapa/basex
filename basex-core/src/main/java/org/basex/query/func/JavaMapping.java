@@ -8,11 +8,13 @@ import java.lang.reflect.*;
 import java.lang.reflect.Array;
 import java.math.*;
 import java.net.*;
+import java.util.*;
 
 import javax.xml.datatype.*;
 import javax.xml.namespace.*;
 
-import org.basex.core.*;
+import org.basex.core.locks.*;
+import org.basex.core.users.*;
 import org.basex.query.*;
 import org.basex.query.expr.*;
 import org.basex.query.iter.*;
@@ -24,7 +26,6 @@ import org.basex.query.value.type.*;
 import org.basex.query.value.type.Type;
 import org.basex.util.*;
 import org.w3c.dom.*;
-import org.w3c.dom.Text;
 
 /**
  * This class contains common methods for executing Java code and mapping
@@ -184,8 +185,8 @@ public abstract class JavaMapping extends Arr {
     // check if user has sufficient permissions to call the function
     Perm perm = Perm.ADMIN;
     final QueryModule.Requires req = meth.getAnnotation(QueryModule.Requires.class);
-    if(req != null) perm = Perm.get(req.value().name());
-    if(!qc.context.user.has(perm)) return null;
+    if(req != null) perm = Perm.get(req.value().name().toLowerCase(Locale.ENGLISH));
+    if(!qc.context.user().has(perm)) return null;
 
     // Add module locks to QueryContext.
     final QueryModule.Lock lock = meth.getAnnotation(QueryModule.Lock.class);
@@ -225,10 +226,10 @@ public abstract class JavaMapping extends Arr {
     final boolean java = startsWith(uri, JAVAPREF);
 
     // rewrite function name: convert dashes to upper-case initials
-    final String local = camelCase(string(name.local()));
+    final String local = Strings.camelCase(string(name.local()));
 
     // check imported Java modules
-    final String path = camelCase(toPath(java ? substring(uri, JAVAPREF.length) : uri));
+    final String path = Strings.camelCase(toPath(java ? substring(uri, JAVAPREF.length) : uri));
 
     final ModuleLoader modules = qc.resources.modules();
     final Object jm  = modules.findImport(path);
@@ -238,7 +239,7 @@ public abstract class JavaMapping extends Arr {
     }
 
     // only allowed with administrator permissions
-    if(!qc.context.user.has(Perm.ADMIN)) return null;
+    if(!qc.context.user().has(Perm.ADMIN)) return null;
 
     // check addressed class
     try {

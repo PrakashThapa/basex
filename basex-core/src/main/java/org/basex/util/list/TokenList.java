@@ -127,7 +127,7 @@ public final class TokenList extends ElementList implements Iterable<byte[]> {
    * @param index index of the element to delete
    * @return deleted element
    */
-  public byte[] deleteAt(final int index) {
+  public byte[] remove(final int index) {
     final byte[] l = list[index];
     Array.move(list, index + 1, -1, --size - index);
     return l;
@@ -276,19 +276,8 @@ public final class TokenList extends ElementList implements Iterable<byte[]> {
     final TokenBuilder tb = new TokenBuilder(Util.className(this) + '[');
     for(int i = 0; i < size; ++i) {
       if(i != 0) tb.add(", ");
-      tb.add(list[i]);
+      tb.addExt(list[i]);
     }
     return tb.add(']').toString();
-  }
-
-  /**
-   * Creates a copy of this list.
-   * @return copy of this list
-   */
-  public TokenList copy() {
-    final TokenList tl = new TokenList(list.length);
-    tl.factor = factor;
-    for(int i = 0; i < size; i++) tl.add(list[i].clone());
-    return tl;
   }
 }

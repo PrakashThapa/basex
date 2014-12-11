@@ -2,15 +2,11 @@ package org.basex.core.cmd;
 
 import static org.basex.core.Text.*;
 
-import java.io.*;
-
-import org.basex.core.*;
 import org.basex.core.parse.*;
 import org.basex.core.parse.Commands.Cmd;
 import org.basex.core.parse.Commands.CmdDrop;
-import org.basex.data.*;
+import org.basex.core.users.*;
 import org.basex.server.*;
-import org.basex.util.*;
 
 /**
  * Evaluates the 'drop user' command and drops a user.
@@ -42,44 +38,23 @@ public final class DropUser extends AUser {
   }
 
   @Override
-  protected boolean run(final String user, final String db) {
+  protected boolean run(final String name, final String pattern) {
     // admin cannot be dropped
-    if(user.equals(S_ADMIN)) return !info(ADMIN_STATIC_X);
+    if(name.equals(UserText.ADMIN)) return !info(ADMIN_STATIC);
 
     // drop global user
-    if(db == null) {
-      for(final ClientListener s : context.sessions) {
-        if(s.context().user.name.equals(user)) return !info(USER_LOGGED_IN_X, user);
+    final Users users = context.users;
+    final User user = users.get(name);
+    if(user != null) {
+      if(pattern == null) {
+        for(final ClientListener s : context.sessions) {
+          if(s.context().user().name().equals(name)) return !info(USER_LOGGED_IN_X, name);
+        }
       }
-      context.users.drop(context.users.get(user));
-      return info(USER_DROPPED_X, user);
+      users.drop(users.get(name), pattern);
+      return info(pattern == null ? USER_DROPPED_X : USER_DROPPED_X_X, name, pattern);
     }
-
-    final Data data;
-    try {
-      data = Open.open(db, context);
-    } catch(final IOException ex) {
-      return !info(Util.message(ex), db);
-    }
-
-    // try to lock database
-    if(!startUpdate(data)) return false;
-
-    // drop local user
-    if(data.meta.users.drop(data.meta.users.get(user))) {
-      info(USER_DROPPED_X_X, user, db);
-      data.meta.dirty = true;
-    }
-    finishUpdate(data);
-
-    Close.close(data, context);
     return true;
-  }
-
-  @Override
-  public void databases(final LockResult lr) {
-    super.databases(lr);
-    databases(lr.write, 1);
   }
 
   @Override

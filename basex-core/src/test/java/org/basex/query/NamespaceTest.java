@@ -9,7 +9,7 @@ import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.io.*;
 import org.basex.io.serial.*;
-import org.basex.query.up.primitives.*;
+import org.basex.query.up.primitives.node.*;
 import org.basex.query.util.*;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
@@ -48,6 +48,7 @@ public final class NamespaceTest extends AdvancedQueryTest {
     { "d18", "<n xmlns:ns='ns'><a/></n>"},
     { "d19", "<x:n xmlns:x='X'/>"},
     { "d20", "<x:a xmlns:x='A'><x:b xmlns:x='B'/><x:c/></x:a>"},
+    { "d21", "<n><a xmlns:p1='u1'><b xmlns:p2='u2'/></a><c/></n>"}
   };
 
   /**
@@ -165,6 +166,19 @@ public final class NamespaceTest extends AdvancedQueryTest {
     query("delete node doc('d11')/*:a/*:b",
         "doc('d11')/*:a",
         "<a xmlns='A'><c xmlns:ns1='AA'><d/></c></a>");
+  }
+
+  /**
+   * Tests if a namespace node is deleted.
+   * @throws Exception exception
+   */
+  @Test
+  public void delete2() throws Exception {
+    create(21);
+    query("delete node //b");
+    assertEquals(NL +
+        "  Pre[2] xmlns:p1=\"u1\" ",
+        context.data().nspaces.toString());
   }
 
   /** Test query. */
@@ -466,9 +480,9 @@ public final class NamespaceTest extends AdvancedQueryTest {
   @Test
   public void deleteDocumentNode() throws Exception {
     create(2);
-    context.data().startUpdate();
+    context.data().startUpdate(context.options);
     context.data().delete(0);
-    context.data().finishUpdate();
+    context.data().finishUpdate(context.options);
     final byte[] ns = context.data().nspaces.globalNS();
     assertTrue(ns != null && ns.length == 0);
   }

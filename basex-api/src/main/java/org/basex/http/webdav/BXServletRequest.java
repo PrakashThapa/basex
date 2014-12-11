@@ -179,18 +179,15 @@ final class BXServletRequest extends AbstractRequest {
    */
   private static void parseQueryString(final Map<String, String> map, final String qs) {
     if(qs == null) return;
-    for(final String nv : qs.split("&")) {
-      final String[] parts = nv.split("=");
+    for(final String nv : Strings.split(qs, '&')) {
+      final String[] parts = Strings.split(nv, '=', 2);
       final String key = parts[0];
       String val = null;
       if(parts.length > 1) {
-        val = parts[1];
-        if(val != null) {
-          try {
-            val = URLDecoder.decode(val, Token.UTF8);
-          } catch(final UnsupportedEncodingException ex) {
-            throw new RuntimeException(ex);
-          }
+        try {
+          val = URLDecoder.decode(parts[1], Strings.UTF8);
+        } catch(final UnsupportedEncodingException ex) {
+          throw new RuntimeException(ex);
         }
       }
       map.put(key, val);

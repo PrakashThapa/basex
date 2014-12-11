@@ -4,8 +4,8 @@ import static org.basex.core.Text.*;
 
 import java.io.*;
 
-import org.basex.core.*;
 import org.basex.core.parse.*;
+import org.basex.core.users.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.io.in.*;
@@ -43,7 +43,7 @@ public final class Store extends ACreate {
 
   @Override
   protected boolean run() {
-    final boolean create = context.user.has(Perm.CREATE);
+    final boolean create = context.user().has(Perm.CREATE);
     String path = MetaData.normPath(args[0]);
     if(path == null || path.endsWith(".")) return error(PATH_INVALID_X, args[0]);
 
@@ -72,7 +72,7 @@ public final class Store extends ACreate {
       Util.debug(ex);
       return error(FILE_NOT_SAVED_X, file);
     } finally {
-      if(lock) finishUpdate();
+      if(lock && !finishUpdate()) return false;
     }
   }
 
