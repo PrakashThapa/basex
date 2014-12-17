@@ -2,6 +2,7 @@ package org.basex.query.func.fn;
 
 import static org.basex.query.QueryError.*;
 import static org.basex.query.func.Function.*;
+import static org.junit.Assert.*;
 
 import org.basex.query.*;
 import org.junit.*;
@@ -123,5 +124,33 @@ public final class FnTest extends AdvancedQueryTest {
   public void jsonDoc() {
     query(JSON_DOC.args("src/test/resources/example.json") + "('address')('state')", "NY");
     query(JSON_DOC.args("src/test/resources/example.json") + "?address?state", "NY");
+  }
+
+  /** Test for namespace functions and in-scope namespaces. */
+  @Test
+  public void ns() {
+    query("sort(<e xmlns:p='u'>{"
+        + "  in-scope-prefixes(<e/>),"
+        + "  namespace-uri-for-prefix('p', <e/>), "
+        + "  resolve-QName('p:p', <p/>)"
+        + "}</e>/text()/tokenize(.))",
+        "p p:p u xml");
+  }
+
+  /** Tests for the {@code random-number-generator} function. */
+  @Test
+  public void randomNumberGenerator() {
+    // ensure that the same seed will generate the same result
+    final String query = "random-number-generator(123)?number";
+    assertEquals(query(query), query(query));
+    // ensure that multiple number generators in a query will generate the same result
+    query("let $seq := 1 to 10 "
+        + "let $m1 := random-number-generator() "
+        + "let $m2 := random-number-generator() "
+        + "return every $test in ("
+        + "  $m1('number') = $m2('number'),"
+        + "  $m2('next')()('number') = $m1('next')()('number'),"
+        + "  deep-equal($m1('permute')($seq), $m2('permute')($seq))"
+        + ") satisfies true()", "true");
   }
 }

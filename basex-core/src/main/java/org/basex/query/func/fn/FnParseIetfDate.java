@@ -164,8 +164,9 @@ public final class FnParseIetfDate extends StandardFunc {
       if(!hours()) return false;
       if(!consume(':') || !minutes()) throw error("minutes");
       if(consume(':') && !seconds()) throw error("seconds");
+      final int ip = pos;
       skipWs();
-      timezone();
+      if(!timezone()) pos = ip;
       return true;
     }
 
@@ -323,7 +324,7 @@ public final class FnParseIetfDate extends StandardFunc {
      */
     private boolean skipWs() {
       if(!more() || !ws(curr())) return false;
-      consume();
+      do consume(); while(more() && ws(curr()));
       return true;
     }
 

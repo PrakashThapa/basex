@@ -2075,8 +2075,8 @@ public class QueryParser extends InputParser {
     // ordered expression
     if(wsConsumeWs(ORDERED, CURLY1, INCOMPLETE) || wsConsumeWs(UNORDERED, CURLY1, INCOMPLETE))
       return enclosed(NOENCLEXPR);
-    // map (including legacy syntax)
-    if(wsConsumeWs(MAPSTR, CURLY1, INCOMPLETE) || curr('{')) return new CMap(info(), keyValues());
+    // map
+    if(wsConsumeWs(MAPSTR, CURLY1, INCOMPLETE)) return new CMap(info(), keyValues());
     // square array constructor
     if(wsConsumeWs(SQUARE1)) return new CArray(info(), false, values());
     // curly array constructor
@@ -2087,7 +2087,11 @@ public class QueryParser extends InputParser {
       return a == null ? new CArray(info(), true) : new CArray(info(), true, a);
     }
     // unary lookup
-    if(wsConsumeWs(QUESTION)) return new Lookup(info(), keySpecifier());
+    final int ip = pos;
+    if(consume(QUESTION)) {
+      if(!wsConsume(COMMA) && !consume(PAREN2)) return new Lookup(info(), keySpecifier());
+      pos = ip;
+    }
     // context value
     if(c == '.' && !digit(next())) {
       if(next() == '.') return null;
@@ -2131,7 +2135,7 @@ public class QueryParser extends InputParser {
     if(!wsConsume(CURLY2)) {
       do {
         add(el, check(single(), INVMAPKEY));
-        if(!wsConsume(ASSIGN)) check(':');
+        if(!wsConsume(COL)) throw error(WRONGCHAR_X_X, COL, found());
         add(el, check(single(), INVMAPVAL));
       } while(wsConsume(COMMA));
       wsCheck(CURLY2);
@@ -2403,12 +2407,13 @@ public class QueryParser extends InputParser {
     if(!wsConsume(PAREN2)) {
       int i = args.size();
       do {
-        if(wsConsume(QUESTION)) {
+        final Expr e = single();
+        if(e != null) {
+          args.add(e);
+        } else if(wsConsume(QUESTION)) {
           holes = holes == null ? new int[] { i } : Array.add(holes, i);
         } else {
-          final Expr e = single();
-          if(e == null) throw error(FUNCMISS_X, name);
-          args.add(e);
+          throw error(FUNCMISS_X, name);
         }
         i++;
       } while(wsConsume(COMMA));

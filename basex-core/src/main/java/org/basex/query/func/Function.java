@@ -316,6 +316,9 @@ public enum Function {
   /** XQuery function. */
   QNAME(FnQName.class, "QName(uri,name)", arg(STR_ZO, STR), QNM),
   /** XQuery function. */
+  RANDOM_NUMBER_GENERATOR(FnRandomNumberGenerator.class, "random-number-generator([seed])",
+      arg(AAT), MAP_O, flag(NDT)),
+  /** XQuery function. */
   REMOVE(FnRemove.class, "remove(items,pos)", arg(ITEM_ZM, ITR), ITEM_ZM),
   /** XQuery function. */
   REPLACE(FnReplace.class, "replace(string,pattern,replace[,mod])",
@@ -465,6 +468,8 @@ public enum Function {
   _ARRAY_REVERSE(ArrayReverse.class, "reverse(array)", arg(ARRAY_O), ITEM_ZM, ARRAY_URI),
   /** XQuery function. */
   _ARRAY_JOIN(ArrayJoin.class, "join(array)", arg(ARRAY_ZM), ITEM_ZM, ARRAY_URI),
+  /** XQuery function. */
+  _ARRAY_FLATTEN(ArrayFlatten.class, "flatten(item()*)", arg(ITEM_ZM), ITEM_ZM, ARRAY_URI),
   /** XQuery function. */
   _ARRAY_FOR_EACH(ArrayForEach.class, "for-each(array,function)",
       arg(ARRAY_O, FuncType.get(ITEM_ZM, ITEM_ZM).seqType()), ARRAY_O, flag(HOF),

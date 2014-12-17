@@ -30,12 +30,12 @@ public final class FuncItem extends FItem implements Scope {
   /** Function name (may be {@code null}). */
   private final QNm name;
   /** Formal parameters. */
-  private final Var[] params;
+  public final Var[] params;
   /** Function expression. */
   public final Expr expr;
 
   /** Context value. */
-  private final Value ctxVal;
+  private final Value ctxValue;
   /** Context position. */
   private final long pos;
   /** Context length. */
@@ -82,7 +82,7 @@ public final class FuncItem extends FItem implements Scope {
     this.expr = expr;
     this.stackSize = stackSize;
     this.sc = sc;
-    ctxVal = ctxValue;
+    this.ctxValue = ctxValue;
     this.pos = pos;
     this.size = size;
   }
@@ -119,7 +119,7 @@ public final class FuncItem extends FItem implements Scope {
     final Value cv = qc.value;
     final long ps = qc.pos, sz = qc.size;
     try {
-      qc.value = ctxVal;
+      qc.value = ctxValue;
       qc.pos = pos;
       qc.size = size;
       final int pl = params.length;
@@ -139,7 +139,7 @@ public final class FuncItem extends FItem implements Scope {
     final Value cv = qc.value;
     final long ps = qc.pos, sz = qc.size;
     try {
-      qc.value = ctxVal;
+      qc.value = ctxValue;
       qc.pos = pos;
       qc.size = size;
       final int pl = params.length;
@@ -161,11 +161,12 @@ public final class FuncItem extends FItem implements Scope {
     if(tp.instanceOf(ft)) return this;
 
     final VarScope vsc = new VarScope(sc);
-    final Var[] vs = new Var[params.length];
-    final Expr[] refs = new Expr[vs.length];
-    for(int i = vs.length; i-- > 0;) {
-      vs[i] = vsc.newLocal(qc, params[i].name, ft.argTypes[i], true);
-      refs[i] = new VarRef(ii, vs[i]);
+    final int pl = params.length;
+    final Var[] vs = new Var[pl];
+    final Expr[] refs = new Expr[pl];
+    for(int p = pl; p-- > 0;) {
+      vs[p] = vsc.newLocal(qc, params[p].name, ft.argTypes[p], true);
+      refs[p] = new VarRef(ii, vs[p]);
     }
 
     final Expr e = new DynFuncCall(ii, sc, false, this, refs);
@@ -251,7 +252,9 @@ public final class FuncItem extends FItem implements Scope {
   @Override
   public String toString() {
     final FuncType ft = (FuncType) type;
-    final TokenBuilder tb = new TokenBuilder(FUNCTION).add('(');
+    final TokenBuilder tb = new TokenBuilder(FUNCTION);
+    if(name != null) tb.add(' ').add(name.string());
+    tb.add('(');
     final int pl = params.length;
     for(final Var v : params) tb.addExt(v).add(v == params[pl - 1] ? "" : ", ");
     tb.add(')').add(ft.retType != null ? " as " + ft.retType : "");

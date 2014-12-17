@@ -246,23 +246,23 @@ public final class QT3TS extends Main {
     final XdmValue expected = new XQuery("*:result/*[1]", ctx).context(test).value();
 
     // check if environment is defined in test-case
-    QT3Env e = null;
+    QT3Env env = null;
     final XdmValue ienv = new XQuery("*:environment[*]", ctx).context(test).value();
-    if(ienv.size() != 0) e = new QT3Env(ctx, ienv);
+    if(ienv.size() != 0) env = new QT3Env(ctx, ienv);
 
     // parse local environment
     boolean base = true;
-    if(e == null) {
-      final String env = asString("*:environment/@ref", test);
-      if(!env.isEmpty()) {
+    if(env == null) {
+      final String e = asString("*:environment[1]/@ref", test);
+      if(!e.isEmpty()) {
         // check if environment is defined in test-set
-        e = envs(envs, env);
+        env = envs(envs, e);
         // check if environment is defined in catalog
-        if(e == null) {
-          e = envs(genvs, env);
+        if(env == null) {
+          env = envs(genvs, e);
           base = false;
         }
-        if(e == null) Util.errln("%: environment '%' not found.", name, env);
+        if(env == null) Util.errln("%: environment '%' not found.", name, e);
       }
     }
 
@@ -281,15 +281,15 @@ public final class QT3TS extends Main {
     if(verbose) Util.outln(name);
 
     // bind variables
-    if(e != null) {
-      for(final HashMap<String, String> par : e.params) {
+    if(env != null) {
+      for(final HashMap<String, String> par : env.params) {
         final String decl = par.get(DECLARED);
         if(decl == null || decl.equals("false")) {
           string = "declare variable $" + par.get(NNAME) + " external;" + string;
         }
       }
       // bind documents
-      for(final HashMap<String, String> src : e.sources) {
+      for(final HashMap<String, String> src : env.sources) {
         final String role = src.get(ROLE);
         if(role != null && role.startsWith("$")) {
           string = "declare variable " + role + " external;" + string;
@@ -313,17 +313,17 @@ public final class QT3TS extends Main {
 
     final QT3Result result = new QT3Result();
     try {
-      if(e != null) {
+      if(env != null) {
         // bind namespaces
-        for(final HashMap<String, String> ns : e.namespaces) {
+        for(final HashMap<String, String> ns : env.namespaces) {
           query.namespace(ns.get(PREFIX), ns.get(URI));
         }
         // bind variables
-        for(final HashMap<String, String> par : e.params) {
+        for(final HashMap<String, String> par : env.params) {
           query.bind(par.get(NNAME), new XQuery(par.get(SELECT), ctx).value());
         }
         // bind documents
-        for(final HashMap<String, String> src : e.sources) {
+        for(final HashMap<String, String> src : env.sources) {
           // add document reference
           final String file = file(base, src.get(FILE));
           query.addDocument(src.get(URI), file);
@@ -335,23 +335,23 @@ public final class QT3TS extends Main {
           else query.bind(role, doc);
         }
         // bind resources
-        for(final HashMap<String, String> src : e.resources) {
+        for(final HashMap<String, String> src : env.resources) {
           query.addResource(src.get(URI), file(base, src.get(FILE)), src.get(Prop.ENCODING));
         }
         // bind collections
-        query.addCollection(e.collURI, e.collSources.toArray());
-        if(e.collContext) {
-          query.context(query.collection(e.collURI));
+        query.addCollection(env.collURI, env.collSources.toArray());
+        if(env.collContext) {
+          query.context(query.collection(env.collURI));
         }
         // bind context item
-        if(e.context != null) {
-          query.context(e.context);
+        if(env.context != null) {
+          query.context(env.context);
         }
         // set base uri
-        if(e.baseURI != null) query.baseURI(e.baseURI);
+        if(env.baseURI != null) query.baseURI(env.baseURI);
         // bind decimal formats
         for(final Map.Entry<QName, HashMap<String, String>> df :
-          e.decFormats.entrySet()) {
+          env.decFormats.entrySet()) {
           query.decimalFormat(df.getKey(), df.getValue());
         }
       }
@@ -360,7 +360,7 @@ public final class QT3TS extends Main {
       result.value = query.value();
       result.sprop = query.serializer();
     } catch(final XQueryException ex) {
-      result.err = ex;
+      result.xqerror = ex;
       result.value = null;
     } catch(final Throwable ex) {
       // unexpected error (potential bug)
@@ -384,8 +384,8 @@ public final class QT3TS extends Main {
     try {
       if(result.error != null) {
         res = result.error.toString();
-      } else if(result.err != null) {
-        res = result.err.getCode() + ": " + result.err.getLocalizedMessage();
+      } else if(result.xqerror != null) {
+        res = result.xqerror.getCode() + ": " + result.xqerror.getLocalizedMessage();
       } else {
         result.sprop.set(SerializerOptions.OMIT_XML_DECLARATION, "yes");
         res = serialize(result.value, result.sprop);
@@ -394,8 +394,7 @@ public final class QT3TS extends Main {
       res = ex.getCode() + ": " + ex.getLocalizedMessage();
       err = true;
     } catch(final Throwable ex) {
-      res = "Unexpected: " + ex.toString();
-      err = true;
+      res = result.value.toString();
     }
 
     tmp.add(err ? "Error : " : "Result: ").add(noComments(res)).add(NL);
@@ -444,13 +443,11 @@ public final class QT3TS extends Main {
       // skip limits
       "@type = 'limits' and @value = ('big_integer') or " +
       // skip non-XQuery tests
-      "@type = 'spec' and not(matches(@value, 'XQ3|XQ\\d\\d\\+'))" +
+      "@type = 'spec' and not(matches(@value, 'XQ\\d\\d\\+'))" +
       "]", ctx).context(test).value().size() == 0;
   }
 
-  //if(new XQuery("*:dependency[@type='spec'][matches(@value,'(XQ10)([^+]|$)')]", ctx).
-
-      /**
+  /**
    * Returns the specified environment, or {@code null}.
    * @param envs environments
    * @param ref reference
@@ -527,10 +524,10 @@ public final class QT3TS extends Main {
    */
   private String assertError(final QT3Result result, final XdmValue expect) {
     final String exp = asString('@' + CODE, expect);
-    if(result.err == null) return exp;
+    if(result.xqerror == null) return exp;
     if(!errors || exp.equals("*")) return null;
 
-    final QNm resErr = result.err.getException().qname();
+    final QNm resErr = result.xqerror.getException().qname();
 
     String name = exp, uri = string(QueryText.ERROR_URI);
     final Matcher m = BIND.matcher(exp);
@@ -676,10 +673,10 @@ public final class QT3TS extends Main {
       exp = normNL(exp);
       if(norm) exp = string(normalize(token(exp)));
 
-      final String res = normNL(asString("serialize(., map{ 'indent':='no' })", value));
+      final String res = normNL(asString("serialize(., map{ 'indent':'no' })", value));
       if(exp.equals(res)) return null;
       final String r = normNL(asString(
-          "serialize(., map{ 'indent':='no', 'omit-xml-declaration':='no' })", value));
+          "serialize(., map{ 'indent':'no', 'omit-xml-declaration':'no' })", value));
       if(exp.equals(r)) return null;
 
       // include check for comments, processing instructions and namespaces
@@ -884,7 +881,7 @@ public final class QT3TS extends Main {
         } else if(c == 'a') {
           all = true;
         } else if(c == 'd') {
-          ctx.soptions.set(StaticOptions.DEBUG, true);
+          Prop.debug = true;
         } else if(c == 'i') {
           ignoring = true;
         } else if(c == 'e') {
@@ -951,7 +948,7 @@ public final class QT3TS extends Main {
     /** Query result. */
     XdmValue value;
     /** Query exception. */
-    XQueryException err;
+    XQueryException xqerror;
     /** Query error. */
     Throwable error;
   }
