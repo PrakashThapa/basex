@@ -77,6 +77,8 @@ public enum Function {
   ANALYZE_STRING(FnAnalyzeString.class, "analyze-string(input,pattern[,mod])",
       arg(STR_ZO, STR, STR), ELM, flag(CNS)),
   /** XQuery function. */
+  APPLY(FnApply.class, "apply(function,args)", arg(FUN_O, ARRAY_O), ITEM_ZM),
+  /** XQuery function. */
   AVAILABLE_ENVIRONMENT_VARIABLES(FnAvailableEnvironmentVariables.class,
       "available-environment-variables()", arg(), STR_ZM),
   /** XQuery function. */
@@ -419,8 +421,6 @@ public enum Function {
 
   /* Map Module. */
 
-  /** XQuery function. */
-  _MAP_NEW(MapNew.class, "new([maps])", arg(MAP_ZM), MAP_O, MAP_URI),
   /** XQuery function. */
   _MAP_MERGE(MapMerge.class, "merge(maps)", arg(MAP_ZM), MAP_O, MAP_URI),
   /** XQuery function. */
@@ -1184,6 +1184,9 @@ public enum Function {
   _XQUERY_INVOKE(XQueryInvoke.class, "invoke(uri[,bindings[,options]])",
       arg(STR, ITEM, ITEM), ITEM_ZM, flag(NDT), XQUERY_URI),
   /** XQuery function. */
+  _XQUERY_PARSE(XQueryParse.class, "parse(string[,options])",
+      arg(STR, ITEM), NOD, flag(NDT), XQUERY_URI),
+  /** XQuery function. */
   _XQUERY_TYPE(XQueryType.class, "type(value)", arg(ITEM_ZM), ITEM_ZM, XQUERY_URI),
 
   /* XSLT Module. */
@@ -1361,7 +1364,7 @@ public enum Function {
    * @return result of check
    * @see Expr#has(Flag)
     */
-  public boolean has(final Flag flag) {
+  boolean has(final Flag flag) {
     return flags.contains(flag);
   }
 
@@ -1371,7 +1374,7 @@ public enum Function {
    * @param ann annotations
    * @return function type
    */
-  public final FuncType type(final int arity, final Ann ann) {
+  final FuncType type(final int arity, final Ann ann) {
     final SeqType[] arg = new SeqType[arity];
     if(arity != 0 && max == Integer.MAX_VALUE) {
       System.arraycopy(args, 0, arg, 0, args.length);
@@ -1416,7 +1419,7 @@ public enum Function {
    * @param arity number of arguments
    * @return array of argument names
    */
-  public final QNm[] argNames(final int arity) {
+  final QNm[] argNames(final int arity) {
     final String[] names = names();
     final QNm[] res = new QNm[arity];
     for(int i = Math.min(arity, names.length); --i >= 0;) res[i] = new QNm(names[i]);

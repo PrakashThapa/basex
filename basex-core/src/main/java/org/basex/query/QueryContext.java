@@ -70,9 +70,9 @@ public final class QueryContext extends Proc implements AutoCloseable {
   /** Cached thesaurus files. */
   public HashMap<String, IO> thes;
   /** Global database options (will be reassigned after query execution). */
-  public final HashMap<Option<?>, Object> staticOpts = new HashMap<>();
+  final HashMap<Option<?>, Object> staticOpts = new HashMap<>();
   /** Temporary query options (key/value pairs), supplied by option declarations. */
-  public final StringList tempOpts = new StringList();
+  final StringList tempOpts = new StringList();
 
   /** Current context value. */
   public Value value;
@@ -132,11 +132,13 @@ public final class QueryContext extends Proc implements AutoCloseable {
   /** Serializer options. */
   SerializerOptions serialOpts;
   /** Initial context value. */
-  public MainModule ctxItem;
+  MainModule ctxItem;
 
   /** Root expression of the query. */
   public MainModule root;
 
+  /** Compilation flag. */
+  private boolean compiled;
   /** Indicates if the query context has been closed. */
   private boolean closed;
 
@@ -262,6 +264,9 @@ public final class QueryContext extends Proc implements AutoCloseable {
    * @throws QueryException query exception
    */
   public void compile() throws QueryException {
+    if(compiled) return;
+    compiled = true;
+
     // set database options
     final StringList opts = tempOpts;
     final int os = opts.size();
@@ -329,6 +334,8 @@ public final class QueryContext extends Proc implements AutoCloseable {
    * @throws QueryException query exception
    */
   public Iter iter() throws QueryException {
+    compile();
+
     try {
       // no updates: iterate through results
       if(!updating) return root.iter(this);
@@ -624,11 +631,12 @@ public final class QueryContext extends Proc implements AutoCloseable {
 
   /**
    * Recursively builds a query plan.
-   * @param doc root node
+   * @return resulting node
    */
-  void plan(final FDoc doc) {
+  public FElem plan() {
     // only show root node if functions or variables exist
     final FElem e = new FElem(QueryText.PLAN);
+    e.add(QueryText.COMPILED, token(compiled));
     if(root != null) {
       for(final StaticScope scp : QueryCompiler.usedDecls(root)) scp.plan(e);
       root.plan(e);
@@ -636,7 +644,7 @@ public final class QueryContext extends Proc implements AutoCloseable {
       funcs.plan(e);
       vars.plan(e);
     }
-    doc.add(e);
+    return e;
   }
 
   // PRIVATE METHODS ====================================================================

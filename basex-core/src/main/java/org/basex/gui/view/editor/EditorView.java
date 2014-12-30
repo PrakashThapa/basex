@@ -18,7 +18,6 @@ import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.core.parse.*;
 import org.basex.gui.*;
-import org.basex.gui.GUIConstants.Fill;
 import org.basex.gui.GUIConstants.Msg;
 import org.basex.gui.layout.*;
 import org.basex.gui.layout.BaseXFileChooser.Mode;
@@ -87,6 +86,7 @@ public final class EditorView extends View {
   public EditorView(final ViewNotifier man) {
     super(EDITORVIEW, man);
     layout(new BorderLayout());
+    setBackground(GUIConstants.PANEL);
 
     header = new BaseXHeader(EDITOR);
 
@@ -114,7 +114,7 @@ public final class EditorView extends View {
         BaseXKeys.UNIT.toString()), false, gui);
     test.addKeyListener(this);
 
-    final BaseXBack buttons = new BaseXBack(Fill.NONE);
+    final BaseXBack buttons = new BaseXBack(false);
     buttons.layout(new TableLayout(1, 8, 1, 0)).border(0, 0, 8, 0);
     buttons.add(openB);
     buttons.add(saveB);
@@ -125,7 +125,7 @@ public final class EditorView extends View {
     buttons.add(go);
     buttons.add(test);
 
-    final BaseXBack north = new BaseXBack(Fill.NONE).layout(new BorderLayout());
+    final BaseXBack north = new BaseXBack(false).layout(new BorderLayout());
     north.add(buttons, BorderLayout.WEST);
     north.add(header, BorderLayout.EAST);
 
@@ -136,12 +136,13 @@ public final class EditorView extends View {
     pos = new BaseXLabel(" ");
     posCode.invokeLater();
 
-    final BaseXBack south = new BaseXBack(Fill.NONE).border(4, 0, 0, 0);
+    final BaseXBack south = new BaseXBack(false).border(4, 0, 0, 0);
     south.layout(new BorderLayout(4, 0));
     south.add(info, BorderLayout.CENTER);
     south.add(pos, BorderLayout.EAST);
 
-    final BaseXBack main = new BaseXBack().border(5).mode(Fill.NONE);
+    final BaseXBack main = new BaseXBack().border(5);
+    main.setOpaque(false);
     main.layout(new BorderLayout());
     main.add(north, BorderLayout.NORTH);
     main.add(center, BorderLayout.CENTER);
@@ -149,7 +150,7 @@ public final class EditorView extends View {
 
     project = new ProjectView(this);
     split = new BaseXSplit(true);
-    split.mode(Fill.NONE);
+    split.setOpaque(false);
     split.add(project);
     split.add(main);
     split.init(new double[] { 0.3, 0.7 }, new double[] { 0, 1 });
@@ -287,7 +288,7 @@ public final class EditorView extends View {
   @Override
   public void refreshLayout() {
     header.refreshLayout();
-    for(final EditorArea edit : editors()) edit.setFont(mfont);
+    for(final EditorArea edit : editors()) edit.refreshLayout(mfont);
     search.refreshLayout();
     final Font f = GUIConstants.font.deriveFont((float) ((FONTSIZE * SCALE + fontSize) / 2));
     info.setFont(f);
@@ -954,7 +955,8 @@ public final class EditorView extends View {
     final EditorArea edit = new EditorArea(this, newTabFile());
     edit.setFont(mfont);
 
-    final BaseXBack tab = new BaseXBack(new BorderLayout(10, 0)).mode(Fill.NONE);
+    final BaseXBack tab = new BaseXBack(new BorderLayout(10, 0));
+    tab.setOpaque(false);
     tab.add(edit.label, BorderLayout.CENTER);
 
     final AbstractButton close = tabButton("e_close", "e_close2");

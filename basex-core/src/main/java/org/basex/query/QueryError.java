@@ -220,8 +220,10 @@ public enum QueryError {
   BXXQ_UPDATING(BXXQ, 1, "No updating expression allowed."),
   /** BXXQ0002. */
   BXXQ_NOUPDATE(BXXQ, 2, "Updating expression expected."),
-  /** BXXQ0002. */
+  /** BXXQ0003. */
   BXXQ_PERM_X(BXXQ, 3, "%"),
+  /** BXXQ0003. */
+  BXXQ_PERM2_X(BASX, 3, "% permission required."),
   /** BXXQ0004. */
   BXXQ_STOPPED(BXXQ, 4, "Timeout or assigned memory was exceeded."),
 
@@ -241,8 +243,6 @@ public enum QueryError {
   UNIT_TWICE_X_X(UNIT, 4, "Annotation %:% was declare twice."),
   /** UNIT0005. */
   UNIT_ANN_X_X(UNIT, 5, "Annotation '%%' has invalid arguments."),
-  /** UNIT0006. */
-  UNIT_EMPTY_X(UNIT, 6, "Test function '%' returns items."),
 
   // User Module
 
@@ -403,6 +403,9 @@ public enum QueryError {
   ZIP_FAIL_X(ZIP, 3, "Operation failed: %."),
 
   // W3 Functions
+
+  /** FOAP0001. */
+  APPLY_X_X(FOAP, 1, "Arity and number of array members differs: % vs. %"),
 
   /** FOAR0001. */
   DIVZERO_X(FOAR, 1, "% cannot be divided by zero."),
@@ -1342,6 +1345,7 @@ public enum QueryError {
 
     // W3 errors
 
+    /** FOAP Error type. */ FOAP,
     /** FOAR Error type. */ FOAR,
     /** FOAY Error type. */ FOAY,
     /** FOCA Error type. */ FOCA,

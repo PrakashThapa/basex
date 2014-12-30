@@ -93,7 +93,7 @@ public final class StaticFuncs extends ExprInfo {
    * @return function call
    * @throws QueryException query exception
    */
-  public TypedFunc getFuncRef(final QNm name, final Expr[] args, final StaticContext sc,
+  TypedFunc getFuncRef(final QNm name, final Expr[] args, final StaticContext sc,
       final InputInfo ii) throws QueryException {
 
     if(NSGlobal.reserved(name.uri())) {
@@ -227,8 +227,9 @@ public final class StaticFuncs extends ExprInfo {
     if(!funcs.isEmpty()) {
       final FElem el = planElem();
       plan.add(el);
-      for(final StaticFunc f : funcs())
-        if(f != null && f.compiled()) f.plan(el);
+      for(final StaticFunc f : funcs()) {
+        if(f != null) f.plan(el);
+      }
     }
   }
 

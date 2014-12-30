@@ -1,5 +1,6 @@
 package org.basex.gui.text;
 
+import static org.basex.gui.GUIConstants.*;
 import static org.basex.gui.layout.BaseXKeys.*;
 import static org.basex.util.Token.*;
 
@@ -10,11 +11,9 @@ import java.util.*;
 
 import javax.swing.*;
 import javax.swing.Timer;
-import javax.swing.border.*;
 
 import org.basex.core.*;
 import org.basex.gui.*;
-import org.basex.gui.GUIConstants.Fill;
 import org.basex.gui.dialog.*;
 import org.basex.gui.layout.*;
 import org.basex.io.*;
@@ -53,7 +52,7 @@ public class TextPanel extends BaseXPanel {
   }
 
   /** Text editor. */
-  protected final TextEditor editor;
+  public final TextEditor editor;
   /** Undo history. */
   public final History hist;
   /** Search bar. */
@@ -90,6 +89,8 @@ public class TextPanel extends BaseXPanel {
 
     setFocusable(true);
     setFocusTraversalKeysEnabled(!editable);
+    setBackground(BACK);
+    setOpaque(editable);
 
     addMouseMotionListener(this);
     addMouseWheelListener(this);
@@ -109,7 +110,7 @@ public class TextPanel extends BaseXPanel {
       }
     });
 
-    setFont(GUIConstants.dmfont);
+    setFont(dmfont);
     layout(new BorderLayout());
 
     scroll = new BaseXScrollBar(this);
@@ -120,13 +121,6 @@ public class TextPanel extends BaseXPanel {
 
     setText(txt);
     hist = new History(editable ? editor.text() : null);
-
-    if(editable) {
-      setBackground(Color.white);
-      setBorder(new MatteBorder(1, 1, 0, 0, GUIConstants.color(6)));
-    } else {
-      mode(Fill.NONE);
-    }
 
     new BaseXPopup(this, editable ?
       new GUICommand[] {
@@ -424,19 +418,19 @@ public class TextPanel extends BaseXPanel {
 
   @Override
   public final void mouseEntered(final MouseEvent e) {
-    gui.cursor(GUIConstants.CURSORTEXT);
+    gui.cursor(CURSORTEXT);
   }
 
   @Override
   public final void mouseExited(final MouseEvent e) {
-    gui.cursor(GUIConstants.CURSORARROW);
+    gui.cursor(CURSORARROW);
   }
 
   @Override
   public final void mouseMoved(final MouseEvent e) {
     if(linkListener == null) return;
     final TextIterator iter = rend.jump(e.getPoint());
-    gui.cursor(iter.link() != null ? GUIConstants.CURSORHAND : GUIConstants.CURSORARROW);
+    gui.cursor(iter.link() != null ? CURSORHAND : CURSORARROW);
   }
 
   @Override
@@ -701,7 +695,27 @@ public class TextPanel extends BaseXPanel {
   @SuppressWarnings("unused")
   protected void release(final Action action) { }
 
+  /**
+   * Refreshes the layout.
+   * @param f used font
+   */
+  public void refreshLayout(final Font f) {
+    setFont(f);
+    scroll.refreshLayout();
+  }
+
   // EDITOR COMMANDS ==========================================================
+
+  /**
+   * Pastes a string.
+   * @param string string to be pasted
+   */
+  public void paste(final String string) {
+    final int pos = editor.pos();
+    if(editor.selected()) editor.delete();
+    editor.add(string);
+    finish(pos);
+  }
 
   /**
    * Copies the selected text to the clipboard.
@@ -848,12 +862,8 @@ public class TextPanel extends BaseXPanel {
 
     @Override
     public void execute() {
-      final int pos = editor.pos();
       final String clip = clip();
-      if(clip == null) return;
-      if(editor.selected()) editor.delete();
-      editor.add(clip);
-      finish(pos);
+      if(clip != null) paste(clip);
     }
     @Override
     public boolean enabled(final GUI main) { return hist.active() && clip() != null; }

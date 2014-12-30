@@ -42,10 +42,16 @@ final class ProjectList extends JList<String> {
     }, null,
     new GUIPopupCmd(REFRESH, BaseXKeys.REFRESH) {
       @Override public void execute() { project.refresh(); }
-    },
+    }, null,
     new GUIPopupCmd(COPY_PATH, BaseXKeys.COPYPATH) {
       @Override public void execute() {
-        if(enabled(null)) BaseXLayout.copy(selectedValue());
+        BaseXLayout.copy(selectedValue());
+      }
+      @Override public boolean enabled(final GUI main) { return selectedValue() != null; }
+    },
+    new GUIPopupCmd(ADD_AS_IMPORT, BaseXKeys.ADDIMPORT) {
+      @Override public void execute() {
+        project.addImport(selectedValues()[0]);
       }
       @Override public boolean enabled(final GUI main) { return selectedValue() != null; }
     }
@@ -172,14 +178,14 @@ final class ProjectList extends JList<String> {
           int x = (int) label.getPreferredSize().getWidth() + 2;
 
           final String s = file.name();
-          g.setColor(label.getForeground());
+          g.setColor(GUIConstants.TEXT);
           g.drawString(s, x, y);
           x += fm.stringWidth(s);
 
           final String[] names = file.file().getParent().split("/|\\\\");
           final StringBuilder sb = new StringBuilder(" ");
           for(int n = names.length - 1; n >= 0; n--) sb.append('/').append(names[n]);
-          g.setColor(GUIConstants.GRAY);
+          g.setColor(GUIConstants.gray);
           g.drawString(sb.toString(), x, y);
         }
       };
@@ -199,8 +205,8 @@ final class ProjectList extends JList<String> {
         label.setBackground(getSelectionBackground());
         label.setForeground(getSelectionForeground());
       } else {
-        label.setBackground(Color.WHITE);
-        label.setForeground(getForeground());
+        label.setBackground(GUIConstants.BACK);
+        label.setForeground(GUIConstants.TEXT);
       }
       return label;
     }

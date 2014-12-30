@@ -68,7 +68,9 @@ public class XQueryEval extends StandardFunc {
     try(final QueryContext qctx = qc.proc(new QueryContext(qc))) {
       if(exprs.length > 2) {
         final Options opts = toOptions(2, Q_OPTIONS, new XQueryOptions(), qc);
-        user.perm(Perm.get(opts.get(XQueryOptions.PERMISSION).toString()), null);
+        final Perm perm = Perm.get(opts.get(XQueryOptions.PERMISSION).toString());
+        if(!user.has(perm)) throw BXXQ_PERM2_X.get(info, perm);
+        user.perm(perm, null);
 
         // initial memory consumption: perform garbage collection and calculate usage
         Performance.gc(2);
@@ -114,7 +116,6 @@ public class XQueryEval extends StandardFunc {
         } else {
           if(qctx.updating) throw BXXQ_UPDATING.get(info);
         }
-        qctx.compile();
 
         final ValueBuilder vb = new ValueBuilder();
         cache(qctx.iter(), vb, qctx);

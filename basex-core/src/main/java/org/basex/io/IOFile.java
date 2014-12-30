@@ -270,7 +270,7 @@ public final class IOFile extends IO {
   public void copyTo(final IOFile target) throws IOException {
     // create parent directory of target file
     target.parent().md();
-    Files.copy(toPath(), target.toPath());
+    Files.copy(toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
   }
 
   @Override
@@ -333,6 +333,19 @@ public final class IOFile extends IO {
       return new IOFile(toPath().toRealPath().toFile());
     } catch(final IOException ex) {
       return this;
+    }
+  }
+
+  /**
+   * Returns a path to the specified path. If rewriting fails, the absolute path is returned.
+   * @param path relative path
+   * @return path
+   */
+  public String relative(final IOFile path) {
+    try {
+      return toPath().relativize(path.toPath()).toString();
+    } catch(final Exception ex) {
+      return path.path();
     }
   }
 
