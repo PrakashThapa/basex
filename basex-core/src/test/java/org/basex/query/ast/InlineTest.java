@@ -1,12 +1,14 @@
 package org.basex.query.ast;
 
 import org.basex.query.expr.*;
+import org.basex.query.value.item.*;
+import org.basex.util.*;
 import org.junit.*;
 
 /**
  * Tests for inlining.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Leo Woerteler
  */
 public final class InlineTest extends QueryPlanTest {
@@ -56,5 +58,43 @@ public final class InlineTest extends QueryPlanTest {
         "true",
         "empty(//GFLWOR)",
         "empty(//Var)");
+  }
+
+  /** Checks if forward-referencing function literals are inlined. */
+  @Test public void gh1052() {
+    check("declare function local:a() { local:b#1(42) };"
+        + "declare function local:b($a) { $a };"
+        + "local:a()",
+        "42",
+        "exists(/*/" + Util.className(Int.class) + "[@value = '42'])");
+
+    check("declare function local:a() { local:b(?)(42) };"
+        + "declare function local:b($a) { $a };"
+        + "local:a()",
+        "42",
+        "exists(/*/" + Util.className(Int.class) + "[@value = '42'])");
+
+    check("declare function local:a() { local:b#1(?)(42) };"
+        + "declare function local:b($a) { $a };"
+        + "local:a()",
+        "42",
+        "exists(/*/" + Util.className(Int.class) + "[@value = '42'])");
+  }
+
+  /** Checks that the simple map operator prohibits inlining a context item into its RHS. */
+  @Test public void gh1055() {
+    check("let $d := for-each(1 to 100, function($a) { $a }) "
+        + "return count((1 to 2) ! $d)",
+        "200",
+        "exists(//Let)");
+
+    check("let $d := for-each(1 to 10, function($a) { $a }) return count((1 to 2) ! $d[1])",
+        "2",
+        "exists(//CachedMap)");
+
+    check("for $x in (<x/>, <x/>) where (1, 2) ! $x return $x",
+        String.format("<x/>%n<x/>"),
+        "exists(//IterMap)",
+        "empty(//Context)");
   }
 }

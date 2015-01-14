@@ -15,7 +15,7 @@ import org.xml.sax.*;
 /**
  * {@link IO} reference, representing a local file or directory path.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class IOFile extends IO {
@@ -372,7 +372,7 @@ public final class IOFile extends IO {
   }
 
   /**
-   * Converts a file filter (glob) to a regular expression.
+   * Converts a name filter (glob) to a regular expression.
    * @param glob filter
    * @return regular expression
    */

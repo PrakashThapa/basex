@@ -12,7 +12,7 @@ import org.basex.query.value.item.*;
 /**
  * Aggregation function.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 abstract class Aggr extends StandardFunc {
@@ -25,9 +25,9 @@ abstract class Aggr extends StandardFunc {
    * @throws QueryException query exception
    */
   Item sum(final Iter iter, final Item it, final boolean avg) throws QueryException {
-    Item rs = it.type.isUntyped() ? Dbl.get(it.string(info), info) : it;
+    Item rs = it.type.isUntyped() ? Dbl.get(it.dbl(info)) : it;
     final boolean num = rs instanceof ANum, dtd = rs.type == DTD, ymd = rs.type == YMD;
-    if(!num && (!(rs instanceof Dur) || rs.type == DUR)) throw SUM_X_X.get(info, rs.type, rs);
+    if(!num && !dtd && !ymd) throw SUM_X_X.get(info, rs.type, rs);
 
     int c = 1;
     for(Item i; (i = iter.next()) != null;) {

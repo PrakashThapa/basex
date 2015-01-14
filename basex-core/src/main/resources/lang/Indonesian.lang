@@ -325,6 +325,7 @@ separator            = Pemisah
 sessions_%           = % sesi
 sessions_killed_%    = % sesi ditutup.
 show_atts            = Tampilkan Atribut
+show_hidden_files    = Show hidden files
 show_invisible       = Tampilkan karakter tak terlihat
 show_line_margin     = Tampilkan garis tepi
 show_line_numbers    = Tampilkan nomor baris

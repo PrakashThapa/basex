@@ -1,6 +1,7 @@
 package org.basex.io.serial;
 
-import org.basex.build.*;
+import org.basex.build.csv.*;
+import org.basex.build.json.*;
 import org.basex.core.*;
 import org.basex.util.*;
 import org.basex.util.options.*;
@@ -8,7 +9,7 @@ import org.basex.util.options.*;
 /**
  * This class defines all available serialization parameters.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class SerializerOptions extends Options {

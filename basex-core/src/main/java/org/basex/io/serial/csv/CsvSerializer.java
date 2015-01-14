@@ -4,7 +4,7 @@ import static org.basex.util.Token.*;
 
 import java.io.*;
 
-import org.basex.build.*;
+import org.basex.build.csv.*;
 import org.basex.io.serial.*;
 import org.basex.util.*;
 import org.basex.util.list.*;
@@ -12,7 +12,7 @@ import org.basex.util.list.*;
 /**
  * This class serializes data as CSV.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 abstract class CsvSerializer extends OutputSerializer {

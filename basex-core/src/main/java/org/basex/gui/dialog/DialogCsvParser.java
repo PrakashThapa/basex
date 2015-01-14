@@ -5,9 +5,9 @@ import static org.basex.core.Text.*;
 import java.awt.*;
 import java.io.*;
 
-import org.basex.build.*;
-import org.basex.build.CsvOptions.CsvFormat;
-import org.basex.build.CsvOptions.CsvSep;
+import org.basex.build.csv.*;
+import org.basex.build.csv.CsvOptions.CsvFormat;
+import org.basex.build.csv.CsvOptions.CsvSep;
 import org.basex.core.*;
 import org.basex.core.MainOptions.MainParser;
 import org.basex.gui.*;
@@ -21,7 +21,7 @@ import org.basex.util.list.*;
 /**
  * CSV parser panel.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 final class DialogCsvParser extends DialogParser {

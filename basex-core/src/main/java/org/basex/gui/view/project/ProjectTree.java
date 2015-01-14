@@ -19,7 +19,7 @@ import org.basex.util.*;
 /**
  * Tree of project view.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 final class ProjectTree extends BaseXTree implements TreeWillExpandListener {
@@ -54,8 +54,8 @@ final class ProjectTree extends BaseXTree implements TreeWillExpandListener {
 
     // add popup
     new BaseXPopup(this, pv.gui,
-      new OpenCmd(), new OpenExternalCmd(), new TestCmd(), null,
-      new DeleteCmd(), new RenameCmd(), new NewDirCmd(), null,
+      new OpenCmd(), new OpenExternalCmd(), new TestCmd(),
+      null, new DeleteCmd(), new RenameCmd(), new NewDirCmd(), null,
       new RefreshCmd(), null, new AddImportCmd(), new CopyPathCmd()
     );
   }

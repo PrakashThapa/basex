@@ -5,7 +5,7 @@ import static org.basex.query.QueryText.*;
 
 import java.io.*;
 
-import org.basex.build.*;
+import org.basex.build.html.*;
 import org.basex.io.*;
 import org.basex.query.*;
 import org.basex.query.func.*;
@@ -16,7 +16,7 @@ import org.basex.util.*;
 /**
  * Function implementation.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class HtmlParse extends StandardFunc {
@@ -28,8 +28,8 @@ public final class HtmlParse extends StandardFunc {
     final byte[] in = toBinary(exprs[0], qc);
     final HtmlOptions opts = toOptions(1, Q_OPTIONS, new HtmlOptions(), qc);
     try {
-      final Parser p = new org.basex.build.HtmlParser(new IOContent(in), qc.context.options, opts);
-      return new DBNode(p);
+      return new DBNode(new org.basex.build.html.HtmlParser(new IOContent(in),
+          qc.context.options, opts));
     } catch(final IOException ex) {
       throw BXHL_IO_X.get(info, ex);
     }

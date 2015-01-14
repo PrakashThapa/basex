@@ -1,4 +1,4 @@
-package org.basex.build;
+package org.basex.build.json;
 
 import java.util.*;
 
@@ -7,7 +7,7 @@ import org.basex.util.options.*;
 /**
  * Options for parsing JSON documents.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class JsonParserOptions extends JsonOptions {

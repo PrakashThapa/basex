@@ -24,7 +24,7 @@ import org.eclipse.jetty.xml.*;
 /**
  * This is the main class for the starting the database HTTP services.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  * @author Dirk Kirsten
  */
@@ -284,7 +284,9 @@ public final class BaseXHTTP extends Main {
             Options.setSystem(StaticOptions.HTTPLOCAL, true);
             break;
           case 'n': // parse host name
-            Options.setSystem(StaticOptions.HOST, arg.string());
+            final String n = arg.string();
+            Options.setSystem(StaticOptions.HOST, n);
+            Options.setSystem(StaticOptions.SERVERHOST, n);
             break;
           case 'p': // parse server port
             final int p = arg.number();

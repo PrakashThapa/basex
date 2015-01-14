@@ -1,6 +1,6 @@
 package org.basex.io.parse.json;
 
-import org.basex.build.*;
+import org.basex.build.json.*;
 import org.basex.query.*;
 import org.basex.query.value.item.*;
 import org.basex.util.*;
@@ -8,7 +8,7 @@ import org.basex.util.*;
 /**
  * Writes the parsed JSON file to the given {@link TokenBuilder}.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Leo Woerteler
  */
 final class JsonStringConverter extends JsonConverter {

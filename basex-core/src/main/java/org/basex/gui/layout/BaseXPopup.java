@@ -12,7 +12,7 @@ import org.basex.gui.*;
 /**
  * Project specific Popup menu implementation.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  * @author Lukas Kircher
  */
@@ -79,15 +79,16 @@ public final class BaseXPopup extends JPopupMenu {
       if(cmd == null) {
         addSeparator();
       } else {
-        final JMenuItem item = add(cmd.label());
-        item.addActionListener(new ActionListener() {
+        final String desc = cmd.label();
+        final JMenuItem jmi = add(cmd.toggle() ? new JCheckBoxMenuItem(desc) : new JMenuItem(desc));
+        jmi.addActionListener(new ActionListener() {
           @Override
           public void actionPerformed(final ActionEvent e) {
             if(!gui.updating) cmd.execute(gui);
           }
         });
-        BaseXLayout.setMnemonic(item, mnemCache);
-        item.setAccelerator(BaseXLayout.keyStroke(cmd));
+        BaseXLayout.setMnemonic(jmi, mnemCache);
+        jmi.setAccelerator(BaseXLayout.keyStroke(cmd));
       }
     }
   }

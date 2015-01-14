@@ -49,7 +49,7 @@ import org.basex.util.options.*;
 /**
  * Parser for XQuery expressions.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public class QueryParser extends InputParser {
@@ -1910,7 +1910,7 @@ public class QueryParser extends InputParser {
       if(axis == null) {
         axis = Axis.CHILD;
         test = nodeTest(false, true);
-        if(test == Test.NSP) throw error(NSNOTALL);
+        if(test == Test.NSP) throw error(NSAXIS);
         if(test != null && test.type == NodeType.ATT) axis = Axis.ATTR;
         checkTest(test, axis == Axis.ATTR);
       }
@@ -2199,11 +2199,26 @@ public class QueryParser extends InputParser {
       if(!(ex instanceof Int)) return ex;
       final int card = (int) ((ANum) ex).itr();
       final Expr lit = Functions.getLiteral(name, card, qc, sc, info(), false);
-      return lit != null ? lit : FuncLit.unknown(name, card, qc, sc, info());
+      return lit != null ? lit : unknownLit(name, card, info());
     }
 
     pos = ip;
     return null;
+  }
+
+  /**
+   * Creates and registers a function literal.
+   * @param name function name
+   * @param card cardinality
+   * @param ii input info
+   * @return the literal
+   * @throws QueryException query exception
+   */
+  private Closure unknownLit(final QNm name, final int card, final InputInfo ii)
+      throws QueryException {
+    final Closure lit = Closure.unknownLit(name, card, qc, sc, ii);
+    qc.funcs.registerFuncLit(lit);
+    return lit;
   }
 
   /**
@@ -2377,7 +2392,7 @@ public class QueryParser extends InputParser {
     if(holes != null) {
       final int card = args.length + holes.length;
       final Expr lit = Functions.getLiteral(name, card, qc, sc, ii, false);
-      final Expr f = lit != null ? lit : FuncLit.unknown(name, card, qc, sc, ii);
+      final Expr f = lit != null ? lit : unknownLit(name, card, ii);
       ret = new PartFunc(sc, ii, f, args, holes);
       if(lit != null && (lit instanceof XQFunctionExpr ? ((XQFunctionExpr) f).annotations() :
         ((FuncLit) lit).annotations()).contains(Ann.Q_UPDATING)) qc.updating();

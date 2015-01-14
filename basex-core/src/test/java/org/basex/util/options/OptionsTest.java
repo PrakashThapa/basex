@@ -3,7 +3,10 @@ package org.basex.util.options;
 import static org.junit.Assert.*;
 
 import org.basex.*;
-import org.basex.build.*;
+import org.basex.build.csv.*;
+import org.basex.build.html.*;
+import org.basex.build.json.*;
+import org.basex.build.text.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.io.*;
@@ -19,7 +22,7 @@ import org.junit.Test;
 /**
  * Tests on options.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class OptionsTest extends SandboxTest {
@@ -37,7 +40,7 @@ public final class OptionsTest extends SandboxTest {
     new TextOptions();
     new ArchOptions();
     new FtIndexOptions();
-    new FtOptions();
+    new FtContainsOptions();
     new XQueryOptions();
     new BaseXCollationOptions();
     new FTDistanceOptions();

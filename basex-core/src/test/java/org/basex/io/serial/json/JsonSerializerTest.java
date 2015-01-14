@@ -4,8 +4,8 @@ import static org.basex.query.QueryError.*;
 import static org.junit.Assert.*;
 
 import org.basex.*;
-import org.basex.build.*;
-import org.basex.build.JsonOptions.JsonFormat;
+import org.basex.build.json.*;
+import org.basex.build.json.JsonOptions.*;
 import org.basex.io.out.*;
 import org.basex.io.serial.*;
 import org.basex.query.*;
@@ -17,7 +17,7 @@ import org.junit.*;
 /**
  * Tests for the {@link JsonSerializer} classes.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class JsonSerializerTest extends SandboxTest {

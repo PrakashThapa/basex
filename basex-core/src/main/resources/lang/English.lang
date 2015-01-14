@@ -325,6 +325,7 @@ separator            = Separator
 sessions_%           = % session(s)
 sessions_killed_%    = % sessions killed.
 show_atts            = Show Attributes
+show_hidden_files    = Show hidden files
 show_invisible       = Show invisible characters
 show_line_margin     = Show line margin
 show_line_numbers    = Show line numbers

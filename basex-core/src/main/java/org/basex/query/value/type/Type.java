@@ -8,7 +8,7 @@ import org.basex.util.*;
 /**
  * XQuery item types.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public interface Type {
@@ -95,10 +95,18 @@ public interface Type {
 
     /**
      * Constructor.
-     * @param i type id
+     * @param id type id
      */
-    ID(final int i) {
-      id = (byte) i;
+    ID(final int id) {
+      this.id = (byte) id;
+    }
+
+    /**
+     * Returns the type ID as a byte.
+     * @return type ID
+     */
+    public byte asByte() {
+      return id;
     }
 
     /**

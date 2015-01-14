@@ -1,7 +1,7 @@
 package org.basex.tests.w3c;
 
 import static org.basex.tests.w3c.QT3Constants.*;
-import static org.basex.util.Prop.*;
+import static org.basex.util.Prop.NL;
 import static org.basex.util.Token.*;
 
 import java.io.*;
@@ -30,7 +30,7 @@ import org.basex.util.options.Options.YesNo;
  * {@code http://dev.w3.org/2011/QT3-test-suite/}. The driver needs to be
  * executed from the test suite directory.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class QT3TS extends Main {
@@ -104,7 +104,7 @@ public final class QT3TS extends Main {
    * Constructor.
    * @param args command-line arguments
    */
-  protected QT3TS(String[] args) {
+  protected QT3TS(final String[] args) {
     super(args);
   }
 
@@ -129,7 +129,7 @@ public final class QT3TS extends Main {
     final XdmValue doc = new XQuery("doc('" + file(false, CATALOG) + "')", ctx).value();
     final String version = asString("*:catalog/@version", doc);
     Util.outln(NL + "QT3 Test Suite " + version);
-    Util.outln("Test directory: " + new File(".").getCanonicalPath());
+    Util.outln("Test directory: " + file(false, "."));
     Util.out("Parsing queries");
 
     for(final XdmItem ienv : new XQuery("*:catalog/*:environment", ctx).context(doc))
@@ -336,7 +336,7 @@ public final class QT3TS extends Main {
         }
         // bind resources
         for(final HashMap<String, String> src : env.resources) {
-          query.addResource(src.get(URI), file(base, src.get(FILE)), src.get(Prop.ENCODING));
+          query.addResource(src.get(URI), file(base, src.get(FILE)), src.get(ENCODING));
         }
         // bind collections
         query.addCollection(env.collURI, env.collSources.toArray());
@@ -472,6 +472,8 @@ public final class QT3TS extends Main {
       String msg;
       if(type.equals("error")) {
         msg = assertError(result, expected);
+      } else if(type.equals("assert-serialization-error")) {
+        msg = assertSerializationError(result, expected, result.sprop);
       } else if(type.equals("all-of")) {
         msg = allOf(result, expected);
       } else if(type.equals("any-of")) {
@@ -495,8 +497,6 @@ public final class QT3TS extends Main {
           msg = assertXML(value, expected);
         } else if(type.equals("serialization-matches")) {
           msg = serializationMatches(value, expected, result.sprop);
-        } else if(type.equals("assert-serialization-error")) {
-          msg = assertSerializationError(value, expected, result.sprop);
         } else if(type.equals("assert-string-value")) {
           msg = assertStringValue(value, expected);
         } else if(type.equals("assert-true")) {
@@ -716,26 +716,31 @@ public final class QT3TS extends Main {
 
   /**
    * Tests a serialization error.
-   * @param value resulting value
+   * @param result result
    * @param expect expected result
    * @param sprop serialization properties
    * @return optional expected test suite result
    */
-  private String assertSerializationError(final XdmValue value, final XdmValue expect,
+  private String assertSerializationError(final QT3Result result, final XdmValue expect,
       final SerializerOptions sprop) {
 
-    final String exp = asString('@' + CODE, expect);
+    final String expCode = asString('@' + CODE, expect);
+    if(result.xqerror != null) {
+      if(!errors || expCode.equals("*")) return null;
+      final String resCode = string(result.xqerror.getException().qname().local());
+      if(resCode.equals(expCode)) return null;
+    }
+
     try {
-      serialize(value, sprop);
-      return exp;
+      if(result.value != null) serialize(result.value, sprop);
+      return expCode;
     } catch(final QueryIOException ex) {
-      if(!errors || exp.equals("*")) return null;
-      final QueryException qe = ex.getCause();
-      final String code = string(qe.qname().local());
-      if(code.equals(exp)) return null;
-      return Util.info("% (found: %)", exp, ex);
+      if(!errors || expCode.equals("*")) return null;
+      final String resCode = string(ex.getCause().qname().local());
+      if(resCode.equals(expCode)) return null;
+      return Util.info("% (found: %)", expCode, ex);
     } catch(final IOException ex) {
-      return Util.info("% (found: %)", exp, ex);
+      return Util.info("% (found: %)", expCode, ex);
     }
   }
 

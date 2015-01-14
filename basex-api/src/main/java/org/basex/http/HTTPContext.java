@@ -15,8 +15,8 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 
 import org.basex.*;
-import org.basex.build.*;
-import org.basex.build.JsonOptions.JsonFormat;
+import org.basex.build.json.*;
+import org.basex.build.json.JsonOptions.*;
 import org.basex.core.*;
 import org.basex.core.StaticOptions.AuthMethod;
 import org.basex.core.users.*;
@@ -31,7 +31,7 @@ import org.basex.util.options.*;
 /**
  * Bundles context-based information on a single HTTP operation.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class HTTPContext {

@@ -11,7 +11,7 @@ import org.basex.util.*;
 /**
  * Simple map expression.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public abstract class SimpleMap extends Arr {
@@ -78,6 +78,19 @@ public abstract class SimpleMap extends Arr {
     if(!visitAll(visitor, exprs)) return false;
     visitor.exitFocus();
     return true;
+  }
+
+  @Override
+  public VarUsage count(final Var var) {
+    final VarUsage left = exprs[0].count(var);
+    final long expr0 = exprs[0].size();
+    return left == VarUsage.MORE_THAN_ONCE || expr0 == 0 ? left :
+      left.plus(exprs[1].count(var).times(expr0));
+  }
+
+  @Override
+  public boolean removable(final Var var) {
+    return exprs[0].removable(var) && !exprs[1].uses(var);
   }
 
   @Override

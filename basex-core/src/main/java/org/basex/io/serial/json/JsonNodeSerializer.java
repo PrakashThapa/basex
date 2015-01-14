@@ -6,8 +6,8 @@ import static org.basex.util.Token.*;
 
 import java.io.*;
 
-import org.basex.build.*;
-import org.basex.build.JsonOptions.JsonFormat;
+import org.basex.build.json.*;
+import org.basex.build.json.JsonOptions.*;
 import org.basex.data.*;
 import org.basex.io.out.*;
 import org.basex.io.parse.json.*;
@@ -25,7 +25,7 @@ import org.basex.util.options.Options.YesNo;
  * This class serializes data as JSON. The input must conform to the rules
  * defined in the {@link JsonDirectConverter} and {@link JsonAttsConverter} class.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class JsonNodeSerializer extends JsonSerializer {

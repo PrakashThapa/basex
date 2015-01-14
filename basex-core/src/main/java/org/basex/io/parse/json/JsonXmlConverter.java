@@ -3,7 +3,7 @@ package org.basex.io.parse.json;
 import static org.basex.io.parse.json.JsonConstants.*;
 import static org.basex.util.Token.*;
 
-import org.basex.build.*;
+import org.basex.build.json.*;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
 import org.basex.util.hash.*;
@@ -12,7 +12,7 @@ import org.basex.util.list.*;
 /**
  * This class provides a parse method to convert JSON data to XML nodes.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 abstract class JsonXmlConverter extends JsonConverter {

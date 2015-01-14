@@ -7,8 +7,8 @@ import static org.basex.util.Token.*;
 import java.util.*;
 import java.util.Map.Entry;
 
-import org.basex.build.*;
-import org.basex.build.JsonOptions.JsonFormat;
+import org.basex.build.json.*;
+import org.basex.build.json.JsonOptions.*;
 import org.basex.core.*;
 import org.basex.core.MainOptions.MainParser;
 import org.basex.core.locks.*;
@@ -40,7 +40,7 @@ import org.basex.util.options.*;
  * This class organizes both static and dynamic properties that are specific to a
  * single query.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class QueryContext extends Proc implements AutoCloseable {
@@ -697,8 +697,7 @@ public final class QueryContext extends Proc implements AutoCloseable {
         final JsonParserOptions jp = new JsonParserOptions();
         jp.set(JsonOptions.FORMAT, JsonFormat.MAP);
         final JsonConverter conv = JsonConverter.get(jp);
-        conv.convert(token(vl.toString()), null);
-        return conv.finish();
+        return conv.convert(token(vl.toString()), null);
       } catch(final QueryIOException ex) {
         throw ex.getCause();
       }

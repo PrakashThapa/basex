@@ -14,16 +14,19 @@ import org.basex.query.value.node.*;
 /**
  * Function implementation.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class UserListDetails extends UserList {
   @Override
   public Iter iter(final QueryContext qc) throws QueryException {
     checkAdmin(qc);
+    final User u = exprs.length > 0 ? toUser(0, qc) : null;
 
     final ValueBuilder vb = new ValueBuilder();
     for(final User us : qc.context.users.users(null)) {
+      if(u != null && u != us) continue;
+
       final String perm = us.perm(null).toString().toLowerCase(Locale.ENGLISH);
       final FElem user = new FElem(USER).add(NAME, us.name()).add(PERMISSION, perm);
       for(final Entry<Algorithm, EnumMap<Code, String>> codes : us.alg().entrySet()) {

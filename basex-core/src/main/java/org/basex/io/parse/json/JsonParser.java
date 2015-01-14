@@ -3,8 +3,8 @@ package org.basex.io.parse.json;
 import static org.basex.query.QueryError.*;
 import static org.basex.util.Token.*;
 
-import org.basex.build.*;
-import org.basex.build.JsonParserOptions.JsonDuplicates;
+import org.basex.build.json.*;
+import org.basex.build.json.JsonParserOptions.*;
 import org.basex.query.*;
 import org.basex.util.*;
 import org.basex.util.hash.*;
@@ -12,7 +12,7 @@ import org.basex.util.hash.*;
 /**
  * A JSON parser generating parse events similar to a SAX XML parser.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Leo Woerteler
  */
 final class JsonParser extends InputParser {

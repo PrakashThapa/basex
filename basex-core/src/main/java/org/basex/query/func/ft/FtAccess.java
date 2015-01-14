@@ -8,7 +8,7 @@ import org.basex.util.ft.*;
 /**
  * Function implementation.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 abstract class FtAccess extends StandardFunc {
@@ -21,7 +21,7 @@ abstract class FtAccess extends StandardFunc {
    * @param opts full-text options
    * @return expressions
    */
-  final FTExpr options(final FTExpr ftexpr, final FtOptions opts) {
+  final FTExpr options(final FTExpr ftexpr, final FtIndexOptions opts) {
     FTExpr fte = ftexpr;
     if(opts != null) {
       if(opts.get(FtIndexOptions.ORDERED)) {

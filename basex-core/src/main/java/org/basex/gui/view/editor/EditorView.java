@@ -13,7 +13,7 @@ import java.util.regex.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-import org.basex.build.*;
+import org.basex.build.json.*;
 import org.basex.core.*;
 import org.basex.core.cmd.*;
 import org.basex.core.parse.*;
@@ -38,7 +38,7 @@ import org.xml.sax.*;
 /**
  * This view allows the input and evaluation of queries and documents.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class EditorView extends View {

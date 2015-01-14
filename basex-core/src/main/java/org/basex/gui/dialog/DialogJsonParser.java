@@ -5,8 +5,8 @@ import static org.basex.core.Text.*;
 import java.awt.*;
 import java.io.*;
 
-import org.basex.build.*;
-import org.basex.build.JsonOptions.JsonFormat;
+import org.basex.build.json.*;
+import org.basex.build.json.JsonOptions.*;
 import org.basex.core.*;
 import org.basex.core.MainOptions.MainParser;
 import org.basex.gui.*;
@@ -20,7 +20,7 @@ import org.basex.util.list.*;
 /**
  * JSON parser panel.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 final class DialogJsonParser extends DialogParser {

@@ -5,8 +5,8 @@ import static org.basex.util.Token.*;
 
 import java.io.*;
 
-import org.basex.build.*;
-import org.basex.build.CsvOptions.CsvFormat;
+import org.basex.build.csv.*;
+import org.basex.build.csv.CsvOptions.*;
 import org.basex.data.*;
 import org.basex.io.serial.*;
 import org.basex.query.value.item.*;
@@ -17,7 +17,7 @@ import org.basex.util.list.*;
 /**
  * This class serializes data as CSV.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class CsvDirectSerializer extends CsvSerializer {

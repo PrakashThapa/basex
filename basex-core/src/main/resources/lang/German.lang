@@ -325,6 +325,7 @@ separator            = Trennzeichen
 sessions_%           = % Verbindung(en)
 sessions_killed_%    = % Verbindungen beendet.
 show_atts            = Zeige Attribute
+show_hidden_files    = Versteckte Dateien anzeigen
 show_invisible       = Zeige unsichtbare Zeichen
 show_line_margin     = Zeige Zeilenbegrenzung
 show_line_numbers    = Zeige Zeilennumner

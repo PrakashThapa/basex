@@ -15,7 +15,7 @@ import org.basex.query.value.node.*;
 /**
  * This class contains all full-text options.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class FTOpt extends ExprInfo {
@@ -33,7 +33,7 @@ public final class FTOpt extends ExprInfo {
   public Language ln;
 
   /**
-   * Initializes the full-text options, inheriting the options of the argument.
+   * Adopts the options of the specified argument.
    * @param opt parent full-text options
    * @return self reference
    */

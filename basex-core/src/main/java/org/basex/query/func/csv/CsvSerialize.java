@@ -2,7 +2,7 @@ package org.basex.query.func.csv;
 
 import static org.basex.query.QueryError.*;
 
-import org.basex.build.*;
+import org.basex.build.csv.*;
 import org.basex.io.serial.*;
 import org.basex.query.*;
 import org.basex.query.iter.*;
@@ -12,7 +12,7 @@ import org.basex.util.*;
 /**
  * Function implementation.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class CsvSerialize extends CsvFn {

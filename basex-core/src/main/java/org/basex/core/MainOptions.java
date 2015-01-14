@@ -2,14 +2,17 @@ package org.basex.core;
 
 import java.util.*;
 
-import org.basex.build.*;
+import org.basex.build.csv.*;
+import org.basex.build.html.*;
+import org.basex.build.json.*;
+import org.basex.build.text.*;
 import org.basex.io.serial.*;
 import org.basex.util.options.*;
 
 /**
  * This class contains database options which are used all around the project.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class MainOptions extends Options {

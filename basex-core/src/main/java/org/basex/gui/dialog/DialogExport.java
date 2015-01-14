@@ -8,7 +8,8 @@ import java.io.*;
 import java.nio.charset.*;
 import java.util.*;
 
-import org.basex.build.*;
+import org.basex.build.csv.*;
+import org.basex.build.json.*;
 import org.basex.core.*;
 import org.basex.gui.*;
 import org.basex.gui.GUIConstants.Msg;
@@ -24,7 +25,7 @@ import org.basex.util.options.*;
 /**
  * Dialog window for changing some project's preferences.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class DialogExport extends BaseXDialog {

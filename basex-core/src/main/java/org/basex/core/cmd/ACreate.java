@@ -15,10 +15,10 @@ import org.basex.util.*;
 /**
  * Abstract class for database creation commands.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
-abstract class ACreate extends Command {
+public abstract class ACreate extends Command {
   /** Flag for closing a data instances before executing the command. */
   private boolean newData;
 

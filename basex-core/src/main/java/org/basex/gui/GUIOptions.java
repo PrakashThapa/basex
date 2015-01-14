@@ -12,7 +12,7 @@ import org.basex.util.options.*;
  * This class contains options which are used in the GUI.
  * They are also stored in the project's home directory.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class GUIOptions extends Options {
@@ -146,6 +146,8 @@ public final class GUIOptions extends Options {
   public static final BooleanOption AUTO = new BooleanOption("AUTO", true);
   /** Default file filter. */
   public static final StringOption FILES = new StringOption("FILES", "*.xml, *.xq*");
+  /** Flag for activated project structure. */
+  public static final BooleanOption HIDDENFILES = new BooleanOption("HIDDENFILES", true);
 
   /** Current input mode in global text field (Search, XQuery, Command). */
   public static final NumberOption SEARCHMODE = new NumberOption("SEARCHMODE", 0);

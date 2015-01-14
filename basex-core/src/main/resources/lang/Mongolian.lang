@@ -325,6 +325,7 @@ separator            = Тусгаарлагч
 sessions_%           = % суулт (session)
 sessions_killed_%    = % суулт (session) устгагдсан.
 show_atts            = Атрибутуудыг харах
+show_hidden_files    = Show hidden files
 show_invisible       = Show invisible characters
 show_line_margin     = Show line margin
 show_line_numbers    = Show line numbers

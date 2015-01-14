@@ -12,7 +12,7 @@ import org.basex.server.*;
 /**
  * This class offers methods to locally execute database commands.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public class LocalSession extends Session {
@@ -131,5 +131,13 @@ public class LocalSession extends Session {
   protected void execute(final Command command, final OutputStream output) throws BaseXException {
     command.execute(ctx, output);
     info = command.info();
+  }
+
+  /**
+   * Returns the associated database context.
+   * @return database context
+   */
+  public Context context() {
+    return ctx;
   }
 }

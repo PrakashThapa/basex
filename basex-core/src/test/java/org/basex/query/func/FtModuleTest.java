@@ -16,7 +16,7 @@ import org.junit.Test;
 /**
  * This class tests the functions of the Fulltext Module.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public final class FtModuleTest extends AdvancedQueryTest {
@@ -204,6 +204,10 @@ public final class FtModuleTest extends AdvancedQueryTest {
   @Test
   public void tokenize() {
     query(_FT_TOKENIZE.args("A bc"), "a bc");
+    query(_FT_TOKENIZE.args("A bc", " map { 'case': 'sensitive' }"), "A bc");
+    query(_FT_TOKENIZE.args("\u00e4", " map { 'diacritics': 'sensitive' }"), "\u00e4");
+    query(_FT_TOKENIZE.args("gifts", " map { 'stemming': 'true' }"), "gift");
+
     query("declare ft-option using stemming; " + _FT_TOKENIZE.args("Gifts"), "gift");
     query("count(" + _FT_TOKENIZE.args("") + ')', "0");
     query("count(" + _FT_TOKENIZE.args("a!b:c") + ')', "3");

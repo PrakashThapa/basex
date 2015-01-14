@@ -2,7 +2,7 @@ package org.basex.io.parse.json;
 
 import java.util.*;
 
-import org.basex.build.*;
+import org.basex.build.json.*;
 import org.basex.query.*;
 import org.basex.query.util.list.*;
 import org.basex.query.value.*;
@@ -29,7 +29,7 @@ import org.basex.util.*;
  *     <code>{'foo':42, 'bar':()}</code>)
  * </dl>
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Leo Woerteler
  */
 public final class JsonMapConverter extends JsonConverter {

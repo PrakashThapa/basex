@@ -325,6 +325,7 @@ separator            = Separator
 sessions_%           = % sesiuni
 sessions_killed_%    = % sesiuni ucise.
 show_atts            = Afişează atributele
+show_hidden_files    = Show hidden files
 show_invisible       = Show invisible characters
 show_line_margin     = Show line margin
 show_line_numbers    = Show line numbers

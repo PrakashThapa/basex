@@ -5,6 +5,7 @@ import static org.basex.query.QueryError.*;
 import java.io.*;
 
 import org.basex.build.*;
+import org.basex.build.html.*;
 import org.basex.core.*;
 import org.basex.io.*;
 import org.basex.query.*;
@@ -15,7 +16,7 @@ import org.basex.util.*;
 /**
  * Functions on zip files.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Christian Gruen
  */
 public class ZipXmlEntry extends ZipBinaryEntry {

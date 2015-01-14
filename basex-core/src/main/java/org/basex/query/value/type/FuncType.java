@@ -15,7 +15,7 @@ import org.basex.util.*;
 /**
  * XQuery 3.0 function types.
  *
- * @author BaseX Team 2005-14, BSD License
+ * @author BaseX Team 2005-15, BSD License
  * @author Leo Woerteler
  */
 public class FuncType implements Type {
@@ -23,7 +23,7 @@ public class FuncType implements Type {
   public static final FuncType ANY_FUN = new FuncType(null, null, null);
 
   /** Annotations. */
-  private final Ann ann;
+  public final Ann ann;
   /** Argument types. */
   public final SeqType[] argTypes;
   /** Return type. */
